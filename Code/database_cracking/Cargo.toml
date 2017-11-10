@@ -1,0 +1,6 @@
+[package]
+name = "database_cracking"
+version = "0.1.0"
+authors = ["Rob <robmoore121@gmail.com>"]
+
+[dependencies]
