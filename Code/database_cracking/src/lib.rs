@@ -357,6 +357,7 @@ pub mod db {
         (x1, x2 + 1)
     }
     
+    // Selects from T between POS_L and POS_H values strictly in between LOW and HIGH
     pub fn cracker_select_in_three(t: &mut Table, pos_l: usize, pos_h: usize, low: i64, high: i64) -> &[i64] {
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
@@ -369,6 +370,38 @@ pub mod db {
         let (l, h) = crack_in_three(&mut t.a.crk, pos_l, pos_h, low, high);
         t.a.crk_idx.insert(low,  l);
         t.a.crk_idx.insert(high, h);
+        &t.a.crk[l..h]
+    }
+    
+    fn crack_in_two(c: &mut Vec<i64>, pos_l: usize, pos_h: usize, med: i64) -> (usize, usize) {
+        let mut x1 = pos_l;
+        let mut x2 = pos_h;
+        while x1 < x2 {
+            if c[x1] < med {
+                x1 += 1;
+            } else {
+                while c[x2] >= med && x2 > x1 {
+                    x2 -= 1;
+                }
+                c.swap(x1, x2);
+                x1 += 1;
+                x2 -= 1;
+            }
+        }
+        (0, x2 + 1)
+    }
+    
+    // Selects from T between POS_L and POS_H values strictly less than MED
+    pub fn cracker_select_in_two(t: &mut Table, pos_l: usize, pos_h: usize, med: i64) -> &[i64] {
+        if t.a.crk.len() == 0 {
+            t.a.crk = t.a.v.clone();
+        }
+        let idx_h = *t.a.crk_idx.get_or(med, &pos_h);
+        if idx_h != pos_h {
+            return &t.a.crk[pos_l..idx_h];
+        }
+        let (l, h) = crack_in_two(&mut t.a.crk, pos_l, pos_h, med);
+        t.a.crk_idx.insert(med, h);
         &t.a.crk[l..h]
     }
 }
@@ -414,5 +447,20 @@ mod tests {
         let max_pos = (table.count - 1) as usize;
         let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14);
         assert_eq!(*selection, [11, 12, 13]);
+    }
+
+    #[test]
+    fn cracker_select_in_two_from_single_column_table() {
+        let mut table = new_table();
+        assert_eq!(table.a.crk.len(), 0);
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_two(&mut table, 0, max_pos, 7);
+            assert_eq!(*selection, [6, 3, 4, 1, 2]);
+        }
+        let max_pos = (table.count - 1) as usize;
+        let selection = cracker_select_in_two(&mut table, 0, max_pos, 7);
+        assert_eq!(*selection, [6, 3, 4, 1, 2]);
     }
 }
