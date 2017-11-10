@@ -22,7 +22,6 @@ pub mod avl {
     fn height<K:Ord,D>(node: &Option<Box<Node<K,D>>>) -> u64  {
         return node.as_ref().map_or(0, |succ| succ.height)
     }
-
     
     // Perform a single right rotation on this (sub) tree
     fn rotate_right<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
@@ -130,13 +129,6 @@ pub mod avl {
             Ordering::Greater => root.left.as_ref().map_or(None, |succ| search_pair(key, succ))
         }
     }
-
-
-    // Returns true iff key is stored in the tree given by root
-    fn contains<K:Ord,D>(key: &K, root: &Box<Node<K,D>> ) -> bool  {
-        search(key,root).is_some()
-    }
-
 
     // Returns the smallest key and value after the given key.
     pub fn min_after<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
@@ -298,7 +290,7 @@ pub mod db {
         // Cracked
         pub crk: Vec<i64>,
         // Cracker index - for a value v, stores a position p and inclusivity inc
-        pub crk_idx: AVLTree<i64, (usize, bool)>,
+        pub crk_idx: AVLTree<i64, usize>,
     }
     
     pub fn new_table() -> Table {
@@ -369,9 +361,14 @@ pub mod db {
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
         }
+        let idx_l = *t.a.crk_idx.get_or(low,  &pos_l);
+        let idx_h = *t.a.crk_idx.get_or(high, &pos_h);
+        if idx_l != pos_l && idx_h != pos_h {
+            return &t.a.crk[idx_l..idx_h];
+        }
         let (l, h) = crack_in_three(&mut t.a.crk, pos_l, pos_h, low, high);
-        t.a.crk_idx.insert(low, (l, false));
-        t.a.crk_idx.insert(high, (h, false));
+        t.a.crk_idx.insert(low,  l);
+        t.a.crk_idx.insert(high, h);
         &t.a.crk[l..h]
     }
 }
@@ -410,10 +407,12 @@ mod tests {
         assert_eq!(table.a.crk.len(), 0);
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-            let pos_h = (table.count - 1) as usize;
-            let selection = cracker_select_in_three(&mut table, 0, pos_h, 10, 14);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14);
             assert_eq!(*selection, [11, 12, 13]);
         }
-        // assert_eq!(table.a.crk, vec![4, 9, 2, 7, 1, 3, 8, 6, 13, 12, 11, 16, 19, 14]);
+        let max_pos = (table.count - 1) as usize;
+        let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14);
+        assert_eq!(*selection, [11, 12, 13]);
     }
 }
