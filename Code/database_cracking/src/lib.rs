@@ -320,18 +320,17 @@ pub mod db {
 
     // Selects from T between POS_L and POS_H values strictly in between LOW and HIGH
     pub fn cracker_select_in_three(t: &mut Table, pos_l: usize, pos_h: usize, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
+        println!();
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
         }
 
-        let adjusted_low  = low  + inc_l as i64;
+        let adjusted_low  = low  + inc_l  as i64;
         let adjusted_high = high - !inc_h as i64;
         // c_low(x)  returns x outside catchment at low  end
-        #[inline]
-        let c_low = |x| x < adjusted_low;
+        #[inline] let c_low = |x| x < adjusted_low;
         // c_high(x) returns x outside catchment at high end
-        #[inline]
-        let c_high = |x| x > adjusted_high;
+        #[inline] let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
         let mut p_low = pos_l;
@@ -340,13 +339,15 @@ pub mod db {
         while c_low(t.a.crk[p_low]) {
             p_low += 1;
         }
+        println!("p_low moved to: {}", p_low);
         // while p_high is pointing at an element satisfying c_high, move it backwards
         while c_high(t.a.crk[p_high]) {
-            p_high += 1;
+            p_high -= 1;
         }
+        println!("p_high moved to: {}", p_high);
         // Set a new pointer p_itr = p_low + 1
         let mut p_itr = p_low.clone() + 1;
-        while p_itr < p_high {
+        while p_itr <= p_high {
             if c_low(t.a.crk[p_itr]) {
                 t.a.crk.swap(p_low, p_itr);
                 p_low += 1;
@@ -357,7 +358,7 @@ pub mod db {
                 p_itr += 1;
             }
         }
-        &t.a.crk[p_low..(p_high+1)]
+        &t.a.crk[p_low..p_itr]
     }
 }
 
@@ -388,11 +389,16 @@ mod tests {
         let selection = standard_select(table, |x| x > 10 && x < 14);
         assert_eq!(selection, vec![13, 12, 11]);
     }
+
+    #[test]
+    fn cracker_column_initialised_empty() {
+        let table = new_table();
+        assert_eq!(table.a.crk.len(), 0);
+    }
     
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
         let mut table = new_table();
-        assert_eq!(table.a.crk.len(), 0);
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let max_pos = (table.count - 1) as usize;
@@ -400,5 +406,23 @@ mod tests {
             assert_eq!(*selection, [13, 12, 11]);
         }
         assert_eq!(table.a.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
+    }
+
+    #[test]
+    fn cracker_select_in_three_can_utilise_previous_queries() {
+        let mut table = new_table();
+        {
+            // Do a cracked select as in the above test
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            cracker_select_in_three(&mut table, 0, max_pos, 10, 14, false, false);
+        }
+        {
+            println!("After first query: {:?}", table.a.crk);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_three(&mut table, 0, max_pos, 5, 10, false, false);
+            assert_eq!(*selection, [7, 9, 8, 6]);
+        }
+        assert_eq!(table.a.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
     }
 }
