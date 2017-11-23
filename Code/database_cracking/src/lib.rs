@@ -317,92 +317,47 @@ pub mod db {
         }
         selection
     }
-    
-    fn crack_in_three(c: &mut Vec<i64>, pos_l: usize, pos_h: usize, low: i64, high: i64) -> (usize, usize) {
-        let mut x1 = pos_l;
-        let mut x2 = pos_h;
-        println!("");
-        println!("Cracking between {} and {} in the range {} to {}", pos_l, pos_h, low, high);
-        while c[x2] >= high && x2 > x1 {
-            x2 -= 1;            
-        }
-        println!("Moved x2 to {} (value {})", x2, c[x2]);
-        let mut x3 = x2.clone();
-        while c[x3] > low && x3 > x1 {
-            if c[x3] >= high {
-                println!("Pass 1: swapping {} and {}", c[x2], c[x3]);
-                c.swap(x2, x3);
-                x2 -= 1;
-            }
-            x3 -= 1;
-        }
-        println!("After pass 1, x = ({}, {}, {})", x1, x2, x3);
-        while x1 <= x3 {
-            if c[x1] < low {
-                x1 += 1;
-            } else {
-                println!("Pass 2a: swapping {} and {}", c[x1], c[x3]);
-                c.swap(x1, x3);
-                while c[x3] > low && x3 > x1 {
-                    if c[x3] >= high {
-                        println!("Pass 2b: swapping {} and {}", c[x2], c[x3]);
-                        c.swap(x2, x3);
-                        x2 -= 1;
-                    }
-                    x3 -= 1;
-                }
-            }     
-        }
-        println!("  orig: `{:?}", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        (x1, x2 + 1)
-    }
-    
+
     // Selects from T between POS_L and POS_H values strictly in between LOW and HIGH
-    pub fn cracker_select_in_three(t: &mut Table, pos_l: usize, pos_h: usize, low: i64, high: i64) -> &[i64] {
+    pub fn cracker_select_in_three(t: &mut Table, pos_l: usize, pos_h: usize, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
         }
-        let idx_l = *t.a.crk_idx.get_or(low,  &pos_l);
-        let idx_h = *t.a.crk_idx.get_or(high, &pos_h);
-        if idx_l != pos_l && idx_h != pos_h {
-            return &t.a.crk[idx_l..idx_h];
+
+        let adjusted_low  = low  + inc_l as i64;
+        let adjusted_high = high - !inc_h as i64;
+        // c_low(x)  returns x outside catchment at low  end
+        #[inline]
+        let c_low = |x| x < adjusted_low;
+        // c_high(x) returns x outside catchment at high end
+        #[inline]
+        let c_high = |x| x > adjusted_high;
+
+        // Start with a pointer at both ends of the array: p_low, p_high
+        let mut p_low = pos_l;
+        let mut p_high = pos_h;
+        // while p_low  is pointing at an element satisfying c_low,  move it forwards
+        while c_low(t.a.crk[p_low]) {
+            p_low += 1;
         }
-        let (l, h) = crack_in_three(&mut t.a.crk, pos_l, pos_h, low, high);
-        t.a.crk_idx.insert(low,  l);
-        t.a.crk_idx.insert(high, h);
-        &t.a.crk[l..h]
-    }
-    
-    fn crack_in_two(c: &mut Vec<i64>, pos_l: usize, pos_h: usize, med: i64) -> (usize, usize) {
-        let mut x1 = pos_l;
-        let mut x2 = pos_h;
-        while x1 < x2 {
-            if c[x1] < med {
-                x1 += 1;
+        // while p_high is pointing at an element satisfying c_high, move it backwards
+        while c_high(t.a.crk[p_high]) {
+            p_high += 1;
+        }
+        // Set a new pointer p_itr = p_low + 1
+        let mut p_itr = p_low.clone() + 1;
+        while p_itr < p_high {
+            if c_low(t.a.crk[p_itr]) {
+                t.a.crk.swap(p_low, p_itr);
+                p_low += 1;
+            } else if c_high(t.a.crk[p_itr]) {
+                t.a.crk.swap(p_itr, p_high);
+                p_high -= 1;
             } else {
-                while c[x2] >= med && x2 > x1 {
-                    x2 -= 1;
-                }
-                c.swap(x1, x2);
-                x1 += 1;
-                x2 -= 1;
+                p_itr += 1;
             }
         }
-        (0, x2 + 1)
-    }
-    
-    // Selects from T between POS_L and POS_H values strictly less than MED
-    pub fn cracker_select_in_two(t: &mut Table, pos_l: usize, pos_h: usize, med: i64) -> &[i64] {
-        if t.a.crk.len() == 0 {
-            t.a.crk = t.a.v.clone();
-        }
-        let idx_h = *t.a.crk_idx.get_or(med, &pos_h);
-        if idx_h != pos_h {
-            return &t.a.crk[pos_l..idx_h];
-        }
-        let (l, h) = crack_in_two(&mut t.a.crk, pos_l, pos_h, med);
-        t.a.crk_idx.insert(med, h);
-        &t.a.crk[l..h]
+        &t.a.crk[p_low..(p_high+1)]
     }
 }
 
@@ -441,26 +396,9 @@ mod tests {
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let max_pos = (table.count - 1) as usize;
-            let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14);
-            assert_eq!(*selection, [11, 12, 13]);
+            let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14, false, false);
+            assert_eq!(*selection, [13, 12, 11]);
         }
-        let max_pos = (table.count - 1) as usize;
-        let selection = cracker_select_in_three(&mut table, 0, max_pos, 10, 14);
-        assert_eq!(*selection, [11, 12, 13]);
-    }
-
-    #[test]
-    fn cracker_select_in_two_from_single_column_table() {
-        let mut table = new_table();
-        assert_eq!(table.a.crk.len(), 0);
-        {
-            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-            let max_pos = (table.count - 1) as usize;
-            let selection = cracker_select_in_two(&mut table, 0, max_pos, 7);
-            assert_eq!(*selection, [6, 3, 4, 1, 2]);
-        }
-        let max_pos = (table.count - 1) as usize;
-        let selection = cracker_select_in_two(&mut table, 0, max_pos, 7);
-        assert_eq!(*selection, [6, 3, 4, 1, 2]);
+        assert_eq!(table.a.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
     }
 }
