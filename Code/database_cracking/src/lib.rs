@@ -318,7 +318,6 @@ pub mod db {
         selection
     }
 
-    // Selects from T between POS_L and POS_H values strictly in between LOW and HIGH
     pub fn cracker_select_in_three(t: &mut Table, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
@@ -327,16 +326,16 @@ pub mod db {
 
         let adjusted_low  = low  + !inc_l as i64;
         let adjusted_high = high - !inc_h as i64;
-        // c_low(x)  returns x outside catchment at low  end
-        // c_high(x) returns x outside catchment at high end
-        #[inline] let c_low = |x| x < adjusted_low;
+        // c_low(x)  <=> x outside catchment at low  end
+        // c_high(x) <=> x outside catchment at high end
+        #[inline] let c_low =  |x| x < adjusted_low;
         #[inline] let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
         let mut p_low  = *t.a.crk_idx.get_or(low, &0);
         let mut p_high = *t.a.crk_idx.get_or(low, &((t.count - 1) as usize));
 
-        // while p_low  is pointing at an element satisfying c_low,  move it forwards
+        // while p_low is pointing at an element satisfying c_low,  move it forwards
         while c_low(t.a.crk[p_low]) {
             p_low += 1;
         }
