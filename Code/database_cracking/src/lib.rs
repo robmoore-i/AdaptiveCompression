@@ -346,7 +346,7 @@ pub mod db {
             p_high -= 1;
         }
         // Set a new pointer p_itr = p_low + 1
-        let mut p_itr = p_low.clone() + 1;
+        let mut p_itr = p_low.clone();
         while p_itr <= p_high {
             if c_low(t.a.crk[p_itr]) {
                 t.a.crk.swap(p_low, p_itr);
@@ -469,9 +469,9 @@ mod tests {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let max_pos = (table.count - 1) as usize;
             let selection = cracker_select_in_three(&mut table, 0, max_pos, 3, 7, true, false);
-            assert_eq!(*selection, [4, 3, 6]);
+            assert_eq!(*selection, [4, 6, 3]);
         }
-        assert_eq!(table.a.crk, vec![2, 1, 4, 3, 6, 12, 7, 13, 19, 9, 14, 11, 8, 16]);
+        assert_eq!(table.a.crk, vec![1, 2, 4, 6, 3, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
 
     #[test]
@@ -484,6 +484,18 @@ mod tests {
             assert_eq!(*selection, [19, 16, 14]);
         }
         assert_eq!(table.a.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
+    }
+
+    #[test]
+    fn cracker_select_in_three_from_single_column_table_inc_both() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_three(&mut table, 0, max_pos, 1, 6, true, true);
+            assert_eq!(*selection, [6, 3, 4, 1, 2]);
+        }
+        assert_eq!(table.a.crk, vec![6, 3, 4, 1, 2, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
 
     #[test]
