@@ -464,6 +464,18 @@ mod tests {
     }
 
     #[test]
+    fn cracker_select_in_three_from_single_column_table_inc_low() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_three(&mut table, 0, max_pos, 3, 7, true, false);
+            assert_eq!(*selection, [4, 3, 6]);
+        }
+        assert_eq!(table.a.crk, vec![2, 1, 4, 3, 6, 12, 7, 13, 19, 9, 14, 11, 8, 16]);
+    }
+
+    #[test]
     fn cracker_select_in_two_from_single_column_table() {
         let mut table = new_table();
         {
