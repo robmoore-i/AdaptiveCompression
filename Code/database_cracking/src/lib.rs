@@ -325,7 +325,7 @@ pub mod db {
             t.a.crk = t.a.v.clone();
         }
 
-        let adjusted_low  = low  + !inc_l  as i64;
+        let adjusted_low  = low  + !inc_l as i64;
         let adjusted_high = high - !inc_h as i64;
         // c_low(x)  returns x outside catchment at low  end
         // c_high(x) returns x outside catchment at high end
@@ -340,6 +340,7 @@ pub mod db {
         while c_low(t.a.crk[p_low]) {
             p_low += 1;
         }
+
         // while p_high is pointing at an element satisfying c_high, move it backwards
         while c_high(t.a.crk[p_high]) {
             p_high -= 1;
@@ -358,9 +359,7 @@ pub mod db {
                     p_high -= 1;
                 }
             } else {
-                while !c_high(t.a.crk[p_itr]) && !c_low(t.a.crk[p_itr]) {
-                    p_itr += 1;
-                }
+                p_itr += 1;
             }
         }
         &t.a.crk[p_low..p_itr]
@@ -482,9 +481,9 @@ mod tests {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let max_pos = (table.count - 1) as usize;
             let selection = cracker_select_in_three(&mut table, 0, max_pos, 13, 19, false, true);
-            assert_eq!(*selection, [14, 16, 19]);
+            assert_eq!(*selection, [19, 16, 14]);
         }
-        assert_eq!(table.a.crk, vec![2, 1, 4, 3, 6, 12, 7, 13, 9, 11, 8, 14, 16, 19]);
+        assert_eq!(table.a.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
 
     #[test]
