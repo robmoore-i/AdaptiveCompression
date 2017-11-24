@@ -420,14 +420,9 @@ mod tests {
     fn cracker_select_in_three_can_utilise_previous_queries() {
         let mut table = new_table();
         {
-            // Do a cracked select as in the above test
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let max_pos = (table.count - 1) as usize;
             cracker_select_in_three(&mut table, 0, max_pos, 10, 14, false, false);
-        }
-        {
-            println!("After first query: {:?}", table.a.crk);
-            let max_pos = (table.count - 1) as usize;
             let selection = cracker_select_in_three(&mut table, 0, max_pos, 5, 10, false, false);
             assert_eq!(*selection, [7, 9, 8, 6]);
         }
