@@ -333,8 +333,8 @@ pub mod db {
         #[inline] let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
-        let mut p_low = 0;
-        let mut p_high = (t.count - 1) as usize;
+        let mut p_low  = *t.a.crk_idx.get_or(low, &0);
+        let mut p_high = *t.a.crk_idx.get_or(low, &((t.count - 1) as usize));
 
         // while p_low  is pointing at an element satisfying c_low,  move it forwards
         while c_low(t.a.crk[p_low]) {
@@ -361,6 +361,8 @@ pub mod db {
                 p_itr += 1;
             }
         }
+        t.a.crk_idx.insert(low, p_low);
+        t.a.crk_idx.insert(high, p_high);
         &t.a.crk[p_low..p_itr]
     }
 
@@ -388,7 +390,7 @@ pub mod db {
             p_high -= 1;
         }
 
-        // At this point, !cond(col[p_low]) ^ cond(col[p_high])
+        // At this point, !cond(col[p_low]) && cond(col[p_high])
         while p_low <= p_high {
             t.a.crk.swap(p_low, p_high);
             while cond(t.a.crk[p_low]) {
@@ -453,6 +455,8 @@ mod tests {
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_three(&mut table, 10, 14, false, false);
+            assert!(table.a.crk_idx.contains(10));
+            assert!(table.a.crk_idx.contains(14));
             let selection = cracker_select_in_three(&mut table, 5, 10, false, false);
             assert_eq!(*selection, [7, 9, 8, 6]);
         }
