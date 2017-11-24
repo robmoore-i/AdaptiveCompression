@@ -345,7 +345,6 @@ pub mod db {
         while c_high(t.a.crk[p_high]) {
             p_high -= 1;
         }
-        // Set a new pointer p_itr = p_low + 1
         let mut p_itr = p_low.clone();
         while p_itr <= p_high {
             if c_low(t.a.crk[p_itr]) {
@@ -508,5 +507,17 @@ mod tests {
             assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
         }
         assert_eq!(table.a.crk, vec![6, 3, 4, 1, 2, 7, 12, 9, 19, 16, 14, 11, 8, 13]);
+    }
+
+    #[test]
+    fn cracker_select_in_two_from_single_column_table_not_inclusive() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_two(&mut table, 0, max_pos, 10, false);
+            assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
+        }
+        assert_eq!(table.a.crk, vec![6, 8, 4, 9, 2, 3, 7, 1, 19, 12, 14, 11, 16, 13]);
     }
 }
