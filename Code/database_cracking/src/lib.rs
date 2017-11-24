@@ -352,12 +352,18 @@ pub mod db {
         while p_itr <= p_high {
             if c_low(t.a.crk[p_itr]) {
                 t.a.crk.swap(p_low, p_itr);
-                p_low += 1;
+                while c_low(t.a.crk[p_low]) {
+                    p_low += 1;
+                }
             } else if c_high(t.a.crk[p_itr]) {
                 t.a.crk.swap(p_itr, p_high);
-                p_high -= 1;
+                while c_high(t.a.crk[p_high]) {
+                    p_high -= 1;
+                }
             } else {
-                p_itr += 1;
+                while !c_high(t.a.crk[p_itr]) && !c_low(t.a.crk[p_itr]) {
+                    p_itr += 1;
+                }
             }
         }
         &t.a.crk[p_low..p_itr]
