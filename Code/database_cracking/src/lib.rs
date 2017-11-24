@@ -320,7 +320,6 @@ pub mod db {
 
     // Selects from T between POS_L and POS_H values strictly in between LOW and HIGH
     pub fn cracker_select_in_three(t: &mut Table, pos_l: usize, pos_h: usize, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
-        println!();
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
@@ -341,12 +340,10 @@ pub mod db {
         while c_low(t.a.crk[p_low]) {
             p_low += 1;
         }
-        println!("p_low moved to: {}", p_low);
         // while p_high is pointing at an element satisfying c_high, move it backwards
         while c_high(t.a.crk[p_high]) {
             p_high -= 1;
         }
-        println!("p_high moved to: {}", p_high);
         // Set a new pointer p_itr = p_low + 1
         let mut p_itr = p_low.clone() + 1;
         while p_itr <= p_high {
@@ -370,7 +367,6 @@ pub mod db {
     }
 
     pub fn cracker_select_in_two(t: &mut Table, pos_l: usize, pos_h: usize, med: i64, inc: bool) -> &[i64] {
-        println!();
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
             t.a.crk = t.a.v.clone();
@@ -379,12 +375,6 @@ pub mod db {
         let adjusted_med  = med + inc as i64;
         // cond(x) returns x inside catchment
         #[inline] let cond = |x| x < adjusted_med;
-
-        println!("cond(6) is {}", cond(6));
-        println!("cond(7) is {}", cond(7));
-        println!("cond(8) is {}", cond(8));
-        println!("cond(9) is {}", cond(9));
-        println!("cond(10) is {}", cond(10));
 
         // Start with pointers at the start and end of the array
         let mut p_low = pos_l;
