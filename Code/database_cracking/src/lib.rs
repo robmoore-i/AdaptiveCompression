@@ -368,6 +368,50 @@ pub mod db {
         }
         &t.a.crk[p_low..p_itr]
     }
+
+    pub fn cracker_select_in_two(t: &mut Table, pos_l: usize, pos_h: usize, med: i64, inc: bool) -> &[i64] {
+        println!();
+        // If column hasn't been cracked before, copy it
+        if t.a.crk.len() == 0 {
+            t.a.crk = t.a.v.clone();
+        }
+
+        let adjusted_med  = med + inc as i64;
+        // cond(x) returns x inside catchment
+        #[inline] let cond = |x| x < adjusted_med;
+
+        println!("cond(6) is {}", cond(6));
+        println!("cond(7) is {}", cond(7));
+        println!("cond(8) is {}", cond(8));
+        println!("cond(9) is {}", cond(9));
+        println!("cond(10) is {}", cond(10));
+
+        // Start with pointers at the start and end of the array
+        let mut p_low = pos_l;
+        let mut p_high = pos_h;
+
+        // while p_low is pointing at an element already in the catchment, move it forwards
+        while cond(t.a.crk[p_low]) {
+            p_low += 1;
+        }
+
+        // while p_high is pointing at an element already outside the catchment, move it backwards
+        while !cond(t.a.crk[p_high]) {
+            p_high -= 1;
+        }
+
+        // At this point, !cond(col[p_low]) ^ cond(col[p_high])
+        while p_low <= p_high {
+            t.a.crk.swap(p_low, p_high);
+            while cond(t.a.crk[p_low]) {
+                p_low += 1;
+            }
+            while !cond(t.a.crk[p_high]) {
+                p_high -= 1;
+            }
+        }
+        &t.a.crk[pos_l..p_low]
+    }
 }
 
 // Tests
@@ -427,5 +471,17 @@ mod tests {
             assert_eq!(*selection, [7, 9, 8, 6]);
         }
         assert_eq!(table.a.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
+    }
+
+    #[test]
+    fn cracker_select_in_two_from_single_column_table() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let max_pos = (table.count - 1) as usize;
+            let selection = cracker_select_in_two(&mut table, 0, max_pos, 7, true);
+            assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
+        }
+        assert_eq!(table.a.crk, vec![6, 3, 4, 1, 2, 7, 12, 9, 19, 16, 14, 11, 8, 13]);
     }
 }
