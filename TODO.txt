@@ -1,0 +1,17 @@
+In no particular order:
+
+- Prove correctness for crack_in three and crack_in_two
+
+- Inclusivity test cases for cracker index
+
+- Implement a lookup in cracker index that finds the closest keys, for reducing query space
+
+- Test cases for cracker index with crack_in_two
+
+- Test cases for mixtures of cracking in two and three
+
+- Change implementation to work for float columns (may require changes to inclusivity handling)
+
+- Change implementation to re-index all columns of a table, so it works for multi-column tables
+
+- Using an adjacency list, implement BFS
