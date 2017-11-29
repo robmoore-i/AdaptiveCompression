@@ -130,20 +130,44 @@ pub mod avl {
         }
     }
 
-    // Returns the smallest key and value after the given key.
+    // Returns the smallest key >= given key.
     pub fn min_after<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key){
-            Ordering::Equal =>  root.right.as_ref().map_or(None, |succ| Some(min_pair(succ))),
-            Ordering::Less =>   root.right.as_ref().map_or(None, |succ| min_after(key, succ)),
+            Ordering::Equal   => Some((&root.key, &root.data)),           
+            Ordering::Less    => {
+                match root.right {
+                    Some(ref succ) => min_after(key, &succ),
+                    None           => None
+                }
+            },
             Ordering::Greater => {
                 match root.left {
-                    Some(ref succ) => min_after(key, &succ).or( Some((&root.key,&root.data)) ),
-                    None => Some((&root.key, &root.data))
+                    Some(ref succ) => min_after(key, &succ).or(Some((&root.key,&root.data))),
+                    None           => Some((&root.key, &root.data))
                 }
             }
         }
     }
-
+    
+    // Returns the smallest key >= given key.
+    pub fn max_before<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
+        match root.key.cmp(key){
+            Ordering::Equal   => Some((&root.key, &root.data)),
+            Ordering::Less    => {
+                match root.right {
+                    Some(ref succ) => max_before(key, &succ).or(Some((&root.key,&root.data))),
+                    None           => Some((&root.key, &root.data))
+                }
+            }
+            Ordering::Greater => {
+                match root.left {
+                    Some(ref succ) => max_before(key, &succ),
+                    None           => None
+                }
+            }
+        }
+    }
+    
     // Returns the minimal key,value pair within this tree
     pub fn min_pair<K:Ord,D>(root: &Box<Node<K,D>>) -> (&K,&D) {
         root.left.as_ref().map_or((&root.key,&root.data), min_pair)
@@ -239,7 +263,7 @@ pub mod avl {
         pub fn insert(&mut self, key: K, data: D) {
             match self.root.take() {
                 Some(box_to_node) => self.root = Some(insert::<K,D>(key, data, box_to_node)),
-                None => self.root = Some(Box::new(Node::new(key,data))),
+                None              => self.root = Some(Box::new(Node::new(key,data))),
             }
         }
 
@@ -252,7 +276,7 @@ pub mod avl {
 
         pub fn get(&self, key: K) -> Option<&D>{
             match self.root {
-                Some(ref box_to_node) =>search(&key, box_to_node),
+                Some(ref box_to_node) => search(&key, box_to_node),
                 None => None
             }
         }
@@ -266,6 +290,30 @@ pub mod avl {
         }
 
         pub fn empty(&self) -> bool { self.root.is_none() }
+        
+        pub fn lower_bound(&self, key: &K) -> Option<&D> {
+            match self.root {
+                Some(ref tree) => {
+                    match min_after(key, tree) {
+                         Some((_k, v)) => Some(v),
+                         None         => None
+                    }
+                },
+                None => None
+            }            
+        }
+        
+        pub fn upper_bound(&self, key: &K) -> Option<&D> {
+            match self.root {
+                Some(ref tree) => {
+                    match max_before(key, tree) {
+                         Some((_k, v)) => Some(v),
+                         None         => None
+                    }
+                },
+                None => None
+            }            
+        }
     }
 }
 
