@@ -368,6 +368,7 @@ pub mod db {
         selection
     }
 
+    // Selects elements of T between LOW and HIGH - inclusivity determined by INC_H and INC_L.
     pub fn cracker_select_in_three(t: &mut Table, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
@@ -415,7 +416,7 @@ pub mod db {
         &t.a.crk[p_low..p_itr]
     }
 
-    // Returns the elements of T which are less than MED, with inclusivity given by INC
+    // Returns the elements of T less than MED, with inclusivity given by INC
     pub fn cracker_select_in_two(t: &mut Table, med: i64, inc: bool) -> &[i64] {
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
