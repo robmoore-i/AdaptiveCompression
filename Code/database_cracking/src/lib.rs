@@ -324,7 +324,6 @@ pub mod db {
     #[derive(Clone)]
     pub struct Table {
         // Meta
-        pub index: Vec<u64>,
         pub count: u64,
 
         // Columns
@@ -344,13 +343,11 @@ pub mod db {
     }
     
     pub fn new_table() -> Table {
-        Table {index: Vec::new(), count: 0, a: Col {v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree {root: None}}}
+        Table {count: 0, a: Col {v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree {root: None}}}
     }
     
     pub fn standard_insert(t: &mut Table, v: &mut Vec<i64>) {
         let n = v.len() as u64;
-        let mut indices: Vec<u64> = (t.count..(t.count + n)).collect();
-        t.index.append(&mut indices);
         t.a.v.append(v);
         t.count += n;
     }
@@ -475,7 +472,6 @@ mod tests {
         let mut table = new_table();
         standard_insert(&mut table, &mut vec![1, 2, 3]);
         assert_eq!(table.count, 3);
-        assert_eq!(table.index, vec![0, 1, 2]);
         assert_eq!(table.a.v, vec![1, 2, 3]);
     }
     
