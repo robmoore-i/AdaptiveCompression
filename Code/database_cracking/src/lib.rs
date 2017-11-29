@@ -332,8 +332,8 @@ pub mod db {
         #[inline] let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
-        let mut p_low  = *t.a.crk_idx.get_or(low, &0);
-        let mut p_high = *t.a.crk_idx.get_or(low, &((t.count - 1) as usize));
+        let mut p_low  = *t.a.crk_idx.get_or(low,  &0);
+        let mut p_high = *t.a.crk_idx.get_or(high, &((t.count - 1) as usize));
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
         while c_low(t.a.crk[p_low]) {
