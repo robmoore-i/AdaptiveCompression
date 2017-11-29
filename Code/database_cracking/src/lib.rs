@@ -291,24 +291,24 @@ pub mod avl {
 
         pub fn empty(&self) -> bool { self.root.is_none() }
         
-        pub fn lower_bound(&self, key: &K) -> Option<&D> {
+        pub fn upper_bound(&self, key: &K) -> Option<&D> {
             match self.root {
                 Some(ref tree) => {
                     match min_after(key, tree) {
                          Some((_k, v)) => Some(v),
-                         None         => None
+                         None          => None
                     }
                 },
                 None => None
             }            
         }
         
-        pub fn upper_bound(&self, key: &K) -> Option<&D> {
+        pub fn lower_bound(&self, key: &K) -> Option<&D> {
             match self.root {
                 Some(ref tree) => {
                     match max_before(key, tree) {
                          Some((_k, v)) => Some(v),
-                         None         => None
+                         None          => None
                     }
                 },
                 None => None
@@ -337,7 +337,9 @@ pub mod db {
         pub v: Vec<i64>,
         // Cracked
         pub crk: Vec<i64>,
-        // Cracker index - for a value v, stores a position p and inclusivity inc
+        // Cracker index - for a value v, stores the index p such that
+        // for all i < p: c[i] < v. That is - Every value before p in the column
+        // is less than v.
         pub crk_idx: AVLTree<i64, usize>,
     }
     
@@ -380,8 +382,8 @@ pub mod db {
         #[inline] let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
-        let mut p_low  = *t.a.crk_idx.get_or(low,  &0);
-        let mut p_high = *t.a.crk_idx.get_or(high, &((t.count - 1) as usize));
+        let mut p_low  = *(t.a.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
+        let mut p_high = *(t.a.crk_idx.upper_bound(&(high + !inc_h as i64)).unwrap_or(&((t.count - 1) as usize)));
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
         while c_low(t.a.crk[p_low]) {
@@ -408,11 +410,12 @@ pub mod db {
                 p_itr += 1;
             }
         }
-        t.a.crk_idx.insert(low, p_low);
-        t.a.crk_idx.insert(high, p_high);
+        t.a.crk_idx.insert(adjusted_low, p_low);
+        t.a.crk_idx.insert(high + !inc_h as i64, p_high);
         &t.a.crk[p_low..p_itr]
     }
 
+    // Returns the elements of T which are less than MED, with inclusivity given by INC
     pub fn cracker_select_in_two(t: &mut Table, med: i64, inc: bool) -> &[i64] {
         // If column hasn't been cracked before, copy it
         if t.a.crk.len() == 0 {
@@ -424,9 +427,12 @@ pub mod db {
         #[inline] let cond = |x| x < adjusted_med;
 
         // Start with pointers at the start and end of the array
-        let mut p_low = 0;
-        let mut p_high = (t.count - 1) as usize;
+        let mut p_low  = 0;
+        let mut p_high = *(t.a.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((t.count - 1) as usize)));
 
+        // Save p_low for later:
+        let initial_p_low = p_low.clone();
+        
         // while p_low is pointing at an element already in the catchment, move it forwards
         while cond(t.a.crk[p_low]) {
             p_low += 1;
@@ -447,7 +453,8 @@ pub mod db {
                 p_high -= 1;
             }
         }
-        &t.a.crk[0..p_low]
+        t.a.crk_idx.insert(adjusted_med, p_low);
+        &t.a.crk[initial_p_low..p_low]
     }
 }
 
@@ -502,8 +509,8 @@ mod tests {
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_three(&mut table, 10, 14, false, false);
-            assert!(table.a.crk_idx.contains(10));
-            assert!(table.a.crk_idx.contains(14));
+            assert!(table.a.crk_idx.contains(11));
+            assert!(table.a.crk_idx.contains(15));
             let selection = cracker_select_in_three(&mut table, 5, 10, false, false);
             assert_eq!(*selection, [7, 9, 8, 6]);
         }
@@ -563,5 +570,17 @@ mod tests {
             assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
         }
         assert_eq!(table.a.crk, vec![6, 8, 4, 9, 2, 3, 7, 1, 19, 12, 14, 11, 16, 13]);
+    }
+    
+    #[test]
+    fn cracker_select_in_two_can_utilise_previous_queries() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            cracker_select_in_three(&mut table, 10, 14, false, false);
+            let selection = cracker_select_in_two(&mut table, 7, false);
+            assert_eq!(*selection, [6, 4, 3, 2, 1]);
+        }
+        assert_eq!(table.a.crk, vec![6, 4, 3, 2, 1, 7, 8, 9, 13, 12, 11, 14, 19, 16]);
     }
 }
