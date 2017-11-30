@@ -428,10 +428,6 @@ pub mod db {
         let mut p_low  = 0;
         let mut p_high = *(t.a.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((t.count - 1) as usize)));
 
-        println!();
-        println!("initial p_low:{}", p_low);
-        println!("initial p_high:{}", p_high);
-
         // Save p_low for later:
         let initial_p_low = p_low.clone();
         
@@ -442,7 +438,6 @@ pub mod db {
                 return &t.a.crk;
             }
         }
-        println!("starting p_low:{}", p_low);
 
         // while p_high is pointing at an element already outside the catchment, move it backwards
         while !cond(t.a.crk[p_high]) {
@@ -451,7 +446,6 @@ pub mod db {
                 return &[];
             }
         }
-        println!("starting p_high:{}", p_high);        
 
         // At this point, !cond(col[p_low]) && cond(col[p_high])
         while p_low <= p_high {
@@ -462,8 +456,6 @@ pub mod db {
             while !cond(t.a.crk[p_high]) {
                 p_high -= 1;
             }
-            println!("p_low:{}", p_low);
-            println!("p_high:{}", p_high);
         }
         t.a.crk_idx.insert(adjusted_med, p_low);
         &t.a.crk[initial_p_low..p_low]
@@ -627,5 +619,16 @@ mod tests {
             assert_eq!(*selection, []);
         }
         assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+    }
+    
+    #[test]
+    fn crack_in_three_between_value_within_column_and_above_upper_limit() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let selection = cracker_select_in_three(&mut table, 14, 25, true, false);
+            assert_eq!(*selection, [19, 16, 14]);
+        }
+        assert_eq!(table.a.crk, [13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
 }
