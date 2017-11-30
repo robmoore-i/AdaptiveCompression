@@ -447,6 +447,9 @@ pub mod db {
         // while p_high is pointing at an element already outside the catchment, move it backwards
         while !cond(t.a.crk[p_high]) {
             p_high -= 1;
+            if p_high == 0 {
+                return &[];
+            }
         }
         println!("starting p_high:{}", p_high);        
 
@@ -611,6 +614,17 @@ mod tests {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_two(&mut table, 25, true);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        }
+        assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+    }
+    
+    #[test]
+    fn crack_in_two_below_lower_limit() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let selection = cracker_select_in_two(&mut table, -5, true);
+            assert_eq!(*selection, []);
         }
         assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
