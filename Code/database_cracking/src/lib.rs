@@ -381,7 +381,7 @@ pub mod db {
 
         // Start with a pointer at both ends of the array: p_low, p_high
         let mut p_low  = *(t.a.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
-        let mut p_high = *(t.a.crk_idx.upper_bound(&(high + !inc_h as i64)).unwrap_or(&((t.count - 1) as usize)));
+        let mut p_high = *(t.a.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((t.count - 1) as usize)));
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
         while c_low(t.a.crk[p_low]) {
@@ -409,7 +409,7 @@ pub mod db {
             }
         }
         t.a.crk_idx.insert(adjusted_low, p_low);
-        t.a.crk_idx.insert(high + !inc_h as i64, p_high);
+        t.a.crk_idx.insert(high + !inc_h as i64, p_itr);
         &t.a.crk[p_low..p_itr]
     }
 
@@ -652,5 +652,21 @@ mod tests {
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
         assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+    }
+    
+    #[test]
+    fn can_crack_over_three_queries() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            cracker_select_in_three(&mut table, 10, 14, false, false);
+            let s1 = cracker_select_in_three(&mut table, 3, 11, false, true);
+            assert_eq!(*s1, [6, 7, 4, 8, 9, 11]);
+        }
+        {
+            let s2 = cracker_select_in_three(&mut table, 7, 17, true, false);
+            assert_eq!(*s2, [7, 8, 9, 11, 12, 13, 14, 16]);
+        }
+        assert_eq!(table.a.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
     }
 }
