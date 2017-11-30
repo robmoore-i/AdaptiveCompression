@@ -669,4 +669,23 @@ mod tests {
         }
         assert_eq!(table.a.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
     }
+    
+    #[test]
+    fn can_crack_in_two_over_three_queries() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let s1 = cracker_select_in_two(&mut table, 10, true);
+            assert_eq!(*s1, [6, 8, 4, 9, 2, 3, 7, 1]);
+        }
+        {
+            let s2 = cracker_select_in_two(&mut table, 3, true);
+            assert_eq!(*s2, [1, 3, 2]);
+        }
+        {
+            let s3 = cracker_select_in_two(&mut table, 14, false);
+            assert_eq!(*s3, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11]);
+        }
+        assert_eq!(table.a.crk, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11, 14, 16, 19]);
+    }
 }
