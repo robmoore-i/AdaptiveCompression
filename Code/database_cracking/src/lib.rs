@@ -83,9 +83,9 @@ pub mod avl {
         let diff  = diff_of_successors_height(&root);
         if -1 <= diff && diff <= 1 {return root}
         match diff{
-            2 => rotate_left_successor::<K,D>(root),
+            2  => rotate_left_successor::<K,D>(root),
             -2 => rotate_right_successor::<K,D>(root),
-            _ => unreachable!()
+            _  => unreachable!()
         }
     }
 
@@ -99,7 +99,7 @@ pub mod avl {
     fn insert_in_successor<K:Ord,D>(key: K, data: D, successor: Option<Box<Node<K,D>>>)->Option<Box<Node<K,D>>> {
                 Some(match successor {
                     Some(succ) => insert(key, data, succ),
-                    None =>Box::new(Node::new(key, data))
+                    None       => Box::new(Node::new(key, data))
                 })
     }
 
@@ -108,8 +108,8 @@ pub mod avl {
     // (its root may now differ due to rotations, thus the old root is moved into the function)
     pub fn insert<K:Ord,D>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
         match root.key.cmp(&key) {
-            Ordering::Equal => { root.data  = data; return root },
-            Ordering::Less =>    root.right = insert_in_successor(key, data, root.right.take()),
+            Ordering::Equal   => { root.data  = data; return root },
+            Ordering::Less    =>    root.right = insert_in_successor(key, data, root.right.take()),
             Ordering::Greater => root.left  = insert_in_successor(key,data, root.left.take())
         }
         update_height(&mut *root);
@@ -124,8 +124,8 @@ pub mod avl {
     // Returns a read only reference paie to the data stored under key in the tree given by root
     pub fn search_pair<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)>{
         match root.key.cmp(key) {
-            Ordering::Equal => Some((&root.key, &root.data)),
-            Ordering::Less => root.right.as_ref().map_or(None, |succ| search_pair(key, succ)),
+            Ordering::Equal   => Some((&root.key, &root.data)),
+            Ordering::Less    => root.right.as_ref().map_or(None, |succ| search_pair(key, succ)),
             Ordering::Greater => root.left.as_ref().map_or(None, |succ| search_pair(key, succ))
         }
     }
