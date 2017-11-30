@@ -655,7 +655,7 @@ mod tests {
     }
     
     #[test]
-    fn can_crack_over_three_queries() {
+    fn can_crack_in_three_over_three_queries() {
         let mut table = new_table();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
