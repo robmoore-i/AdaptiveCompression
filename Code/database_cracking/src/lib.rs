@@ -16,7 +16,7 @@ pub mod avl {
     }
 
     impl<K:Ord, D> Node<K,D> {
-        pub fn new(key: K, data: D) -> Node<K,D>{
+        pub fn new(key: K, data: D) -> Node<K,D> {
             Node::<K,D>{key: key, data: data, height: 1, left: None, right: None}
         }
     }
@@ -26,7 +26,7 @@ pub mod avl {
     }
     
     // Perform a single right rotation on this (sub) tree
-    fn rotate_right<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
+    fn rotate_right<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let mut new_root_box = root.left.take().expect("AVL broken");
         root.left = new_root_box.right.take();
         update_height(&mut root);
@@ -36,7 +36,7 @@ pub mod avl {
     }
 
     // Perform a single left rotation on this (sub) tree
-    fn rotate_left<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
+    fn rotate_left<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let mut new_root_box = root.right.take().expect("AVL broken");
         root.right = new_root_box.left.take();
         update_height(&mut root);
@@ -93,12 +93,12 @@ pub mod avl {
 
     // Update the cached height of root. To call this function make sure that the cached values of
     // both children of root ar up to date.
-    fn update_height<K:Ord,D>(root: &mut Node<K,D>){
+    fn update_height<K:Ord,D>(root: &mut Node<K,D>) {
         root.height = cmp::max( height(&root.left), height(&root.right) )+1;
     }
 
     // Recursively insert the (key,data) pair into the given optional succesor and return its new value
-    fn insert_in_successor<K:Ord,D>(key: K, data: D, successor: Option<Box<Node<K,D>>>)->Option<Box<Node<K,D>>> {
+    fn insert_in_successor<K:Ord,D>(key: K, data: D, successor: Option<Box<Node<K,D>>>) -> Option<Box<Node<K,D>>> {
                 Some(match successor {
                     Some(succ) => insert(key, data, succ),
                     None       => Box::new(Node::new(key, data))
@@ -108,7 +108,7 @@ pub mod avl {
     // Inserts the given data under the key in the tree root. It will replace old data stored
     // under this key if it was allready used in the tree. The resulting tree will be returned
     // (its root may now differ due to rotations, thus the old root is moved into the function)
-    pub fn insert<K:Ord,D>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
+    pub fn insert<K:Ord,D>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         match root.key.cmp(&key) {
             Ordering::Equal   => { root.data  = data; return root },
             Ordering::Less    => root.right = insert_in_successor(key, data, root.right.take()),
@@ -119,12 +119,12 @@ pub mod avl {
     }
 
     // Returns a read only reference to the data stored under key in the tree given by root
-    pub fn search<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<&'a D>{
+    pub fn search<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<&'a D> {
         search_pair(key,root).map(|(_,v)| v )
     }
 
     // Returns a read only reference paie to the data stored under key in the tree given by root
-    pub fn search_pair<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)>{
+    pub fn search_pair<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
             Ordering::Less    => root.right.as_ref().map_or(None, |succ| search_pair(key, succ)),
@@ -134,7 +134,7 @@ pub mod avl {
 
     // Returns the smallest key >= given key.
     pub fn min_after<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
-        match root.key.cmp(key){
+        match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),           
             Ordering::Less    => {
                 match root.right {
@@ -153,7 +153,7 @@ pub mod avl {
     
     // Returns the smallest key >= given key.
     pub fn max_before<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
-        match root.key.cmp(key){
+        match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
             Ordering::Less    => {
                 match root.right {
@@ -213,7 +213,7 @@ pub mod avl {
     }
 
     // Return a new AVL tree, as the combination of two subtrees with max(l) <= min(r)
-    fn combine_two_subtrees<K:Ord,D>(l: Box<Node<K,D>>, r: Box<Node<K,D>>) -> Box<Node<K,D>>{
+    fn combine_two_subtrees<K:Ord,D>(l: Box<Node<K,D>>, r: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let (remaining_tree, min) = drop_min(r);
         let mut new_root = min;
         new_root.left = Some(l);
@@ -233,8 +233,8 @@ pub mod avl {
 
     // Deletes `key` from the tree `root`. Returns either `Some` tree or if the resilting tree is
     // empty: None.
-    pub fn delete<K:Ord,D>(key: K, mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>>{
-        match root.key.cmp(&key){
+    pub fn delete<K:Ord,D>(key: K, mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>> {
+        match root.key.cmp(&key) {
             Ordering::Equal =>  return delete_root(root),
             Ordering::Less  => {
                 if let Some(succ) = root.right.take() {
@@ -258,7 +258,7 @@ pub mod avl {
     }
 
     impl <K:Ord+Copy,D> AVLTree<K,D> {
-        pub fn new() -> AVLTree<K,D>{
+        pub fn new() -> AVLTree<K,D> {
             AVLTree{root: None}
         }
 
@@ -269,21 +269,21 @@ pub mod avl {
             }
         }
 
-        pub fn delete(&mut self, key: K){
+        pub fn delete(&mut self, key: K) {
             match self.root.take() {
                 Some(box_to_node) => self.root = delete(key,box_to_node),
                 None              => return
             }
         }
 
-        pub fn get(&self, key: K) -> Option<&D>{
+        pub fn get(&self, key: K) -> Option<&D> {
             match self.root {
                 Some(ref box_to_node) => search(&key, box_to_node),
                 None                  => None
             }
         }
 
-        pub fn get_or<'a>(&'a self, key: K, default: &'a D) -> &D{
+        pub fn get_or<'a>(&'a self, key: K, default: &'a D) -> &D {
             self.get(key).map_or(default, |data| data)
         }
 
