@@ -718,4 +718,34 @@ mod tests {
         }
         assert_eq!(table.a.crk, [4, 9, 2, 7, 1, 6, 3, 8, 12, 16, 14, 11, 13, 19]);
     }
+    
+    #[test]
+    fn cracker_index_handles_inclusivity_at_lower_bound() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let s1 = cracker_select_in_two(&mut table, 1, true);
+            assert_eq!(*s1, [1]);
+        }
+        {
+            let s2 = cracker_select_in_three(&mut table, 1, 5, true, true);
+            assert_eq!(*s2, [1, 3, 4, 2]);
+        }
+        assert_eq!(table.a.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
+    }
+    
+    #[test]
+    fn cracker_index_handles_inclusivity_close_to_lower_bound() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let s1 = cracker_select_in_two(&mut table, 2, false);
+            assert_eq!(*s1, [1]);
+        }
+        {
+            let s2 = cracker_select_in_three(&mut table, 1, 5, true, true);
+            assert_eq!(*s2, [1, 3, 4, 2]);
+        }
+        assert_eq!(table.a.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
+    }
 }
