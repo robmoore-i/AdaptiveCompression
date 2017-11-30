@@ -1,5 +1,7 @@
 // All credit for this beautiful AVL tree implementation belongs to: https://github.com/eqv/avl_tree
 // What a legend
+// I added functions for max_before to go with min_after, and also added functions to the Tree struct
+// to go with them. The min_after layout changed a bit, but the underlying algorithm is the same.
 pub mod avl {
     use std::cmp;
     use std::cmp::Ordering;
