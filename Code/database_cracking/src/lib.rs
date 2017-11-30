@@ -580,4 +580,16 @@ mod tests {
         }
         assert_eq!(table.a.crk, vec![6, 4, 3, 2, 1, 7, 8, 9, 13, 12, 11, 14, 19, 16]);
     }
+    
+    #[test]
+    fn cracker_select_in_three_after_crack_in_two() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            cracker_select_in_two(&mut table, 7, true);
+            let selection = cracker_select_in_three(&mut table, 6, 11, true, false);
+            assert_eq!(*selection, [6, 7, 8, 9]);
+        }
+        assert_eq!(table.a.crk, vec![3, 4, 1, 2, 6, 7, 8, 9, 19, 16, 14, 11, 12, 13]);
+    }
 }
