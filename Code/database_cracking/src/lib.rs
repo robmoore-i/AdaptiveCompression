@@ -82,7 +82,7 @@ pub mod avl {
     fn rotate_if_necessary<K:Ord,D>(root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let diff  = diff_of_successors_height(&root);
         if -1 <= diff && diff <= 1 {return root}
-        match diff{
+        match diff {
             2  => rotate_left_successor::<K,D>(root),
             -2 => rotate_right_successor::<K,D>(root),
             _  => unreachable!()
@@ -109,7 +109,7 @@ pub mod avl {
     pub fn insert<K:Ord,D>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>>{
         match root.key.cmp(&key) {
             Ordering::Equal   => { root.data  = data; return root },
-            Ordering::Less    =>    root.right = insert_in_successor(key, data, root.right.take()),
+            Ordering::Less    => root.right = insert_in_successor(key, data, root.right.take()),
             Ordering::Greater => root.left  = insert_in_successor(key,data, root.left.take())
         }
         update_height(&mut *root);
@@ -196,7 +196,7 @@ pub mod avl {
 
     // Performs recursive `drop_and_get_min` if a left  since a successor is available
     fn drop_min_from_left<K:Ord,D>(mut root : Box<Node<K,D>>, left: Box<Node<K,D>>) -> (Option<Box<Node<K,D>>>,Box<Node<K,D>>) {
-        let (new_left, min) =  drop_min(left);
+        let (new_left, min) = drop_min(left);
         root.left = new_left;
         (Some(updated_node(root)),min)
     }
@@ -234,7 +234,7 @@ pub mod avl {
     pub fn delete<K:Ord,D>(key: K, mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>>{
         match root.key.cmp(&key){
             Ordering::Equal =>  return delete_root(root),
-            Ordering::Less => {
+            Ordering::Less  => {
                 if let Some(succ) = root.right.take() {
                     root.right = delete(key, succ);
                     return Some(updated_node(root))
@@ -242,7 +242,7 @@ pub mod avl {
             },
             Ordering::Greater => {
                 if let Some(succ) = root.left.take() {
-                    root.left =  delete(key, succ);
+                    root.left = delete(key, succ);
                     return Some(updated_node(root))
                 }
             }
@@ -270,14 +270,14 @@ pub mod avl {
         pub fn delete(&mut self, key: K){
             match self.root.take() {
                 Some(box_to_node) => self.root = delete(key,box_to_node),
-                None => return
+                None              => return
             }
         }
 
         pub fn get(&self, key: K) -> Option<&D>{
             match self.root {
                 Some(ref box_to_node) => search(&key, box_to_node),
-                None => None
+                None                  => None
             }
         }
 
