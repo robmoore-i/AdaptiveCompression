@@ -322,30 +322,32 @@ pub mod avl {
 // Implementation of Database
 pub mod db {
     use avl::*;
+    use std::collections::HashMap;
 
     #[derive(Clone)]
     pub struct Table {
-        // Meta
         pub count: u64,
-
-        // Columns
-        pub a: Col,
+        pub a: Col<i64>,
+        pub columns: HashMap<&'static str, Col<i64>>,
+    }
+    
+    impl Table {
     }
     
     #[derive(Clone)]
-    pub struct Col {
+    pub struct Col<T:Ord+Copy> {
         // Original
-        pub v: Vec<i64>,
+        pub v: Vec<T>,
         // Cracked
-        pub crk: Vec<i64>,
+        pub crk: Vec<T>,
         // Cracker index - for a value v, stores the index p such that
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
-        pub crk_idx: AVLTree<i64, usize>,
+        pub crk_idx: AVLTree<T, usize>,
     }
     
     pub fn new_table() -> Table {
-        Table {count: 0, a: Col {v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree {root: None}}}
+        Table {count: 0, a: Col {v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree {root: None}}, columns: HashMap::new()}
     }
     
     pub fn standard_insert(t: &mut Table, v: &mut Vec<i64>) {
@@ -749,5 +751,10 @@ mod tests {
             assert_eq!(*s2, [1, 3, 4, 2]);
         }
         assert_eq!(table.a.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
+    }
+    
+    #[test]
+    fn can_select_from_table_of_multiple_columns() {
+        let mut table = new_table();
     }
 }
