@@ -642,4 +642,15 @@ mod tests {
         }
         assert_eq!(table.a.crk, [3, 1, 2, 9, 4, 12, 7, 16, 19, 13, 14, 11, 8, 6]);
     }
+    
+    #[test]
+    fn crack_in_three_select_enture_column() {
+        let mut table = new_table();
+        {
+            standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            let selection = cracker_select_in_three(&mut table, -50, 200, false, false);
+            assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        }
+        assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+    }
 }
