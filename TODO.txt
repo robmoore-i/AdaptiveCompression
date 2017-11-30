@@ -2,8 +2,6 @@ In no particular order:
 
 - Prove correctness for crack_in three and crack_in_two
 
-- Inclusivity test cases for cracker index
-
 - Change implementation to work for float columns (may require changes to inclusivity handling)
 
 - Change implementation to re-index all columns of a table, so it works for multi-column tables
