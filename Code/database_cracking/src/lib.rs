@@ -597,8 +597,15 @@ mod tests {
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
         let mut table = Table::new();
+        table.new_columns(vec!["a".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        table.insert(&mut new_values);
+        table.set_crk_col("a".to_string());
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            println!();
+            println!("count:{}", table.count);
+            println!("crk_col.v:{:?}", table.crk_col.v);
             let selection = table.cracker_select_in_three(10, 14, false, false);
             assert_eq!(*selection, [13, 12, 11]);
         }
@@ -922,6 +929,8 @@ mod tests {
         table.new_columns(vec!["a".to_string(), "b".to_string()]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
+        table.insert(&mut new_values);
         table.set_crk_col("a".to_string());
         let a = match table.get_col("a".to_string()) {
             Some(ref c) => *c,
