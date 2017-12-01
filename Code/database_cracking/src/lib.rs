@@ -325,6 +325,28 @@ pub mod db {
     use std::collections::HashMap;
 
     #[derive(Clone)]
+    pub struct Col<T:Ord+Copy> {
+        // Original
+        pub v: Vec<T>,
+        // Cracked
+        pub crk: Vec<T>,
+        // Cracker index - for a value v, stores the index p such that
+        // for all i < p: c[i] < v. That is - Every value before p in the column
+        // is less than v.
+        pub crk_idx: AVLTree<T, usize>,
+    }
+
+    impl <T:Ord+Copy> Col<T> {
+        pub fn empty() -> Col<T> {
+            Col {
+                v: Vec::new(),
+                crk:Vec::new(),
+                crk_idx: AVLTree::new()
+            }
+        }
+    }
+
+    #[derive(Clone)]
     pub struct Table {
         pub count: usize,
         pub crk_col: Col<i64>,
@@ -514,28 +536,6 @@ pub mod db {
             self.crk_col.crk_idx.insert(adjusted_med, p_low);
             &self.crk_col.crk[initial_p_low..p_low]
         }
-    }
-    
-    #[derive(Clone)]
-    pub struct Col<T:Ord+Copy> {
-        // Original
-        pub v: Vec<T>,
-        // Cracked
-        pub crk: Vec<T>,
-        // Cracker index - for a value v, stores the index p such that
-        // for all i < p: c[i] < v. That is - Every value before p in the column
-        // is less than v.
-        pub crk_idx: AVLTree<T, usize>,
-    }
-    
-    impl <T:Ord+Copy> Col<T> {
-        pub fn empty() -> Col<T> {
-            Col {
-                v: Vec::new(),
-                crk:Vec::new(),
-                crk_idx: AVLTree::new()
-            }
-        }    
     }
 }
 
