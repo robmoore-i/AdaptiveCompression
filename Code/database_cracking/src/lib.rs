@@ -326,7 +326,7 @@ pub mod db {
 
     #[derive(Clone)]
     pub struct Table {
-        pub count: u64,
+        pub count: usize,
         pub a: Col<i64>,
         pub columns: HashMap<String, Col<i64>>,
     }
@@ -343,7 +343,7 @@ pub mod db {
         }
 
         pub fn standard_insert(&mut self, v: &mut Vec<i64>) {
-            let n = v.len() as u64;
+            let n = v.len();
             self.a.v.append(v);
             self.count += n;
         }
@@ -363,10 +363,20 @@ pub mod db {
             selection
         }
 
+        // TODO: Improve exception handling in this function
         pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
+            let mut n_new_tuples = 0;
             for (key, val) in self.columns.iter_mut() {
-                val.v.append(new_values.get_mut(key).expect("insert: new_values doesn't have values for all columns"));
+                let new_elems = new_values.get_mut(key).expect("insert: new_values doesn't have values for all columns");
+                let n = new_elems.len();
+                if n_new_tuples == 0 || n_new_tuples == n {
+                    val.v.append(new_elems);
+                    n_new_tuples = n;
+                } else {
+                    panic!("insert: new_values has vectors of differing lengths");
+                }
             }
+            self.count += n_new_tuples;
         }
 
         pub fn get_col(&self, col: String) -> Option<&Col<i64>> {
@@ -374,7 +384,7 @@ pub mod db {
         }
 
         pub fn get_indices(&self, indices: Vec<usize>) -> Table {
-            let mut clone = self.clone();
+            let mut clone = self.clone(); // TODO: Performance issue in this clone
             for col in clone.columns.values_mut() {
                 let mut indexed_v = Vec::with_capacity(indices.len());
                 for i in &indices {
@@ -383,6 +393,22 @@ pub mod db {
                 col.v = indexed_v;
             }
             clone
+        }
+
+        pub fn select_in_two(&self, col: String, strictly_less_than: i64) -> Table {
+            let candidate_col = self.get_col(col);
+            match candidate_col {
+                Some(ref c) => {
+                    let mut index = Vec::with_capacity(self.count);
+                    for i in 0..self.count {
+                        if c.v[i] < strictly_less_than {
+                            index.push(i);
+                        }
+                    }
+                    self.get_indices(index)
+                }
+                None => panic!("select_in_two: No such column"), // TODO: Improve exception handling here
+            }
         }
     }
     
@@ -857,6 +883,27 @@ mod tests {
         }
         match b {
             Some(ref col) => assert_eq!(col.v, vec![1, 1, 1, 1, 1, 1]),
+            None          => assert!(false),
+        }
+    }
+
+    #[test]
+    fn can_select_from_multi_column_table() {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string(), "b".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
+        table.insert(&mut new_values);
+        let selection = table.select_in_two("a".to_string(), 10);
+        let a = selection.get_col("a".to_string());
+        let b = selection.get_col("b".to_string());
+        match a {
+            Some(ref col) => assert_eq!(col.v, vec![4, 9, 2, 7, 1, 3, 8, 6]),
+            None          => assert!(false),
+        }
+        match b {
+            Some(ref col) => assert_eq!(col.v, vec![0, 0, 0, 0, 0, 0, 0, 0]),
             None          => assert!(false),
         }
     }
