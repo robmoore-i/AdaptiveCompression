@@ -332,6 +332,9 @@ pub mod db {
     }
     
     impl Table {
+        pub fn new() -> Table {
+            Table { count: 0, a: Col { v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree { root: None } }, columns: HashMap::new() }
+        }
     }
     
     #[derive(Clone)]
@@ -344,10 +347,6 @@ pub mod db {
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
         pub crk_idx: AVLTree<T, usize>,
-    }
-    
-    pub fn new_table() -> Table {
-        Table {count: 0, a: Col {v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree {root: None}}, columns: HashMap::new()}
     }
     
     pub fn standard_insert(t: &mut Table, v: &mut Vec<i64>) {
@@ -473,13 +472,13 @@ mod tests {
 
     #[test]
     fn single_column_table_initialised_empty() {
-        let table = new_table();
+        let table = Table::new();
         assert_eq!(table.count, 0);
     }
     
     #[test]
     fn standard_insert_to_single_column_table() {
-        let mut table = new_table();
+        let mut table = Table::new();
         standard_insert(&mut table, &mut vec![1, 2, 3]);
         assert_eq!(table.count, 3);
         assert_eq!(table.a.v, vec![1, 2, 3]);
@@ -487,7 +486,7 @@ mod tests {
     
     #[test]
     fn standard_select_from_single_column_table() {
-        let mut table = new_table();
+        let mut table = Table::new();
         standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         let selection = standard_select(table, |x| x > 10 && x < 14);
         assert_eq!(selection, vec![13, 12, 11]);
@@ -495,13 +494,13 @@ mod tests {
 
     #[test]
     fn cracker_column_initialised_empty() {
-        let table = new_table();
+        let table = Table::new();
         assert_eq!(table.a.crk.len(), 0);
     }
     
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, 10, 14, false, false);
@@ -512,7 +511,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_can_utilise_previous_queries() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_three(&mut table, 10, 14, false, false);
@@ -526,7 +525,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_low() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, 3, 7, true, false);
@@ -537,7 +536,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_high() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, 13, 19, false, true);
@@ -548,7 +547,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_both() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, 1, 6, true, true);
@@ -559,7 +558,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_two(&mut table, 7, true);
@@ -570,7 +569,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table_not_inclusive() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_two(&mut table, 10, false);
@@ -581,7 +580,7 @@ mod tests {
     
     #[test]
     fn cracker_select_in_two_can_utilise_previous_queries() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_three(&mut table, 10, 14, false, false);
@@ -593,7 +592,7 @@ mod tests {
     
     #[test]
     fn cracker_select_in_three_after_crack_in_two() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_two(&mut table, 7, true);
@@ -605,7 +604,7 @@ mod tests {
     
     #[test]
     fn crack_in_two_above_upper_limit() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_two(&mut table, 25, true);
@@ -616,7 +615,7 @@ mod tests {
     
     #[test]
     fn crack_in_two_below_lower_limit() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_two(&mut table, -5, true);
@@ -627,7 +626,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_above_upper_limit() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, 14, 25, true, false);
@@ -638,7 +637,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_below_lower_limit() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, -5, 4, true, false);
@@ -649,7 +648,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_select_enture_column() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = cracker_select_in_three(&mut table, -50, 200, false, false);
@@ -660,7 +659,7 @@ mod tests {
     
     #[test]
     fn can_crack_in_three_over_three_queries() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             cracker_select_in_three(&mut table, 10, 14, false, false);
@@ -676,7 +675,7 @@ mod tests {
     
     #[test]
     fn can_crack_in_two_over_three_queries() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = cracker_select_in_two(&mut table, 10, true);
@@ -695,7 +694,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_upper_bound() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = cracker_select_in_two(&mut table, 19, true);
@@ -710,7 +709,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_upper_bound() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = cracker_select_in_two(&mut table, 19, false);
@@ -725,7 +724,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_lower_bound() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = cracker_select_in_two(&mut table, 1, true);
@@ -740,7 +739,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_lower_bound() {
-        let mut table = new_table();
+        let mut table = Table::new();
         {
             standard_insert(&mut table, &mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = cracker_select_in_two(&mut table, 2, false);
@@ -755,6 +754,6 @@ mod tests {
     
     #[test]
     fn can_select_from_table_of_multiple_columns() {
-        let mut table = new_table();
+        let mut table = Table::new();
     }
 }
