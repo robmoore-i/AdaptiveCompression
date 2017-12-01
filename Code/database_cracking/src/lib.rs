@@ -327,13 +327,13 @@ pub mod db {
     #[derive(Clone)]
     pub struct Table {
         pub count: usize,
-        pub a: Col<i64>,
+        pub crk_col: Col<i64>,
         pub columns: HashMap<String, Col<i64>>,
     }
     
     impl Table {
         pub fn new() -> Table {
-            Table { count: 0, a: Col::empty(), columns: HashMap::new() }
+            Table { count: 0, crk_col: Col::empty(), columns: HashMap::new() }
         }
         
         pub fn new_columns(&mut self, col_names: Vec<String>) {
@@ -344,7 +344,7 @@ pub mod db {
 
         pub fn standard_insert(&mut self, v: &mut Vec<i64>) {
             let n = v.len();
-            self.a.v.append(v);
+            self.crk_col.v.append(v);
             self.count += n;
         }
     
@@ -352,15 +352,23 @@ pub mod db {
             where F: Fn(i64) -> bool {
             // Specifying max capacity prevents reallocation.
             let n = {
-                self.a.v.len()
+                self.crk_col.v.len()
             };
             let mut selection = Vec::with_capacity(n);
-            for x in &self.a.v {
+            for x in &self.crk_col.v {
                 if constraint(*x) {
                     selection.push(*x);
                 }
             }
             selection
+        }
+
+        pub fn set_crk_col(&mut self, col_name: String) {
+            let col = match self.columns.get(&col_name) {
+                Some(ref c) => *c,
+                None        => panic!("set_crk_col: no such col"),
+            };
+            self.crk_col = col.clone();
         }
 
         // TODO: Improve exception handling in this function
@@ -411,11 +419,11 @@ pub mod db {
             }
         }
 
-        // Selects elements of T between LOW and HIGH - inclusivity determined by INC_H and INC_L.
+        // Selects elements of T between LOW and HIGH - inclusivity determined by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
             // If column hasn't been cracked before, copy it
-            if self.a.crk.len() == 0 {
-                self.a.crk = self.a.v.clone();
+            if self.crk_col.crk.len() == 0 {
+                self.crk_col.crk = self.crk_col.v.clone();
             }
 
             let adjusted_low  = low  + !inc_l as i64;
@@ -426,44 +434,44 @@ pub mod db {
             #[inline] let c_high = |x| x > adjusted_high;
 
             // Start with a pointer at both ends of the array: p_low, p_high
-            let mut p_low  = *(self.a.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
-            let mut p_high = *(self.a.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
+            let mut p_low  = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
+            let mut p_high = *(self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
-            while c_low(self.a.crk[p_low]) {
+            while c_low(self.crk_col.crk[p_low]) {
                 p_low += 1;
             }
 
             // while p_high is pointing at an element satisfying c_high, move it backwards
-            while c_high(self.a.crk[p_high]) {
+            while c_high(self.crk_col.crk[p_high]) {
                 p_high -= 1;
             }
             let mut p_itr = p_low.clone();
             while p_itr <= p_high {
-                if c_low(self.a.crk[p_itr]) {
-                    self.a.crk.swap(p_low, p_itr);
-                    while c_low(self.a.crk[p_low]) {
+                if c_low(self.crk_col.crk[p_itr]) {
+                    self.crk_col.crk.swap(p_low, p_itr);
+                    while c_low(self.crk_col.crk[p_low]) {
                         p_low += 1;
                     }
-                } else if c_high(self.a.crk[p_itr]) {
-                    self.a.crk.swap(p_itr, p_high);
-                    while c_high(self.a.crk[p_high]) {
+                } else if c_high(self.crk_col.crk[p_itr]) {
+                    self.crk_col.crk.swap(p_itr, p_high);
+                    while c_high(self.crk_col.crk[p_high]) {
                         p_high -= 1;
                     }
                 } else {
                     p_itr += 1;
                 }
             }
-            self.a.crk_idx.insert(adjusted_low, p_low);
-            self.a.crk_idx.insert(high + !inc_h as i64, p_itr);
-            &self.a.crk[p_low..p_itr]
+            self.crk_col.crk_idx.insert(adjusted_low, p_low);
+            self.crk_col.crk_idx.insert(high + !inc_h as i64, p_itr);
+            &self.crk_col.crk[p_low..p_itr]
         }
 
         // Returns the elements of T less than MED, with inclusivity given by INC
         pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> &[i64] {
             // If column hasn't been cracked before, copy it
-            if self.a.crk.len() == 0 {
-                self.a.crk = self.a.v.clone();
+            if self.crk_col.crk.len() == 0 {
+                self.crk_col.crk = self.crk_col.v.clone();
             }
 
             let adjusted_med  = med + inc as i64;
@@ -472,21 +480,21 @@ pub mod db {
 
             // Start with pointers at the start and end of the array
             let mut p_low  = 0;
-            let mut p_high = *(self.a.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
+            let mut p_high = *(self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
 
             // Save p_low for later:
             let initial_p_low = p_low.clone();
 
             // while p_low is pointing at an element already in the catchment, move it forwards
-            while cond(self.a.crk[p_low]) {
+            while cond(self.crk_col.crk[p_low]) {
                 p_low += 1;
                 if p_low == self.count as usize {
-                    return &self.a.crk;
+                    return &self.crk_col.crk;
                 }
             }
 
             // while p_high is pointing at an element already outside the catchment, move it backwards
-            while !cond(self.a.crk[p_high]) {
+            while !cond(self.crk_col.crk[p_high]) {
                 p_high -= 1;
                 if p_high == 0 {
                     return &[];
@@ -495,16 +503,16 @@ pub mod db {
 
             // At this point, !cond(col[p_low]) && cond(col[p_high])
             while p_low <= p_high {
-                self.a.crk.swap(p_low, p_high);
-                while cond(self.a.crk[p_low]) {
+                self.crk_col.crk.swap(p_low, p_high);
+                while cond(self.crk_col.crk[p_low]) {
                     p_low += 1;
                 }
-                while !cond(self.a.crk[p_high]) {
+                while !cond(self.crk_col.crk[p_high]) {
                     p_high -= 1;
                 }
             }
-            self.a.crk_idx.insert(adjusted_med, p_low);
-            &self.a.crk[initial_p_low..p_low]
+            self.crk_col.crk_idx.insert(adjusted_med, p_low);
+            &self.crk_col.crk[initial_p_low..p_low]
         }
     }
     
@@ -569,7 +577,7 @@ mod tests {
         let mut table = Table::new();
         table.standard_insert(&mut vec![1, 2, 3]);
         assert_eq!(table.count, 3);
-        assert_eq!(table.a.v, vec![1, 2, 3]);
+        assert_eq!(table.crk_col.v, vec![1, 2, 3]);
     }
     
     #[test]
@@ -583,7 +591,7 @@ mod tests {
     #[test]
     fn cracker_column_initialised_empty() {
         let table = Table::new();
-        assert_eq!(table.a.crk.len(), 0);
+        assert_eq!(table.crk_col.crk.len(), 0);
     }
     
     #[test]
@@ -594,7 +602,7 @@ mod tests {
             let selection = table.cracker_select_in_three(10, 14, false, false);
             assert_eq!(*selection, [13, 12, 11]);
         }
-        assert_eq!(table.a.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
+        assert_eq!(table.crk_col.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
     }
 
     #[test]
@@ -603,12 +611,12 @@ mod tests {
         {
             table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             table.cracker_select_in_three(10, 14, false, false);
-            assert!(table.a.crk_idx.contains(11));
-            assert!(table.a.crk_idx.contains(15));
+            assert!(table.crk_col.crk_idx.contains(11));
+            assert!(table.crk_col.crk_idx.contains(15));
             let selection = table.cracker_select_in_three(5, 10, false, false);
             assert_eq!(*selection, [7, 9, 8, 6]);
         }
-        assert_eq!(table.a.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
+        assert_eq!(table.crk_col.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
     }
 
     #[test]
@@ -619,7 +627,7 @@ mod tests {
             let selection = table.cracker_select_in_three(3, 7, true, false);
             assert_eq!(*selection, [4, 6, 3]);
         }
-        assert_eq!(table.a.crk, vec![1, 2, 4, 6, 3, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
+        assert_eq!(table.crk_col.crk, vec![1, 2, 4, 6, 3, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
 
     #[test]
@@ -630,7 +638,7 @@ mod tests {
             let selection = table.cracker_select_in_three(13, 19, false, true);
             assert_eq!(*selection, [19, 16, 14]);
         }
-        assert_eq!(table.a.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
+        assert_eq!(table.crk_col.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
 
     #[test]
@@ -641,7 +649,7 @@ mod tests {
             let selection = table.cracker_select_in_three(1, 6, true, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2]);
         }
-        assert_eq!(table.a.crk, vec![6, 3, 4, 1, 2, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
+        assert_eq!(table.crk_col.crk, vec![6, 3, 4, 1, 2, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
 
     #[test]
@@ -652,7 +660,7 @@ mod tests {
             let selection = table.cracker_select_in_two(7, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
         }
-        assert_eq!(table.a.crk, vec![6, 3, 4, 1, 2, 7, 12, 9, 19, 16, 14, 11, 8, 13]);
+        assert_eq!(table.crk_col.crk, vec![6, 3, 4, 1, 2, 7, 12, 9, 19, 16, 14, 11, 8, 13]);
     }
 
     #[test]
@@ -663,7 +671,7 @@ mod tests {
             let selection = table.cracker_select_in_two(10, false);
             assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
         }
-        assert_eq!(table.a.crk, vec![6, 8, 4, 9, 2, 3, 7, 1, 19, 12, 14, 11, 16, 13]);
+        assert_eq!(table.crk_col.crk, vec![6, 8, 4, 9, 2, 3, 7, 1, 19, 12, 14, 11, 16, 13]);
     }
     
     #[test]
@@ -675,7 +683,7 @@ mod tests {
             let selection = table.cracker_select_in_two(7, false);
             assert_eq!(*selection, [6, 4, 3, 2, 1]);
         }
-        assert_eq!(table.a.crk, vec![6, 4, 3, 2, 1, 7, 8, 9, 13, 12, 11, 14, 19, 16]);
+        assert_eq!(table.crk_col.crk, vec![6, 4, 3, 2, 1, 7, 8, 9, 13, 12, 11, 14, 19, 16]);
     }
     
     #[test]
@@ -687,7 +695,7 @@ mod tests {
             let selection = table.cracker_select_in_three(6, 11, true, false);
             assert_eq!(*selection, [6, 7, 8, 9]);
         }
-        assert_eq!(table.a.crk, vec![3, 4, 1, 2, 6, 7, 8, 9, 19, 16, 14, 11, 12, 13]);
+        assert_eq!(table.crk_col.crk, vec![3, 4, 1, 2, 6, 7, 8, 9, 19, 16, 14, 11, 12, 13]);
     }
     
     #[test]
@@ -698,7 +706,7 @@ mod tests {
             let selection = table.cracker_select_in_two(25, true);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
-        assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -709,7 +717,7 @@ mod tests {
             let selection = table.cracker_select_in_two(-5, true);
             assert_eq!(*selection, []);
         }
-        assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -720,7 +728,7 @@ mod tests {
             let selection = table.cracker_select_in_three(14, 25, true, false);
             assert_eq!(*selection, [19, 16, 14]);
         }
-        assert_eq!(table.a.crk, [13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
+        assert_eq!(table.crk_col.crk, [13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
     
     #[test]
@@ -731,7 +739,7 @@ mod tests {
             let selection = table.cracker_select_in_three(-5, 4, true, false);
             assert_eq!(*selection, [3, 1, 2]);
         }
-        assert_eq!(table.a.crk, [3, 1, 2, 9, 4, 12, 7, 16, 19, 13, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [3, 1, 2, 9, 4, 12, 7, 16, 19, 13, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -742,7 +750,7 @@ mod tests {
             let selection = table.cracker_select_in_three(-50, 200, false, false);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
-        assert_eq!(table.a.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -758,7 +766,7 @@ mod tests {
             let s2 = table.cracker_select_in_three(7, 17, true, false);
             assert_eq!(*s2, [7, 8, 9, 11, 12, 13, 14, 16]);
         }
-        assert_eq!(table.a.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
+        assert_eq!(table.crk_col.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
     }
     
     #[test]
@@ -777,7 +785,7 @@ mod tests {
             let s3 = table.cracker_select_in_two(14, false);
             assert_eq!(*s3, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11]);
         }
-        assert_eq!(table.a.crk, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11, 14, 16, 19]);
+        assert_eq!(table.crk_col.crk, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11, 14, 16, 19]);
     }
     
     #[test]
@@ -792,7 +800,7 @@ mod tests {
             let s2 = table.cracker_select_in_three(10, 19, false, true);
             assert_eq!(*s2, [19, 12, 14, 11, 16, 13]);
         }
-        assert_eq!(table.a.crk, [4, 9, 2, 7, 1, 3, 8, 6, 19, 12, 14, 11, 16, 13]);
+        assert_eq!(table.crk_col.crk, [4, 9, 2, 7, 1, 3, 8, 6, 19, 12, 14, 11, 16, 13]);
     }
     
     #[test]
@@ -807,7 +815,7 @@ mod tests {
             let s2 = table.cracker_select_in_three(10, 19, false, true);
             assert_eq!(*s2, [12, 16, 14, 11, 13, 19]);
         }
-        assert_eq!(table.a.crk, [4, 9, 2, 7, 1, 6, 3, 8, 12, 16, 14, 11, 13, 19]);
+        assert_eq!(table.crk_col.crk, [4, 9, 2, 7, 1, 6, 3, 8, 12, 16, 14, 11, 13, 19]);
     }
     
     #[test]
@@ -822,7 +830,7 @@ mod tests {
             let s2 = table.cracker_select_in_three(1, 5, true, true);
             assert_eq!(*s2, [1, 3, 4, 2]);
         }
-        assert_eq!(table.a.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -837,7 +845,7 @@ mod tests {
             let s2 = table.cracker_select_in_three(1, 5, true, true);
             assert_eq!(*s2, [1, 3, 4, 2]);
         }
-        assert_eq!(table.a.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
+        assert_eq!(table.crk_col.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
     }
     
     #[test]
@@ -906,5 +914,19 @@ mod tests {
             Some(ref col) => assert_eq!(col.v, vec![0, 0, 0, 0, 0, 0, 0, 0]),
             None          => assert!(false),
         }
+    }
+
+    #[test]
+    fn can_set_cracked_column() {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string(), "b".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        table.set_crk_col("a".to_string());
+        let a = match table.get_col("a".to_string()) {
+            Some(ref c) => *c,
+            None        => panic!("Test failed"),
+        };
+        assert_eq!(table.crk_col.v, a.v);
     }
 }
