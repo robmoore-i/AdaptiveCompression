@@ -778,6 +778,8 @@ mod tests {
         for key in table.columns.keys() {
             keys.push(key);
         }
-        assert_eq!(keys, vec![&"c".to_string(), &"b".to_string(), &"a".to_string()]);
+        assert!(keys.contains(&&"a".to_string()));
+        assert!(keys.contains(&&"b".to_string()));
+        assert!(keys.contains(&&"c".to_string()));
     }
 }
