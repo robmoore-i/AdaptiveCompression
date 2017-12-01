@@ -487,6 +487,7 @@ pub mod db {
 #[cfg(test)]
 mod tests {
     use db::*;
+    use std::collections::HashMap;
 
     #[test]
     fn single_column_table_initialised_empty() {
@@ -781,5 +782,14 @@ mod tests {
         assert!(keys.contains(&&"a".to_string()));
         assert!(keys.contains(&&"b".to_string()));
         assert!(keys.contains(&&"c".to_string()));
+    }
+
+    #[test]
+    fn can_insert_into_multi_column_table() {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![1, 2, 3]);
+        new_values.insert("b".to_string(), vec![4, 5, 6]);
     }
 }
