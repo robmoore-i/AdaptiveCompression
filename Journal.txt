@@ -1,0 +1,41 @@
+## 1st December, 2017 - So far
+
+I have begun implementation of database cracking in Rust, which I chose
+because of the need for the implementation to be high performance and
+because my programming style lends itself to high level abstractions as
+provided in rust vs the low level hacking that is idiomatic to C or C++.
+
+I began by implementing the basic cracking algorithms crack_in_three and
+crack_in_two, applied simply to Vec<i64>s. I moved through this implementation
+using an unrigorous application of TDD. I wrote tests before implementing
+code, but I've covered edge cases so far primarily by writing exhaustive
+tests rather than really thinking about my code.
+
+After implementing this minimal subset of cracking functionality, I updated
+the Table struct, which previously contained just the size of the table and
+its single column, to support multiple columns formatted using decomposed
+storage. The columns are currently stored using a hashmap, such that the
+mapping is column_name (String) -> column_data (Col). The Col is a struct
+which contains the base column, the cracker column, which is created by the
+cracking operators (currently only select), the cracker index (an AVL tree),
+and a base index, which is an index used for tuple reconstruction. It is
+used to maintain alignment knowledge about other columns of the table.
+
+So far implementation has been pretty difficult, because the Rust compiler is
+extremely picky. I'm getting used to it though I think, and as soon as this
+ownership stuff becomes second nature the ball should really start rolling.
+
+The literature I've read  has been mostly regarding graph databases, but
+Idreos' cracking paper has been very helpful in implementation so far,
+although the algorithms given in the paper didn't work for me, I gained a
+sufficient understanding of how they are meant to work to reverse engineer
+them from the properties and descriptions given in the paper.
+
+The graph database literature has been interesting although I haven't of
+course applied any of it yet. I've read the Ligra paper and skimmed the 
+beginning of the Galuc thesis, as well as the cache aware graph processing
+algorithms paper shown to me by Holger.
+
+The next steps will be to benchmark what I've got right now using BFS and
+possibly experiement with using N-ary storage isntead of decomposed storage, 
+since adjacency lists do have only two columns.
