@@ -335,6 +335,9 @@ pub mod db {
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
         pub crk_idx: AVLTree<T, usize>,
+        // Base index - maintains an index into the base columns of the table for alignment
+        // during tuple reconstruction.
+        pub base_idx: Vec<usize>,
     }
 
     impl <T:Ord+Copy> Col<T> {
@@ -342,7 +345,8 @@ pub mod db {
             Col {
                 v: Vec::new(),
                 crk:Vec::new(),
-                crk_idx: AVLTree::new()
+                crk_idx: AVLTree::new(),
+                base_idx: Vec::new()
             }
         }
     }
@@ -422,7 +426,24 @@ pub mod db {
                     indexed_v.push(col.v[i]);
                 }
                 col.v = indexed_v;
+                println!("col.v:{:?}", col.v);
             }
+
+            let mut indexed_crk_v   = Vec::with_capacity(indices.len());
+            if self.crk_col.crk.len() > 0 {
+                let mut indexed_crk_col = Vec::with_capacity(indices.len());
+                for &i in indices.clone() {
+                    indexed_crk_col.push(self.crk_col.crk[i]);
+                    indexed_crk_v.push(self.crk_col.v[i]);
+                }
+                clone.crk_col.crk     = indexed_crk_col;
+                clone.crk_col.crk_idx = AVLTree::new();
+            } else {
+                for &i in indices.clone() {
+                    indexed_crk_v.push(self.crk_col.v[i]);
+                }
+            }
+            clone.crk_col.v = indexed_crk_v;
             clone
         }
 
@@ -442,16 +463,14 @@ pub mod db {
             }
         }
 
-//        pub fn crack_between(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
-//            let indices = self.cracker_select_in_three(low, high, inc_l, inc_h);
-//            self.get_indices(indices)
-//        }
-
-        // Selects elements of T between LOW and HIGH - inclusivity determined by INC_L and INC_H.
-        pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
-            // If column hasn't been cracked before, copy it
+        // Returns indices of the base columns such that crk_col's values are between LOW and HIGH
+        // with inclusivity determined by INC_L and INC_H.
+        pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
+            // If column hasn't been cracked before, copy it, and copy a reference to the current
+            // indices of the base table.
             if self.crk_col.crk.len() == 0 {
                 self.crk_col.crk = self.crk_col.v.clone();
+                self.crk_col.base_idx = (0..self.count).collect();
             }
 
             let adjusted_low  = low  + !inc_l as i64;
@@ -464,6 +483,10 @@ pub mod db {
             // Start with a pointer at both ends of the array: p_low, p_high
             let mut p_low  = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
+
+            println!("three: Initially:");
+            println!("p_low:{}", p_low);
+            println!("p_high:{}", p_high);
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) {
@@ -478,11 +501,13 @@ pub mod db {
             while p_itr <= p_high {
                 if c_low(self.crk_col.crk[p_itr]) {
                     self.crk_col.crk.swap(p_low, p_itr);
+                    self.crk_col.base_idx.swap(p_low, p_itr);
                     while c_low(self.crk_col.crk[p_low]) {
                         p_low += 1;
                     }
                 } else if c_high(self.crk_col.crk[p_itr]) {
                     self.crk_col.crk.swap(p_itr, p_high);
+                    self.crk_col.base_idx.swap(p_itr, p_high);
                     while c_high(self.crk_col.crk[p_high]) {
                         p_high -= 1;
                     }
@@ -492,14 +517,18 @@ pub mod db {
             }
             self.crk_col.crk_idx.insert(adjusted_low, p_low);
             self.crk_col.crk_idx.insert(high + !inc_h as i64, p_itr);
-            &self.crk_col.crk[p_low..p_itr]
+            println!("three: Finally:");
+            println!("p_low:{}", p_low);
+            println!("p_high:{}", p_high);
+            self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
         }
 
         // Returns the elements of T less than MED, with inclusivity given by INC
-        pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> &[i64] {
+        pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> Table {
             // If column hasn't been cracked before, copy it
             if self.crk_col.crk.len() == 0 {
                 self.crk_col.crk = self.crk_col.v.clone();
+                self.crk_col.base_idx = (0..self.count).collect();
             }
 
             let adjusted_med  = med + inc as i64;
@@ -510,6 +539,11 @@ pub mod db {
             let mut p_low  = 0;
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
 
+            println!("two: Initially:");
+            println!("p_low:{}", p_low);
+            println!("p_high:{}", p_high);
+
+            println!("med:{}", med);
             // Save p_low for later:
             let initial_p_low = p_low.clone();
 
@@ -517,7 +551,7 @@ pub mod db {
             while cond(self.crk_col.crk[p_low]) {
                 p_low += 1;
                 if p_low == self.count as usize {
-                    return &self.crk_col.crk;
+                    return self.get_indices(self.crk_col.base_idx.iter());
                 }
             }
 
@@ -525,13 +559,14 @@ pub mod db {
             while !cond(self.crk_col.crk[p_high]) {
                 p_high -= 1;
                 if p_high == 0 {
-                    return &[];
+                    return  self.get_indices(self.crk_col.base_idx[0..0].iter());
                 }
             }
 
             // At this point, !cond(col[p_low]) && cond(col[p_high])
             while p_low <= p_high {
                 self.crk_col.crk.swap(p_low, p_high);
+                self.crk_col.base_idx.swap(p_low, p_high);
                 while cond(self.crk_col.crk[p_low]) {
                     p_low += 1;
                 }
@@ -539,8 +574,11 @@ pub mod db {
                     p_high -= 1;
                 }
             }
+            println!("two: Finally:");
+            println!("p_low:{}", p_low);
+            println!("p_high:{}", p_high);
             self.crk_col.crk_idx.insert(adjusted_med, p_low);
-            &self.crk_col.crk[initial_p_low..p_low]
+            self.get_indices(self.crk_col.base_idx[initial_p_low..p_low].iter())
         }
     }
 }
@@ -609,13 +647,13 @@ mod tests {
         let table = Table::new();
         assert_eq!(table.crk_col.crk.len(), 0);
     }
-    
+
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(10, 14, false, false);
-            assert_eq!(*selection, [13, 12, 11]);
+            assert_eq!(selection.crk_col.v, vec![13, 12, 11]);
         }
         assert_eq!(table.crk_col.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
     }
@@ -628,7 +666,7 @@ mod tests {
             assert!(table.crk_col.crk_idx.contains(11));
             assert!(table.crk_col.crk_idx.contains(15));
             let selection = table.cracker_select_in_three(5, 10, false, false);
-            assert_eq!(*selection, [7, 9, 8, 6]);
+            assert_eq!(selection.crk_col.v, vec![7, 9, 8, 6]);
         }
         assert_eq!(table.crk_col.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
     }
@@ -638,7 +676,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(3, 7, true, false);
-            assert_eq!(*selection, [4, 6, 3]);
+            assert_eq!(selection.crk_col.v, vec![4, 6, 3]);
         }
         assert_eq!(table.crk_col.crk, vec![1, 2, 4, 6, 3, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
@@ -648,7 +686,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(13, 19, false, true);
-            assert_eq!(*selection, [19, 16, 14]);
+            assert_eq!(selection.crk_col.v, vec![19, 16, 14]);
         }
         assert_eq!(table.crk_col.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
@@ -658,7 +696,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(1, 6, true, true);
-            assert_eq!(*selection, [6, 3, 4, 1, 2]);
+            assert_eq!(selection.crk_col.v, vec![6, 3, 4, 1, 2]);
         }
         assert_eq!(table.crk_col.crk, vec![6, 3, 4, 1, 2, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
     }
@@ -668,7 +706,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(7, true);
-            assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
+            assert_eq!(selection.crk_col.v, vec![6, 3, 4, 1, 2, 7]);
         }
         assert_eq!(table.crk_col.crk, vec![6, 3, 4, 1, 2, 7, 12, 9, 19, 16, 14, 11, 8, 13]);
     }
@@ -678,7 +716,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(10, false);
-            assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
+            assert_eq!(selection.crk_col.v, vec![6, 8, 4, 9, 2, 3, 7, 1]);
         }
         assert_eq!(table.crk_col.crk, vec![6, 8, 4, 9, 2, 3, 7, 1, 19, 12, 14, 11, 16, 13]);
     }
@@ -689,7 +727,7 @@ mod tests {
         {
             table.cracker_select_in_three(10, 14, false, false);
             let selection = table.cracker_select_in_two(7, false);
-            assert_eq!(*selection, [6, 4, 3, 2, 1]);
+            assert_eq!(selection.crk_col.v, vec![6, 4, 3, 2, 1]);
         }
         assert_eq!(table.crk_col.crk, vec![6, 4, 3, 2, 1, 7, 8, 9, 13, 12, 11, 14, 19, 16]);
     }
@@ -700,7 +738,7 @@ mod tests {
         {
             table.cracker_select_in_two(7, true);
             let selection = table.cracker_select_in_three(6, 11, true, false);
-            assert_eq!(*selection, [6, 7, 8, 9]);
+            assert_eq!(selection.crk_col.v, vec![6, 7, 8, 9]);
         }
         assert_eq!(table.crk_col.crk, vec![3, 4, 1, 2, 6, 7, 8, 9, 19, 16, 14, 11, 12, 13]);
     }
@@ -710,7 +748,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(25, true);
-            assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            assert_eq!(selection.crk_col.v, vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
         assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
@@ -720,7 +758,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(-5, true);
-            assert_eq!(*selection, []);
+            assert_eq!(selection.crk_col.v, vec![]);
         }
         assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
@@ -730,7 +768,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(14, 25, true, false);
-            assert_eq!(*selection, [19, 16, 14]);
+            assert_eq!(selection.crk_col.v, vec![19, 16, 14]);
         }
         assert_eq!(table.crk_col.crk, [13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
     }
@@ -740,7 +778,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(-5, 4, true, false);
-            assert_eq!(*selection, [3, 1, 2]);
+            assert_eq!(selection.crk_col.v, vec![3, 1, 2]);
         }
         assert_eq!(table.crk_col.crk, [3, 1, 2, 9, 4, 12, 7, 16, 19, 13, 14, 11, 8, 6]);
     }
@@ -750,7 +788,7 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(-50, 200, false, false);
-            assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            assert_eq!(selection.crk_col.v, vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
         assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
     }
@@ -761,11 +799,11 @@ mod tests {
         {
             table.cracker_select_in_three(10, 14, false, false);
             let s1 = table.cracker_select_in_three(3, 11, false, true);
-            assert_eq!(*s1, [6, 7, 4, 8, 9, 11]);
+            assert_eq!(s1.crk_col.v, vec![6, 7, 4, 8, 9, 11]);
         }
         {
             let s2 = table.cracker_select_in_three(7, 17, true, false);
-            assert_eq!(*s2, [7, 8, 9, 11, 12, 13, 14, 16]);
+            assert_eq!(s2.crk_col.v, vec![7, 8, 9, 11, 12, 13, 14, 16]);
         }
         assert_eq!(table.crk_col.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
     }
@@ -775,15 +813,15 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(10, true);
-            assert_eq!(*s1, [6, 8, 4, 9, 2, 3, 7, 1]);
+            assert_eq!(s1.crk_col.v, vec![6, 8, 4, 9, 2, 3, 7, 1]);
         }
         {
             let s2 = table.cracker_select_in_two(3, true);
-            assert_eq!(*s2, [1, 3, 2]);
+            assert_eq!(s2.crk_col.v, vec![1, 3, 2]);
         }
         {
             let s3 = table.cracker_select_in_two(14, false);
-            assert_eq!(*s3, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11]);
+            assert_eq!(s3.crk_col.v, vec![1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11]);
         }
         assert_eq!(table.crk_col.crk, [1, 3, 2, 9, 4, 8, 7, 6, 13, 12, 11, 14, 16, 19]);
     }
@@ -793,11 +831,11 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(19, true);
-            assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+            assert_eq!(s1.crk_col.v, vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
         {
             let s2 = table.cracker_select_in_three(10, 19, false, true);
-            assert_eq!(*s2, [19, 12, 14, 11, 16, 13]);
+            assert_eq!(s2.crk_col.v, vec![19, 12, 14, 11, 16, 13]);
         }
         assert_eq!(table.crk_col.crk, [4, 9, 2, 7, 1, 3, 8, 6, 19, 12, 14, 11, 16, 13]);
     }
@@ -807,11 +845,11 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(19, false);
-            assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 6, 3, 14, 11, 8]);
+            assert_eq!(s1.crk_col.v, vec![13, 16, 4, 9, 2, 12, 7, 1, 6, 3, 14, 11, 8]);
         }
         {
             let s2 = table.cracker_select_in_three(10, 19, false, true);
-            assert_eq!(*s2, [12, 16, 14, 11, 13, 19]);
+            assert_eq!(s2.crk_col.v, vec![12, 16, 14, 11, 13, 19]);
         }
         assert_eq!(table.crk_col.crk, [4, 9, 2, 7, 1, 6, 3, 8, 12, 16, 14, 11, 13, 19]);
     }
@@ -821,11 +859,11 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(1, true);
-            assert_eq!(*s1, [1]);
+            assert_eq!(s1.crk_col.v, vec![1]);
         }
         {
             let s2 = table.cracker_select_in_three(1, 5, true, true);
-            assert_eq!(*s2, [1, 3, 4, 2]);
+            assert_eq!(s2.crk_col.v, vec![1, 3, 4, 2]);
         }
         assert_eq!(table.crk_col.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
     }
@@ -835,11 +873,11 @@ mod tests {
         let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(2, false);
-            assert_eq!(*s1, [1]);
+            assert_eq!(s1.crk_col.v, vec![1]);
         }
         {
             let s2 = table.cracker_select_in_three(1, 5, true, true);
-            assert_eq!(*s2, [1, 3, 4, 2]);
+            assert_eq!(s2.crk_col.v, vec![1, 3, 4, 2]);
         }
         assert_eq!(table.crk_col.crk, [1, 3, 4, 2, 9, 12, 7, 13, 19, 16, 14, 11, 8, 6]);
     }
@@ -870,27 +908,6 @@ mod tests {
         assert!(matches!(table.get_col("c".to_string()), None));
     }
 
-    #[test]
-    fn can_index_into_multi_column_table() {
-        let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string()]);
-        let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
-        table.insert(&mut new_values);
-        let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
-        let a = selection.get_col("a".to_string());
-        let b = selection.get_col("b".to_string());
-        match a {
-            Some(ref col) => assert_eq!(col.v, vec![13, 16, 12, 19, 14, 11]),
-            None          => assert!(false),
-        }
-        match b {
-            Some(ref col) => assert_eq!(col.v, vec![1, 1, 1, 1, 1, 1]),
-            None          => assert!(false),
-        }
-    }
-
     fn two_col_test_table() -> Table {
         let mut table = Table::new();
         table.new_columns(vec!["a".to_string(), "b".to_string()]);
@@ -900,6 +917,20 @@ mod tests {
         table.insert(&mut new_values);
         table.set_crk_col("a".to_string());
         table
+    }
+
+    #[test]
+    fn can_index_into_multi_column_table() {
+        let table = two_col_test_table();
+        let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
+        match selection.get_col("a".to_string()) {
+            Some(ref col) => assert_eq!(col.v, vec![13, 16, 12, 19, 14, 11]),
+            None          => assert!(false),
+        }
+        match selection.get_col("b".to_string()) {
+            Some(ref col) => assert_eq!(col.v, vec![1, 1, 1, 1, 1, 1]),
+            None          => assert!(false),
+        }
     }
 
     #[test]
@@ -927,17 +958,17 @@ mod tests {
         };
     }
 
-//    #[test]
-//    fn crack_returns_indices_into_base_columns() {
-//        let mut table = two_col_test_table();
-//        let selection = table.crack_between(10, 14, false, false);
-//        match table.get_col("a".to_string()) {
-//            Some(ref c) => assert_eq!(c.v, vec![13, 12, 11]),
-//            None        => assert!(false),
-//        };
-//        match table.get_col("b".to_string()) {
-//            Some(ref c) => assert_eq!(c.v, vec![1,  1,  1]),
-//            None        => assert!(false),
-//        };
-//    }
+    #[test]
+    fn crack_returns_indices_into_base_columns() {
+        let mut table = two_col_test_table();
+        let selection = table.cracker_select_in_three(10, 14, false, false);
+        match selection.get_col("a".to_string()) {
+            Some(ref c) => assert_eq!(c.v, vec![13, 12, 11]),
+            None        => assert!(false),
+        };
+        match selection.get_col("b".to_string()) {
+            Some(ref c) => assert_eq!(c.v, vec![1,  1,  1]),
+            None        => assert!(false),
+        };
+    }
 }
