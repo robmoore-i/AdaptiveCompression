@@ -368,6 +368,10 @@ pub mod db {
                 val.v.append(new_values.get_mut(key).expect("Key missing from new_values on insert"));
             }
         }
+
+        pub fn get_col(&self, col: String) -> Option<&Col<i64>> {
+            self.columns.get(&col)
+        }
     }
     
     #[derive(Clone)]
@@ -494,6 +498,27 @@ pub mod db {
 mod tests {
     use db::*;
     use std::collections::HashMap;
+
+    // I credit these two macros (matches, _tt_as_expr_hack) to this chap:
+    // http://rrichardson.github.io/reactor/src/mac/matches.rs.html#18-27
+    #[macro_export]
+    macro_rules! matches {
+        ($expr:expr, $($pat:tt)+) => {
+             _tt_as_expr_hack! {
+                match $expr {
+                    $($pat)+ => true,
+                    _        => false
+                }
+            }
+        }
+    }
+    // Work around "error: unexpected token: `an interpolated tt`", whatever that
+    // means. (Probably rust-lang/rust#22819.)
+    #[doc(hidden)]
+    #[macro_export]
+    macro_rules! _tt_as_expr_hack {
+        ($value:expr) => ($value)
+    }
 
     #[test]
     fn single_column_table_initialised_empty() {
@@ -798,5 +823,8 @@ mod tests {
         new_values.insert("a".to_string(), vec![1, 2, 3]);
         new_values.insert("b".to_string(), vec![4, 5, 6]);
         table.insert(&mut new_values);
+        assert!(matches!(table.get_col("a".to_string()), Some(ref _col)));
+        assert!(matches!(table.get_col("b".to_string()), Some(ref _col)));
+        assert!(matches!(table.get_col("c".to_string()), None));
     }
 }
