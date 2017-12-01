@@ -333,7 +333,7 @@ pub mod db {
     
     impl Table {
         pub fn new() -> Table {
-            Table { count: 0, a: Col { v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree { root: None } }, columns: HashMap::new() }
+            Table { count: 0, a: Col { v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree::new() }, columns: HashMap::new() }
         }
     }
     
