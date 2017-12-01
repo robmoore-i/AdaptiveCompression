@@ -323,6 +323,7 @@ pub mod avl {
 pub mod db {
     use avl::*;
     use std::collections::HashMap;
+    use std::slice::Iter;
 
     #[derive(Clone)]
     pub struct Col<T:Ord+Copy> {
@@ -413,12 +414,12 @@ pub mod db {
             self.columns.get(&col)
         }
 
-        pub fn get_indices(&self, indices: Vec<usize>) -> Table {
+        pub fn get_indices(&self, indices: Iter<usize>) -> Table {
             let mut clone = self.clone(); // TODO: Performance issue in this clone
             for col in clone.columns.values_mut() {
                 let mut indexed_v = Vec::with_capacity(indices.len());
-                for i in &indices {
-                    indexed_v.push(col.v[*i]);
+                for &i in indices.clone() {
+                    indexed_v.push(col.v[i]);
                 }
                 col.v = indexed_v;
             }
@@ -435,11 +436,16 @@ pub mod db {
                             index.push(i);
                         }
                     }
-                    self.get_indices(index)
+                    self.get_indices(index.iter())
                 }
                 None => panic!("select_in_two: No such column"), // TODO: Improve exception handling here
             }
         }
+
+//        pub fn crack_between(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
+//            let indices = self.cracker_select_in_three(low, high, inc_l, inc_h);
+//            self.get_indices(indices)
+//        }
 
         // Selects elements of T between LOW and HIGH - inclusivity determined by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> &[i64] {
@@ -872,7 +878,7 @@ mod tests {
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
         table.insert(&mut new_values);
-        let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11]);
+        let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
         let a = selection.get_col("a".to_string());
         let b = selection.get_col("b".to_string());
         match a {
@@ -892,6 +898,7 @@ mod tests {
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
         table.insert(&mut new_values);
+        table.set_crk_col("a".to_string());
         table
     }
 
@@ -913,12 +920,24 @@ mod tests {
 
     #[test]
     fn can_set_cracked_column() {
-        let mut table = two_col_test_table();
-        table.set_crk_col("a".to_string());
-        let a = match table.get_col("a".to_string()) {
-            Some(ref c) => *c,
-            None        => panic!("Test failed"),
+        let table = two_col_test_table();
+        match table.get_col("a".to_string()) {
+            Some(ref c) => assert_eq!(table.crk_col.v, c.v),
+            None        => assert!(false),
         };
-        assert_eq!(table.crk_col.v, a.v);
     }
+
+//    #[test]
+//    fn crack_returns_indices_into_base_columns() {
+//        let mut table = two_col_test_table();
+//        let selection = table.crack_between(10, 14, false, false);
+//        match table.get_col("a".to_string()) {
+//            Some(ref c) => assert_eq!(c.v, vec![13, 12, 11]),
+//            None        => assert!(false),
+//        };
+//        match table.get_col("b".to_string()) {
+//            Some(ref c) => assert_eq!(c.v, vec![1,  1,  1]),
+//            None        => assert!(false),
+//        };
+//    }
 }
