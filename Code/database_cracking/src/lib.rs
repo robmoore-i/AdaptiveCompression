@@ -566,7 +566,7 @@ mod tests {
         ($value:expr) => ($value)
     }
 
-    fn test_table() -> Table {
+    fn one_col_test_table() -> Table {
         let mut table = Table::new();
         table.new_columns(vec!["a".to_string()]);
         let mut new_values = HashMap::new();
@@ -606,7 +606,7 @@ mod tests {
     
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(10, 14, false, false);
             assert_eq!(*selection, [13, 12, 11]);
@@ -616,7 +616,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_can_utilise_previous_queries() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             table.cracker_select_in_three(10, 14, false, false);
             assert!(table.crk_col.crk_idx.contains(11));
@@ -629,7 +629,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_low() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(3, 7, true, false);
             assert_eq!(*selection, [4, 6, 3]);
@@ -639,7 +639,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_high() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(13, 19, false, true);
             assert_eq!(*selection, [19, 16, 14]);
@@ -649,7 +649,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_both() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(1, 6, true, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2]);
@@ -659,7 +659,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(7, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
@@ -669,7 +669,7 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table_not_inclusive() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(10, false);
             assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
@@ -679,7 +679,7 @@ mod tests {
     
     #[test]
     fn cracker_select_in_two_can_utilise_previous_queries() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             table.cracker_select_in_three(10, 14, false, false);
             let selection = table.cracker_select_in_two(7, false);
@@ -690,7 +690,7 @@ mod tests {
     
     #[test]
     fn cracker_select_in_three_after_crack_in_two() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             table.cracker_select_in_two(7, true);
             let selection = table.cracker_select_in_three(6, 11, true, false);
@@ -701,7 +701,7 @@ mod tests {
     
     #[test]
     fn crack_in_two_above_upper_limit() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(25, true);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
@@ -711,7 +711,7 @@ mod tests {
     
     #[test]
     fn crack_in_two_below_lower_limit() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_two(-5, true);
             assert_eq!(*selection, []);
@@ -721,7 +721,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_above_upper_limit() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(14, 25, true, false);
             assert_eq!(*selection, [19, 16, 14]);
@@ -731,7 +731,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_below_lower_limit() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(-5, 4, true, false);
             assert_eq!(*selection, [3, 1, 2]);
@@ -741,7 +741,7 @@ mod tests {
     
     #[test]
     fn crack_in_three_select_enture_column() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(-50, 200, false, false);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
@@ -751,7 +751,7 @@ mod tests {
     
     #[test]
     fn can_crack_in_three_over_three_queries() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             table.cracker_select_in_three(10, 14, false, false);
             let s1 = table.cracker_select_in_three(3, 11, false, true);
@@ -766,7 +766,7 @@ mod tests {
     
     #[test]
     fn can_crack_in_two_over_three_queries() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(10, true);
             assert_eq!(*s1, [6, 8, 4, 9, 2, 3, 7, 1]);
@@ -784,7 +784,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_upper_bound() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(19, true);
             assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
@@ -798,7 +798,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_upper_bound() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(19, false);
             assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 6, 3, 14, 11, 8]);
@@ -812,7 +812,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_lower_bound() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(1, true);
             assert_eq!(*s1, [1]);
@@ -826,7 +826,7 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_lower_bound() {
-        let mut table = test_table();
+        let mut table = one_col_test_table();
         {
             let s1 = table.cracker_select_in_two(2, false);
             assert_eq!(*s1, [1]);
@@ -885,14 +885,19 @@ mod tests {
         }
     }
 
-    #[test]
-    fn can_select_from_multi_column_table() {
+    fn two_col_test_table() -> Table {
         let mut table = Table::new();
         table.new_columns(vec!["a".to_string(), "b".to_string()]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
         table.insert(&mut new_values);
+        table
+    }
+
+    #[test]
+    fn can_select_from_multi_column_table() {
+        let table = two_col_test_table();
         let selection = table.select_in_two("a".to_string(), 10);
         let a = selection.get_col("a".to_string());
         let b = selection.get_col("b".to_string());
@@ -908,12 +913,7 @@ mod tests {
 
     #[test]
     fn can_set_cracked_column() {
-        let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string()]);
-        let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
-        table.insert(&mut new_values);
+        let mut table = two_col_test_table();
         table.set_crk_col("a".to_string());
         let a = match table.get_col("a".to_string()) {
             Some(ref c) => *c,
