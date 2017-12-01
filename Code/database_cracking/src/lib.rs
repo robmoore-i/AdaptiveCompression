@@ -566,6 +566,16 @@ mod tests {
         ($value:expr) => ($value)
     }
 
+    fn test_table() -> Table {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        table.insert(&mut new_values);
+        table.set_crk_col("a".to_string());
+        table
+    }
+
     #[test]
     fn single_column_table_initialised_empty() {
         let table = Table::new();
@@ -596,16 +606,8 @@ mod tests {
     
     #[test]
     fn cracker_select_in_three_from_single_column_table() {
-        let mut table = Table::new();
-        table.new_columns(vec!["a".to_string()]);
-        let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        table.insert(&mut new_values);
-        table.set_crk_col("a".to_string());
+        let mut table = test_table();
         {
-            println!();
-            println!("count:{}", table.count);
-            println!("crk_col.v:{:?}", table.crk_col.v);
             let selection = table.cracker_select_in_three(10, 14, false, false);
             assert_eq!(*selection, [13, 12, 11]);
         }
@@ -614,9 +616,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_can_utilise_previous_queries() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             table.cracker_select_in_three(10, 14, false, false);
             assert!(table.crk_col.crk_idx.contains(11));
             assert!(table.crk_col.crk_idx.contains(15));
@@ -628,9 +629,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_low() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(3, 7, true, false);
             assert_eq!(*selection, [4, 6, 3]);
         }
@@ -639,9 +639,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_high() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(13, 19, false, true);
             assert_eq!(*selection, [19, 16, 14]);
         }
@@ -650,9 +649,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_three_from_single_column_table_inc_both() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(1, 6, true, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2]);
         }
@@ -661,9 +659,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_two(7, true);
             assert_eq!(*selection, [6, 3, 4, 1, 2, 7]);
         }
