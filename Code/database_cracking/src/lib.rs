@@ -350,7 +350,14 @@ pub mod db {
             }
         }
     }
-
+    
+    // Tagged union for database types
+    #[derive(PartialEq, PartialOrd)]
+    pub enum Field {
+        I(i64),
+        F(f64),
+    }
+    
     #[derive(Clone)]
     pub struct Table {
         pub count: usize,
@@ -426,7 +433,6 @@ pub mod db {
                     indexed_v.push(col.v[i]);
                 }
                 col.v = indexed_v;
-                println!("col.v:{:?}", col.v);
             }
 
             let mut indexed_crk_v   = Vec::with_capacity(indices.len());
@@ -587,6 +593,7 @@ pub mod db {
 #[cfg(test)]
 mod tests {
     use db::*;
+    use db::Field::I;
     use std::collections::HashMap;
 
     // I credit these two macros (matches, _tt_as_expr_hack) to this chap:
@@ -970,5 +977,22 @@ mod tests {
             Some(ref c) => assert_eq!(c.v, vec![1,  1,  1]),
             None        => assert!(false),
         };
+    }
+    
+    fn float_test_table() -> Table {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![]); //vec![2.34, 5.67, 1.22, 8.46, 9.12, 14.20, 1.12, 0.89]);
+        table.insert(&mut new_values);
+        table.set_crk_col("a".to_string());
+        table
+    }
+    
+    #[test]
+    fn can_compare_i_fields() {
+        let x: Field = I(5);
+        let y: Field = I(7);
+        assert!(x < y);
     }
 }
