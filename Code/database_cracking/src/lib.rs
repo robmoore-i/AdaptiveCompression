@@ -365,12 +365,24 @@ pub mod db {
 
         pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
             for (key, val) in self.columns.iter_mut() {
-                val.v.append(new_values.get_mut(key).expect("Key missing from new_values on insert"));
+                val.v.append(new_values.get_mut(key).expect("insert: new_values doesn't have values for all columns"));
             }
         }
 
         pub fn get_col(&self, col: String) -> Option<&Col<i64>> {
             self.columns.get(&col)
+        }
+
+        pub fn get_indices(&self, indices: Vec<usize>) -> Table {
+            let mut clone = self.clone();
+            for col in clone.columns.values_mut() {
+                let mut indexed_v = Vec::with_capacity(indices.len());
+                for i in &indices {
+                    indexed_v.push(col.v[*i]);
+                }
+                col.v = indexed_v;
+            }
+            clone
         }
     }
     
@@ -826,5 +838,26 @@ mod tests {
         assert!(matches!(table.get_col("a".to_string()), Some(ref _col)));
         assert!(matches!(table.get_col("b".to_string()), Some(ref _col)));
         assert!(matches!(table.get_col("c".to_string()), None));
+    }
+
+    #[test]
+    fn can_index_into_multi_column_table() {
+        let mut table = Table::new();
+        table.new_columns(vec!["a".to_string(), "b".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
+        table.insert(&mut new_values);
+        let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11]);
+        let a = selection.get_col("a".to_string());
+        let b = selection.get_col("b".to_string());
+        match a {
+            Some(ref col) => assert_eq!(col.v, vec![13, 16, 12, 19, 14, 11]),
+            None          => assert!(false),
+        }
+        match b {
+            Some(ref col) => assert_eq!(col.v, vec![1, 1, 1, 1, 1, 1]),
+            None          => assert!(false),
+        }
     }
 }
