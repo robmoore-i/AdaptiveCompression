@@ -328,12 +328,18 @@ pub mod db {
     pub struct Table {
         pub count: u64,
         pub a: Col<i64>,
-        pub columns: HashMap<&'static str, Col<i64>>,
+        pub columns: HashMap<String, Col<i64>>,
     }
     
     impl Table {
         pub fn new() -> Table {
-            Table { count: 0, a: Col { v: Vec::new(), crk: Vec::new(), crk_idx: AVLTree::new() }, columns: HashMap::new() }
+            Table { count: 0, a: Col::empty(), columns: HashMap::new() }
+        }
+        
+        pub fn new_columns(&mut self, col_names: Vec<String>) {
+            for col in col_names {
+                self.columns.insert(col, Col::empty());
+            }
         }
 
         pub fn standard_insert(&mut self, v: &mut Vec<i64>) {
@@ -368,6 +374,16 @@ pub mod db {
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
         pub crk_idx: AVLTree<T, usize>,
+    }
+    
+    impl <T:Ord+Copy> Col<T> {
+        pub fn empty() -> Col<T> {
+            Col {
+                v: Vec::new(),
+                crk:Vec::new(),
+                crk_idx: AVLTree::new()
+            }
+        }    
     }
     
     // Selects elements of T between LOW and HIGH - inclusivity determined by INC_H and INC_L.
@@ -755,7 +771,13 @@ mod tests {
     }
     
     #[test]
-    fn can_select_from_table_of_multiple_columns() {
+    fn can_create_table_with_three_columns() {
         let mut table = Table::new();
+        table.new_columns(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let mut keys = Vec::new();
+        for key in table.columns.keys() {
+            keys.push(key);
+        }
+        assert_eq!(keys, vec![&"c".to_string(), &"b".to_string(), &"a".to_string()]);
     }
 }
