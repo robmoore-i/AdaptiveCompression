@@ -594,6 +594,7 @@ pub mod db {
 mod tests {
     use db::*;
     use db::Field::I;
+    use db::Field::F;
     use std::collections::HashMap;
 
     // I credit these two macros (matches, _tt_as_expr_hack) to this chap:
@@ -978,21 +979,18 @@ mod tests {
             None        => assert!(false),
         };
     }
-    
-    fn float_test_table() -> Table {
-        let mut table = Table::new();
-        table.new_columns(vec!["a".to_string()]);
-        let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![]); //vec![2.34, 5.67, 1.22, 8.46, 9.12, 14.20, 1.12, 0.89]);
-        table.insert(&mut new_values);
-        table.set_crk_col("a".to_string());
-        table
-    }
-    
+
     #[test]
     fn can_compare_i_fields() {
         let x: Field = I(5);
         let y: Field = I(7);
+        assert!(x < y);
+    }
+
+    #[test]
+    fn can_compare_f_fields() {
+        let x: Field = F(5.0);
+        let y: Field = F(5.5);
         assert!(x < y);
     }
 }
