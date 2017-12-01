@@ -376,27 +376,6 @@ pub mod db {
             }
         }
 
-        pub fn standard_insert(&mut self, v: &mut Vec<i64>) {
-            let n = v.len();
-            self.crk_col.v.append(v);
-            self.count += n;
-        }
-    
-        pub fn standard_select<F>(&self, constraint: F) -> Vec<i64>
-            where F: Fn(i64) -> bool {
-            // Specifying max capacity prevents reallocation.
-            let n = {
-                self.crk_col.v.len()
-            };
-            let mut selection = Vec::with_capacity(n);
-            for x in &self.crk_col.v {
-                if constraint(*x) {
-                    selection.push(*x);
-                }
-            }
-            selection
-        }
-
         pub fn set_crk_col(&mut self, col_name: String) {
             let col = match self.columns.get(&col_name) {
                 Some(ref c) => *c,
@@ -634,22 +613,6 @@ mod tests {
         assert_eq!(table.count, 0);
     }
     
-    #[test]
-    fn standard_insert_to_single_column_table() {
-        let mut table = Table::new();
-        table.standard_insert(&mut vec![1, 2, 3]);
-        assert_eq!(table.count, 3);
-        assert_eq!(table.crk_col.v, vec![1, 2, 3]);
-    }
-    
-    #[test]
-    fn standard_select_from_single_column_table() {
-        let mut table = Table::new();
-        table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        let selection = table.standard_select(|x| x > 10 && x < 14);
-        assert_eq!(selection, vec![13, 12, 11]);
-    }
-
     #[test]
     fn cracker_column_initialised_empty() {
         let table = Table::new();
