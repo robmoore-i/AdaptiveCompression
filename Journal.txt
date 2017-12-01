@@ -1,4 +1,6 @@
-## 1st December, 2017 - So far
+================================================
+## 1st December, 2017, after meeting with Holger
+================================================
 
 I have begun implementation of database cracking in Rust, which I chose
 because of the need for the implementation to be high performance and
@@ -39,3 +41,27 @@ algorithms paper shown to me by Holger.
 The next steps will be to benchmark what I've got right now using BFS and
 possibly experiement with using N-ary storage isntead of decomposed storage, 
 since adjacency lists do have only two columns.
+
+=================================================================================
+## 1st December, 2017, preparing to change columns from fixed i64 -> set of types
+=================================================================================
+
+I've defined a tagged union, Field, which currently has I(i64) and F(f64), in
+order to define float columns, which I'll need for benchmarking on algorithms
+other than BFS. In my view, to hardcode i64 into the code makes it all a bit
+pointless, because the overall system is impractical.
+
+The steps here will be to find all the places where i64 is depended on and replace
+them with Field and use rust's dynamic dispatch + compiler optimisations to cleanly
+make the switch.
+
+Furthermore, I'll need type checking around columns to ensure inserts are of the
+correct type by each column, which will involve adding a "type" field to the Col
+struct. I can here borrow the KDB idea of using a short integer as a type, or I
+could simply use a char.
+
+To sort out inclusivity, I'm going to keep my current method of using the cracker
+index to store v,p pairs such that all elements before p and strictly less than v.
+I'll use pattern matching to change the "adjusted_x" and upper_bound-using variables
+for inclusivity handling. An issue would be strings, but I have no need to crack on
+strings at the moment, so that's a problem I'm definitely going to evaluate lazily.
