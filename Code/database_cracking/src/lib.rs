@@ -329,12 +329,15 @@ pub mod db {
     pub struct Col<T:Ord+Copy> {
         // Original
         pub v: Vec<T>,
+        
         // Cracked
         pub crk: Vec<T>,
+        
         // Cracker index - for a value v, stores the index p such that
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
         pub crk_idx: AVLTree<T, usize>,
+        
         // Base index - maintains an index into the base columns of the table for alignment
         // during tuple reconstruction.
         pub base_idx: Vec<usize>,
