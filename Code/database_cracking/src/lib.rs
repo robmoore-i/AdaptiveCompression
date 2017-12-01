@@ -362,6 +362,12 @@ pub mod db {
             }
             selection
         }
+
+        pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
+            for (key, val) in self.columns.iter_mut() {
+                val.v.append(new_values.get_mut(key).expect("Key missing from new_values on insert"));
+            }
+        }
     }
     
     #[derive(Clone)]
@@ -787,9 +793,10 @@ mod tests {
     #[test]
     fn can_insert_into_multi_column_table() {
         let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        table.new_columns(vec!["a".to_string(), "b".to_string()]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![1, 2, 3]);
         new_values.insert("b".to_string(), vec![4, 5, 6]);
+        table.insert(&mut new_values);
     }
 }
