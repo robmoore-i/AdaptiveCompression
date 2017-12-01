@@ -1,7 +1,5 @@
 === In order ===
 
-- Make both crack_in_x methods return an index onto the base columns for tuple reconstruction.
-
 - Change implementation to work for float columns (may require changes to inclusivity handling)
 
 - Further change it to work for generic types implementing Ord (will be a hard fight vs compiler)
@@ -11,3 +9,5 @@
 - Prove correctness for crack_in three and crack_in_two
 
 - Cracked update, insert, delete? Perhaps later for further benchmarks.
+
+- Possibly implement sideways cracking
