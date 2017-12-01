@@ -669,9 +669,8 @@ mod tests {
 
     #[test]
     fn cracker_select_in_two_from_single_column_table_not_inclusive() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_two(10, false);
             assert_eq!(*selection, [6, 8, 4, 9, 2, 3, 7, 1]);
         }
@@ -680,9 +679,8 @@ mod tests {
     
     #[test]
     fn cracker_select_in_two_can_utilise_previous_queries() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             table.cracker_select_in_three(10, 14, false, false);
             let selection = table.cracker_select_in_two(7, false);
             assert_eq!(*selection, [6, 4, 3, 2, 1]);
@@ -692,9 +690,8 @@ mod tests {
     
     #[test]
     fn cracker_select_in_three_after_crack_in_two() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             table.cracker_select_in_two(7, true);
             let selection = table.cracker_select_in_three(6, 11, true, false);
             assert_eq!(*selection, [6, 7, 8, 9]);
@@ -704,9 +701,8 @@ mod tests {
     
     #[test]
     fn crack_in_two_above_upper_limit() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_two(25, true);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
@@ -715,9 +711,8 @@ mod tests {
     
     #[test]
     fn crack_in_two_below_lower_limit() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_two(-5, true);
             assert_eq!(*selection, []);
         }
@@ -726,9 +721,8 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_above_upper_limit() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(14, 25, true, false);
             assert_eq!(*selection, [19, 16, 14]);
         }
@@ -737,9 +731,8 @@ mod tests {
     
     #[test]
     fn crack_in_three_between_value_within_column_and_below_lower_limit() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(-5, 4, true, false);
             assert_eq!(*selection, [3, 1, 2]);
         }
@@ -748,9 +741,8 @@ mod tests {
     
     #[test]
     fn crack_in_three_select_enture_column() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let selection = table.cracker_select_in_three(-50, 200, false, false);
             assert_eq!(*selection, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
@@ -759,9 +751,8 @@ mod tests {
     
     #[test]
     fn can_crack_in_three_over_three_queries() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             table.cracker_select_in_three(10, 14, false, false);
             let s1 = table.cracker_select_in_three(3, 11, false, true);
             assert_eq!(*s1, [6, 7, 4, 8, 9, 11]);
@@ -775,9 +766,8 @@ mod tests {
     
     #[test]
     fn can_crack_in_two_over_three_queries() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = table.cracker_select_in_two(10, true);
             assert_eq!(*s1, [6, 8, 4, 9, 2, 3, 7, 1]);
         }
@@ -794,9 +784,8 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_upper_bound() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = table.cracker_select_in_two(19, true);
             assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         }
@@ -809,9 +798,8 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_upper_bound() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = table.cracker_select_in_two(19, false);
             assert_eq!(*s1, [13, 16, 4, 9, 2, 12, 7, 1, 6, 3, 14, 11, 8]);
         }
@@ -824,9 +812,8 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_at_lower_bound() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = table.cracker_select_in_two(1, true);
             assert_eq!(*s1, [1]);
         }
@@ -839,9 +826,8 @@ mod tests {
     
     #[test]
     fn cracker_index_handles_inclusivity_close_to_lower_bound() {
-        let mut table = Table::new();
+        let mut table = test_table();
         {
-            table.standard_insert(&mut vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
             let s1 = table.cracker_select_in_two(2, false);
             assert_eq!(*s1, [1]);
         }
