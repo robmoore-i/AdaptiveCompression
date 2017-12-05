@@ -4,3 +4,11 @@ version = "0.1.0"
 authors = ["Rob <robmoore121@gmail.com>"]
 
 [dependencies]
+
+[lib]
+name = "cracking"
+path = "src/lib.rs"
+
+[[bin]]
+name = "benchmark"
+path = "src/bm.rs"
