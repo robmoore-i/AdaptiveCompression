@@ -352,9 +352,22 @@ pub mod db {
                 base_idx: Vec::new()
             }
         }
+
+        pub fn rearrange(&mut self, indices: Iter<usize>) {
+            let mut replacement_v = Vec::with_capacity(self.v.len());
+            for &i in indices.clone() {
+                replacement_v.push(self.v[i]);
+            }
+            self.v = replacement_v;
+
+            // Optimise
+            self.crk = Vec::new();
+            self.crk_idx = AVLTree::new();
+            self.base_idx = Vec::new();
+        }
     }
     
-    // Tagged union for database types
+    // Tagged union for database types. Not used yet.
     #[derive(PartialEq, PartialOrd)]
     pub enum Field {
         I(i64),
@@ -408,7 +421,7 @@ pub mod db {
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
-            let mut clone = self.clone(); // TODO: Performance issue in this clone
+            let mut clone = self.clone(); // Optimise
             for col in clone.columns.values_mut() {
                 let mut indexed_v = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
@@ -433,6 +446,13 @@ pub mod db {
             }
             clone.crk_col.v = indexed_crk_v;
             clone
+        }
+
+        pub fn rearrange(&mut self, indices: Iter<usize>) {
+            for col in self.columns.values_mut() {
+                col.rearrange(indices.clone());
+            }
+            self.crk_col.rearrange(indices.clone());
         }
 
         pub fn select_in_two(&self, col: String, strictly_less_than: i64) -> Table {
@@ -958,5 +978,19 @@ mod tests {
         let x: Field = F(5.0);
         let y: Field = F(5.5);
         assert!(x < y);
+    }
+
+    #[test]
+    fn can_rearrange_tuples() {
+        let mut table = two_col_test_table();
+        table.rearrange(vec![3, 5, 12, 6, 8, 13, 10, 9, 4, 11, 0, 1, 2, 7].iter());
+        match table.get_col("a".to_string()) {
+            Some(ref c) => assert_eq!(c.v, vec![9, 12, 8, 7, 19, 6, 14, 3, 2, 11, 13, 16, 4, 1]),
+            None        => assert!(false),
+        };
+        match table.get_col("b".to_string()) {
+            Some(ref c) => assert_eq!(c.v, vec![0, 1,  0, 0, 1,  0, 1,  0, 0, 1,  1,  1,  0, 0]),
+            None        => assert!(false),
+        };
     }
 }
