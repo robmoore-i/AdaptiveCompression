@@ -4,20 +4,28 @@ extern crate rand;
 use cracking::db::*;
 use std::collections::HashMap;
 use std::iter;
+use rand::Rng;
 
 fn main() {
     let n = 5;
-    let mut t = fully_connected_graph(n);
-    let selection = t.select_in_two("src".to_string(), n+1);
+    let mut adjacency_list = randomly_connected_graph(n);
+    let selection = adjacency_list.select_in_two("src".to_string(), n+1);
+    let start_node;
     match selection.get_col("src".to_string()) {
-        Some(ref col) => println!("src = {:?}", col.v),
-        None          => println!("src failed"),
+        Some(ref src) => {
+            println!("src = {:?}", src.v);
+            start_node = *rand::thread_rng().choose(&src.v).unwrap();
+        },
+        None          => {
+            println!("src failed");
+            start_node = 3;
+        },
     }
     match selection.get_col("dst".to_string()) {
-        Some(ref col) => println!("dst = {:?}", col.v),
+        Some(ref dst) => println!("dst = {:?}", dst.v),
         None          => println!("dst failed"),
     }
-    bfs(&mut t, 3);
+    bfs(&mut adjacency_list, start_node);
 }
 
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.
@@ -39,8 +47,8 @@ fn deal(n: usize) -> Vec<usize> {
     dealing_usize
 }
 
-// A randomly shuffled adjacency list representing a complete graph for n nodes, columns are src, dst,
-// and src is the cracked column.
+// Returns a randomly shuffled adjacency list representing a complete graph for n nodes,
+// columns are src, dst. src is the cracked column.
 fn fully_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(vec!["src".to_string(), "dst".to_string()]);
@@ -60,13 +68,41 @@ fn fully_connected_graph(n: i64) -> Table {
     t
 }
 
+// Returns a connected graph for n nodes, which are numbered 1-n inclusive
+fn randomly_connected_graph(n: i64) -> Table {
+    // Add a random edge and node in a loop until all the nodes are created
+    // Continue to add edges until there are e of them
+    let mut t = Table::new();
+    t.new_columns(vec!["src".to_string(), "dst".to_string()]);
+    let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
+    let mut nodes: Vec<i64> = Vec::with_capacity(n as usize);
+    nodes.push(*rand::thread_rng().choose(&all_nodes).unwrap());
+    while nodes.len() < n as usize {
+        let rand_src = *rand::thread_rng().choose(&nodes).unwrap();
+        let rand_dst = *rand::thread_rng().choose(&all_nodes).unwrap();
+        if rand_src != rand_dst {
+            if !nodes.contains(&rand_dst) {
+                nodes.push(rand_dst);
+            }
+            let mut connections = HashMap::new();
+            connections.insert("src".to_string(), vec![rand_src]);
+            connections.insert("dst".to_string(), vec![rand_dst]);
+            t.insert(&mut connections);
+        }
+    }
+    t.set_crk_col("src".to_string());
+    let t_count = t.count;
+    t.rearrange(deal(t_count).iter());
+    t
+}
+
 // Given a 2-column ADJACENCY_LIST of src_node!dst_node, this function
 // visits every node in the graph from START_NODE.
 fn bfs(adjacency_list: &mut Table, start_node: i64) {
     let mut frontier = vec![start_node];
     let mut visited = Vec::new();
     while !frontier.is_empty() {
-        println!("Visited {:?}", frontier);
+        println!("Visited {:?} ; Visiting {:?}", visited, frontier);
         // Add visited nodes
         visited.append(&mut frontier.clone());
         let prev_frontier = frontier.clone();
@@ -74,9 +110,10 @@ fn bfs(adjacency_list: &mut Table, start_node: i64) {
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            match adjacency_list.cracker_select_in_three(src - 1, src + 1, false, false).get_col("dst".to_string()) {
+            match adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()) {
                 Some(ref col) => for dst in col.v.clone() {
-                    if !visited.contains(&dst) {
+                    if !visited.contains(&dst) && !frontier.contains(&dst) {
+                        println!("Discovered {}", dst);
                         frontier.push(dst);
                     }
                 },
@@ -84,4 +121,5 @@ fn bfs(adjacency_list: &mut Table, start_node: i64) {
             }
         }
     }
+    println!("Visited {:?}", visited);
 }
