@@ -84,12 +84,16 @@ fn randomly_connected_graph(n: i64) -> Table {
             if !nodes.contains(&rand_dst) {
                 nodes.push(rand_dst);
             }
+            if !nodes.contains(&rand_src) {
+                nodes.push(rand_src);
+            }
             let mut connections = HashMap::new();
-            connections.insert("src".to_string(), vec![rand_src]);
-            connections.insert("dst".to_string(), vec![rand_dst]);
+            connections.insert("src".to_string(), vec![rand_src, rand_dst]);
+            connections.insert("dst".to_string(), vec![rand_dst, rand_src]);
             t.insert(&mut connections);
         }
     }
+    let src_nodes = t.get_col("src".to_string()).unwrap().v.clone();
     t.set_crk_col("src".to_string());
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());
