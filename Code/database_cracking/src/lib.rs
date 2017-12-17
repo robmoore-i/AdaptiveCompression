@@ -1032,12 +1032,13 @@ mod tests {
         let mut adjacency_list = complete_graph_adjacency_list();
         let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
         match selection.get_col("src".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![3, 3, 3, 3]),
+            Some(ref src) => assert_eq!(src.v, vec![3, 3, 3, 3]),
             None        => assert!(false),
         };
         match selection.get_col("dst".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![2, 1, 4, 5]),
+            Some(ref dst) => assert_eq!(dst.v, vec![2, 1, 4, 5]),
             None        => assert!(false),
         };
+        assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
     }
 }
