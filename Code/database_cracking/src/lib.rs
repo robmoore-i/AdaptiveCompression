@@ -497,17 +497,23 @@ pub mod db {
             println!("p_high:{}", p_high);
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
-            while c_low(self.crk_col.crk[p_low]) && p_low < self.count - 1 {
+            while c_low(self.crk_col.crk[p_low]) {
                 p_low += 1;
+                if p_low == self.count as usize {
+                    return self.get_indices(self.crk_col.base_idx[0..0].iter());
+                }
             }
 
             // while p_high is pointing at an element satisfying c_high, move it backwards
-            while c_high(self.crk_col.crk[p_high]) && p_high > 0 {
+            while c_high(self.crk_col.crk[p_high]) {
                 p_high -= 1;
+                if p_high == 0 && c_high(self.crk_col.crk[p_high]) {
+                    return self.get_indices(self.crk_col.base_idx[0..0].iter());
+                }
             }
 
             if p_low == p_high {
-                return self.get_indices(self.crk_col.base_idx[0..0].iter());
+                return self.get_indices(self.crk_col.base_idx[p_low..(p_high+1)].iter());
             }
 
             let mut p_itr = p_low.clone();
@@ -575,7 +581,7 @@ pub mod db {
             // while p_high is pointing at an element already outside the catchment, move it backwards
             while !cond(self.crk_col.crk[p_high]) {
                 p_high -= 1;
-                if p_high == 0 {
+                if p_high == 0 && !cond(self.crk_col.crk[p_high]) {
                     return self.get_indices(self.crk_col.base_idx[0..0].iter());
                 }
             }
@@ -1025,7 +1031,7 @@ mod tests {
     }
 
     #[test]
-    fn can_exploit_cracker_index_for_selecting_single_value() {
+    fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
         let mut adjacency_list
             = adjacency_list_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
                                    vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
@@ -1047,5 +1053,33 @@ mod tests {
         assert_base_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
         // After the BFS the cracker column should be fully clustered
         assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
+    }
+
+    #[test]
+    fn can_exploit_cracker_index_for_selecting_single_value_small_table() {
+        let mut adjacency_list
+        = adjacency_list_table(vec![4, 4, 4, 2, 4, 3],
+                               vec![3, 3, 2, 1, 5, 4]);
+
+        let selection_1 = adjacency_list.cracker_select_in_three(3, 3, true, true);
+        assert_base_column_equals(selection_1.clone(), "src", vec![3]);
+        assert_base_column_equals(selection_1.clone(), "dst", vec![4]);
+
+        let selection_2 = adjacency_list.cracker_select_in_three(4, 4, true, true);
+        assert_base_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
+        assert_base_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
+
+        println!("src: {:?}", adjacency_list.crk_col.crk);
+        println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
+
+        let selection_3 = adjacency_list.cracker_select_in_three(2, 2, true, true);
+        assert_base_column_equals(selection_3.clone(), "src", vec![2]);
+        assert_base_column_equals(selection_3.clone(), "dst", vec![1]);
+
+        let selection_4 = adjacency_list.cracker_select_in_three(5, 5, true, true);
+        assert_base_column_equals(selection_4.clone(), "src", vec![]);
+        assert_base_column_equals(selection_4.clone(), "dst", vec![]);
+        // After the BFS the cracker column should be fully clustered
+        assert_eq!(adjacency_list.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
     }
 }
