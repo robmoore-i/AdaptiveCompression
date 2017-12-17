@@ -492,10 +492,6 @@ pub mod db {
             let mut p_low  = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
 
-            println!("three: Initially:");
-            println!("p_low:{}", p_low);
-            println!("p_high:{}", p_high);
-
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) {
                 p_low += 1;
@@ -540,9 +536,6 @@ pub mod db {
             self.crk_col.crk_idx.insert(adjusted_low, p_low);
             let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
             self.crk_col.crk_idx.insert(high + !inc_h as i64, high_ptr);
-            println!("three: Finally:");
-            println!("p_low:{}", p_low);
-            println!("p_high:{}", p_high);
             self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
         }
 
@@ -562,11 +555,6 @@ pub mod db {
             let mut p_low  = 0;
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
 
-            println!("two: Initially:");
-            println!("p_low:{}", p_low);
-            println!("p_high:{}", p_high);
-
-            println!("med:{}", med);
             // Save p_low for later:
             let initial_p_low = p_low.clone();
 
@@ -597,9 +585,6 @@ pub mod db {
                     p_high -= 1;
                 }
             }
-            println!("two: Finally:");
-            println!("p_low:{}", p_low);
-            println!("p_high:{}", p_high);
             self.crk_col.crk_idx.insert(adjusted_med, p_low);
             self.get_indices(self.crk_col.base_idx[initial_p_low..p_low].iter())
         }
