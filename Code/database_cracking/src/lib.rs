@@ -499,13 +499,11 @@ pub mod db {
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) && p_low < self.count - 1 {
                 p_low += 1;
-                println!("p_low  = {}", p_low);
             }
 
             // while p_high is pointing at an element satisfying c_high, move it backwards
             while c_high(self.crk_col.crk[p_high]) && p_high > 0 {
                 p_high -= 1;
-                println!("p_high = {}", p_high);
             }
 
             if p_low == p_high {
@@ -1031,13 +1029,23 @@ mod tests {
         let mut adjacency_list
             = adjacency_list_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
                                    vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
-        adjacency_list.cracker_select_in_three(5, 5, true, true);
-        adjacency_list.cracker_select_in_three(2, 2, true, true);
-        adjacency_list.cracker_select_in_three(1, 1, true, true);
-        let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
-        assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3]);
-        assert_base_column_equals(selection.clone(), "dst", vec![4, 5, 5]);
-        // After the BFS the adjacency list should be fully clustered
+
+        let selection_1 = adjacency_list.cracker_select_in_three(5, 5, true, true);
+        assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+
+        let selection_2 = adjacency_list.cracker_select_in_three(2, 2, true, true);
+        assert_base_column_equals(selection_2.clone(), "src", vec![2]);
+        assert_base_column_equals(selection_2.clone(), "dst", vec![1]);
+
+        let selection_3 = adjacency_list.cracker_select_in_three(1, 1, true, true);
+        assert_base_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
+        assert_base_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
+
+        let selection_4 = adjacency_list.cracker_select_in_three(3, 3, true, true);
+        assert_base_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
+        assert_base_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
+        // After the BFS the cracker column should be fully clustered
         assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
     }
 }
