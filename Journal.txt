@@ -105,7 +105,4 @@ check on the BFS implementation and make sure it's all 100% halal.
 
 Single values have caused a problem because they are messing with boundary
 checking of indices. I think I have now resolved all the issues, but time will
-tell. I need to finish the algorithm for creating randomly shuffled, simply
-connected graphs, and preferably add a way to specify sparseness. From there I
-need to get a benchmarking technique and apply it, then look into pre-clustering
-edges and also writing a version of BFS which is totally unoptimised.
+tell.
