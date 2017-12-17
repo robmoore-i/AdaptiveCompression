@@ -67,7 +67,7 @@ for inclusivity handling. An issue would be strings, but I have no need to crack
 strings at the moment, so that's a problem I'm definitely going to evaluate lazily.
 
 =========================================================================
-## Sunday 17th December, 2017, just started back on after finishing exams 
+## Saturday 16th December, 2017, just started back on after finishing exams 
 =========================================================================
 
 Picking back up where I left off before being rudely interrupted by exams, I am
@@ -84,8 +84,17 @@ e) On-line clustering + RLE on source nodes (using cracking)
 I got some BFS code compiling and running pretty quickly actually, but I've found
 another edge case in my cracking implementation that I need to patch up, so I'll
 fix that tomorrow. I don't know what the problem is, but I'm going to wait for
-tomorrow because it's 1:40am and I need to sleep.
+tomorrow because it's 1:40am (On Sunday) and I need to sleep.
 
 After I've got it working, edge cases and all, I'll want to find a way to do
 benchmarks on the rust code, so that I have a fair way of comparing the different
 optimisation methods.
+
+=====================================================================
+## Sunday 17th December, 2017, fixed failing edge case from yesterday
+=====================================================================
+
+I fixed the edge case and retained previous passing tests by making p_itr catch up
+with p_low if it ever fell behind. I improved the test I added to make sure
+cracking was working properly on the whole column, and indeed it's fine. Will now
+check on the BFS implementation and make sure it's all 100% halal.
