@@ -1,6 +1,6 @@
-================================================
-## 1st December, 2017, after meeting with Holger
-================================================
+=======================================================
+## Friday 1st December, 2017, after meeting with Holger
+=======================================================
 
 I have begun implementation of database cracking in Rust, which I chose
 because of the need for the implementation to be high performance and
@@ -42,9 +42,9 @@ The next steps will be to benchmark what I've got right now using BFS and
 possibly experiement with using N-ary storage isntead of decomposed storage, 
 since adjacency lists do have only two columns.
 
-=================================================================================
-## 1st December, 2017, preparing to change columns from fixed i64 -> set of types
-=================================================================================
+========================================================================================
+## Friday 1st December, 2017, preparing to change columns from fixed i64 -> set of types
+========================================================================================
 
 I've defined a tagged union, Field, which currently has I(i64) and F(f64), in
 order to define float columns, which I'll need for benchmarking on algorithms
@@ -65,3 +65,27 @@ index to store v,p pairs such that all elements before p and strictly less than 
 I'll use pattern matching to change the "adjusted_x" and upper_bound-using variables
 for inclusivity handling. An issue would be strings, but I have no need to crack on
 strings at the moment, so that's a problem I'm definitely going to evaluate lazily.
+
+=========================================================================
+## Sunday 17th December, 2017, just started back on after finishing exams 
+=========================================================================
+
+Picking back up where I left off before being rudely interrupted by exams, I am
+implementing BFS for my newly created, shuffled adjacency list, using cracking.
+I'm looking to perform benchmarks for:
+a) No optimisations at all (control)
+b) Before-hand clustering on source nodes
+c) Before-hand clustering + RLE on source nodes
+d) On-line clustering on source nodes (using cracking)
+e) On-line clustering + RLE on source nodes (using cracking)
+
+(c) and (e) may require changes to my cracking implementation => time consuming.
+
+I got some BFS code compiling and running pretty quickly actually, but I've found
+another edge case in my cracking implementation that I need to patch up, so I'll
+fix that tomorrow. I don't know what the problem is, but I'm going to wait for
+tomorrow because it's 1:40am and I need to sleep.
+
+After I've got it working, edge cases and all, I'll want to find a way to do
+benchmarks on the rust code, so that I have a fair way of comparing the different
+optimisation methods.
