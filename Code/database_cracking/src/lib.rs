@@ -606,7 +606,6 @@ pub mod db {
     }
 }
 
-// Tests
 #[cfg(test)]
 mod tests {
     use db::*;
