@@ -474,7 +474,6 @@ pub mod db {
         // Returns indices of the base columns such that crk_col's values are between LOW and HIGH
         // with inclusivity determined by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
-            println!();
             // If column hasn't been cracked before, copy it, and copy a reference to the current
             // indices of the base table.
             if self.crk_col.crk.len() == 0 {
@@ -482,20 +481,12 @@ pub mod db {
                 self.crk_col.base_idx = (0..self.count).collect();
             }
 
-            println!("cracker column: {:?}", self.crk_col.crk);
-
             let adjusted_low  = low  + !inc_l as i64;
             let adjusted_high = high - !inc_h as i64;
             // c_low(x)  <=> x outside catchment at low  end
             // c_high(x) <=> x outside catchment at high end
             #[inline] let c_low =  |x| x < adjusted_low;
             #[inline] let c_high = |x| x > adjusted_high;
-            
-            println!("c_low(1)={} ; c_high(1)={}", c_low(1), c_high(1));
-            println!("c_low(2)={} ; c_high(2)={}", c_low(2), c_high(2));
-            println!("c_low(3)={} ; c_high(3)={}", c_low(3), c_high(3));
-            println!("c_low(4)={} ; c_high(4)={}", c_low(4), c_high(4));
-            println!("c_low(5)={} ; c_high(5)={}", c_low(5), c_high(5));
 
             // Start with a pointer at both ends of the array: p_low, p_high
             let mut p_low  = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
@@ -510,20 +501,14 @@ pub mod db {
                 p_low += 1;
             }
 
-            println!("p_low moved to:{}", p_low);
-
             // while p_high is pointing at an element satisfying c_high, move it backwards
             while c_high(self.crk_col.crk[p_high]) {
                 p_high -= 1;
             }
 
-            println!("p_high moved to:{}", p_high);
-
             let mut p_itr = p_low.clone();
             while p_itr <= p_high {
-                println!("{:?}", self.crk_col.crk);
                 if c_low(self.crk_col.crk[p_itr]) {
-                    println!("Swapping low  {}@{} and {}@{}", self.crk_col.crk[p_itr], p_itr, self.crk_col.crk[p_low], p_low);
                     self.crk_col.crk.swap(p_low, p_itr);
                     self.crk_col.base_idx.swap(p_low, p_itr);
                     while c_low(self.crk_col.crk[p_low]) {
@@ -532,15 +517,12 @@ pub mod db {
                     if p_itr < p_low {
                         p_itr = p_low.clone();
                     }
-                    println!("p_low: {}", p_low);
                 } else if c_high(self.crk_col.crk[p_itr]) {
-                    println!("Swapping high {}@{} and {}@{}", self.crk_col.crk[p_itr], p_itr, self.crk_col.crk[p_high], p_high);
                     self.crk_col.crk.swap(p_itr, p_high);
                     self.crk_col.base_idx.swap(p_itr, p_high);
                     while c_high(self.crk_col.crk[p_high]) {
                         p_high -= 1;
                     }
-                    println!("p_high: {}", p_high);
                 } else {
                     p_itr += 1;
                 }
