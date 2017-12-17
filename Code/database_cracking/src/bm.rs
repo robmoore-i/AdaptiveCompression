@@ -1,21 +1,24 @@
 extern crate cracking;
 extern crate rand;
+extern crate time;
 
 use cracking::db::*;
 use std::collections::HashMap;
 use std::iter;
 use rand::Rng;
+use time::PreciseTime;
 
 fn main() {
-    let n = 100;
+    bfs_random_adaptive(100);
+}
+
+fn bfs_random_adaptive(n: i64) {
     let mut adjacency_list = randomly_connected_graph(n);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
-    let visited_order = bfs(&mut adjacency_list, start_node);
-    println!("Edge count: {}", adjacency_list.count);
-    println!("Visiting order: {:?}", visited_order);
-    println!("Cracker column: {:?}", adjacency_list.crk_col.crk);
-    println!("Base column: {:?}", adjacency_list.crk_col.v);
+    let start = PreciseTime::now(); bfs(&mut adjacency_list, start_node);
+    let end = PreciseTime::now();
+    println!("[BFS ; randomly connected graph ; adaptive clustering] Edge count: {} ; Running time: {}", adjacency_list.count, start.to(end));
 }
 
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.

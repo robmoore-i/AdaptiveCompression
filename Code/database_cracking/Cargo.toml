@@ -5,6 +5,7 @@ authors = ["Rob <robmoore121@gmail.com>"]
 
 [dependencies]
 rand = "0.3"
+time = "*"
 
 [lib]
 name = "cracking"
