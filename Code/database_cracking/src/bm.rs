@@ -18,12 +18,14 @@ fn main() {
     time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list, start_node);
 }
 
+// Times a given bfs function against a given adjacency list using a given start node.
 fn time_bfs<F>(name: &str, mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
     let start = PreciseTime::now(); bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
     println!("{}: {}", name, start.to(end));
 }
 
+// Finds the directed density of a graph with n nodes and e edges. Returned as a float.
 fn graph_density(n: i64, e: usize) -> f64 {
     (e as f64) / ((n * (n - 1)) as f64)
 }
