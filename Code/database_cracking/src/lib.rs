@@ -497,13 +497,19 @@ pub mod db {
             println!("p_high:{}", p_high);
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
-            while c_low(self.crk_col.crk[p_low]) {
+            while c_low(self.crk_col.crk[p_low]) && p_low < self.count - 1 {
                 p_low += 1;
+                println!("p_low  = {}", p_low);
             }
 
             // while p_high is pointing at an element satisfying c_high, move it backwards
-            while c_high(self.crk_col.crk[p_high]) {
+            while c_high(self.crk_col.crk[p_high]) && p_high > 0 {
                 p_high -= 1;
+                println!("p_high = {}", p_high);
+            }
+
+            if p_low == p_high {
+                return self.get_indices(self.crk_col.base_idx[0..0].iter());
             }
 
             let mut p_itr = p_low.clone();
@@ -528,7 +534,8 @@ pub mod db {
                 }
             }
             self.crk_col.crk_idx.insert(adjusted_low, p_low);
-            self.crk_col.crk_idx.insert(high + !inc_h as i64, p_itr);
+            let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
+            self.crk_col.crk_idx.insert(high + !inc_h as i64, high_ptr);
             println!("three: Finally:");
             println!("p_low:{}", p_low);
             println!("p_high:{}", p_high);
@@ -571,7 +578,7 @@ pub mod db {
             while !cond(self.crk_col.crk[p_high]) {
                 p_high -= 1;
                 if p_high == 0 {
-                    return  self.get_indices(self.crk_col.base_idx[0..0].iter());
+                    return self.get_indices(self.crk_col.base_idx[0..0].iter());
                 }
             }
 
@@ -917,42 +924,35 @@ mod tests {
         table
     }
 
+    fn assert_base_column_equals(t: Table, column_name: &str, expected: Vec<i64>) {
+        match t.get_col(column_name.to_string()) {
+            Some(ref col) => assert_eq!(col.v, expected),
+            None          => assert!(false),
+        }
+    }
+
     #[test]
     fn can_index_into_multi_column_table() {
         let table = two_col_test_table();
         let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
-        match selection.get_col("a".to_string()) {
-            Some(ref col) => assert_eq!(col.v, vec![13, 16, 12, 19, 14, 11]),
-            None          => assert!(false),
-        }
-        match selection.get_col("b".to_string()) {
-            Some(ref col) => assert_eq!(col.v, vec![1, 1, 1, 1, 1, 1]),
-            None          => assert!(false),
-        }
+        assert_base_column_equals(selection.clone(), "a", vec![13, 16, 12, 19, 14, 11]);
+        assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1, 1, 1, 1]);
     }
 
     #[test]
     fn can_select_from_multi_column_table() {
         let table = two_col_test_table();
         let selection = table.select_in_two("a".to_string(), 10);
-        let a = selection.get_col("a".to_string());
-        let b = selection.get_col("b".to_string());
-        match a {
-            Some(ref col) => assert_eq!(col.v, vec![4, 9, 2, 7, 1, 3, 8, 6]),
-            None          => assert!(false),
-        }
-        match b {
-            Some(ref col) => assert_eq!(col.v, vec![0, 0, 0, 0, 0, 0, 0, 0]),
-            None          => assert!(false),
-        }
+        assert_base_column_equals(selection.clone(), "a", vec![4, 9, 2, 7, 1, 3, 8, 6]);
+        assert_base_column_equals(selection.clone(), "b", vec![0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
     fn can_set_cracked_column() {
         let table = two_col_test_table();
         match table.get_col("a".to_string()) {
-            Some(ref c) => assert_eq!(table.crk_col.v, c.v),
-            None        => assert!(false),
+            Some(ref col) => assert_eq!(table.crk_col.v, col.v),
+            None          => assert!(false),
         };
     }
 
@@ -960,14 +960,8 @@ mod tests {
     fn crack_returns_indices_into_base_columns() {
         let mut table = two_col_test_table();
         let selection = table.cracker_select_in_three(10, 14, false, false);
-        match selection.get_col("a".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![13, 12, 11]),
-            None        => assert!(false),
-        };
-        match selection.get_col("b".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![1,  1,  1]),
-            None        => assert!(false),
-        };
+        assert_base_column_equals(selection.clone(), "a", vec![13, 12, 11]);
+        assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1]);
     }
 
     #[test]
@@ -988,39 +982,62 @@ mod tests {
     fn can_rearrange_tuples() {
         let mut table = two_col_test_table();
         table.rearrange(vec![3, 5, 12, 6, 8, 13, 10, 9, 4, 11, 0, 1, 2, 7].iter());
-        match table.get_col("a".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![9, 12, 8, 7, 19, 6, 14, 3, 2, 11, 13, 16, 4, 1]),
-            None        => assert!(false),
-        };
-        match table.get_col("b".to_string()) {
-            Some(ref c) => assert_eq!(c.v, vec![0, 1,  0, 0, 1,  0, 1,  0, 0, 1,  1,  1,  0, 0]),
-            None        => assert!(false),
-        };
+        assert_base_column_equals(table.clone(), "a", vec![9, 12, 8, 7, 19, 6, 14, 3, 2, 11, 13, 16, 4, 1]);
+        assert_base_column_equals(table.clone(), "b", vec![0, 1,  0, 0, 1,  0, 1,  0, 0, 1,  1,  1,  0, 0]);
     }
 
-    fn complete_graph_adjacency_list() -> Table {
-        let mut table = Table::new();
-        table.new_columns(vec!["src".to_string(), "dst".to_string()]);
+    fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> Table {
+        let mut adjacency_list = Table::new();
+        adjacency_list.new_columns(vec!["src".to_string(), "dst".to_string()]);
         let mut new_values = HashMap::new();
-        new_values.insert("src".to_string(), vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5]);
-        new_values.insert("dst".to_string(), vec![3, 5, 5, 3, 4, 1, 2, 5, 2, 5, 2, 1, 2, 4, 1, 4, 3, 1, 3, 4]);
-        table.insert(&mut new_values);
-        table.set_crk_col("src".to_string());
-        table
+        new_values.insert("src".to_string(), src);
+        new_values.insert("dst".to_string(), dst);
+        adjacency_list.insert(&mut new_values);
+        adjacency_list.set_crk_col("src".to_string());
+        adjacency_list
     }
 
     #[test]
     fn can_crack_in_three_for_single_value() {
-        let mut adjacency_list = complete_graph_adjacency_list();
+        let mut adjacency_list
+            = adjacency_list_table(vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5],
+                                   vec![3, 5, 5, 3, 4, 1, 2, 5, 2, 5, 2, 1, 2, 4, 1, 4, 3, 1, 3, 4]);
         let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
-        match selection.get_col("src".to_string()) {
-            Some(ref src) => assert_eq!(src.v, vec![3, 3, 3, 3]),
-            None        => assert!(false),
-        };
-        match selection.get_col("dst".to_string()) {
-            Some(ref dst) => assert_eq!(dst.v, vec![2, 1, 4, 5]),
-            None        => assert!(false),
-        };
+        assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
+        assert_base_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
         assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
+    }
+
+    #[test]
+    fn can_crack_in_three_for_single_value_out_of_lower_bound() {
+        let mut adjacency_list = adjacency_list_table(vec![4, 4, 3, 3, 4, 4], vec![4, 2, 1, 4, 3, 5]);
+        let selection = adjacency_list.cracker_select_in_three(1, 1, true, true);
+        assert_base_column_equals(selection.clone(), "src", vec![]);
+        assert_base_column_equals(selection.clone(), "dst", vec![]);
+        assert_eq!(adjacency_list.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
+    }
+
+    #[test]
+    fn can_crack_in_three_for_single_value_out_of_upper_bound() {
+        let mut adjacency_list = adjacency_list_table(vec![2, 2, 4, 3, 2, 2], vec![3, 2, 1, 5, 4, 4]);
+        let selection = adjacency_list.cracker_select_in_three(5, 5, true, true);
+        assert_base_column_equals(selection.clone(), "src", vec![]);
+        assert_base_column_equals(selection.clone(), "dst", vec![]);
+        assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
+    }
+
+    #[test]
+    fn can_exploit_cracker_index_for_selecting_single_value() {
+        let mut adjacency_list
+            = adjacency_list_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
+                                   vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
+        adjacency_list.cracker_select_in_three(5, 5, true, true);
+        adjacency_list.cracker_select_in_three(2, 2, true, true);
+        adjacency_list.cracker_select_in_three(1, 1, true, true);
+        let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
+        assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3]);
+        assert_base_column_equals(selection.clone(), "dst", vec![4, 5, 5]);
+        // After the BFS the adjacency list should be fully clustered
+        assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
     }
 }
