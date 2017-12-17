@@ -993,4 +993,21 @@ mod tests {
             None        => assert!(false),
         };
     }
+
+    fn complete_graph_adjacency_list() -> Table {
+        let mut table = Table::new();
+        table.new_columns(vec!["src".to_string(), "dst".to_string()]);
+        let mut new_values = HashMap::new();
+        new_values.insert("src".to_string(), vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5]);
+        new_values.insert("dst".to_string(), vec![3, 5, 5, 3, 4, 1, 2, 5, 2, 5, 2, 1, 2, 4, 1, 4, 3, 1, 3, 4]);
+        table.insert(&mut new_values);
+        table.set_crk_col("src".to_string());
+        table
+    }
+
+    #[test]
+    fn can_crack_in_three_for_single_value() {
+        let mut adjacency_list = complete_graph_adjacency_list();
+        adjacency_list.cracker_select_in_three(2, 4, false, false);
+    }
 }
