@@ -9,13 +9,16 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 100;
+    let n = 5;
     let mut adjacency_list = randomly_connected_graph(n);
+    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
+    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
     println!("nodes: {} ; edges: {} ; density: {}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-    time_bfs("adaptive   ", adaptive_bfs, &mut adjacency_list, start_node);
-    time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list, start_node);
+//    time_bfs("adaptive   ", adaptive_bfs, &mut adjacency_list.clone(), start_node);
+//    time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
+    preclustered_bfs(&mut adjacency_list, start_node);
 }
 
 // Times a given bfs function against a given adjacency list using a given start node.
@@ -106,7 +109,7 @@ fn randomly_connected_graph(n: i64) -> Table {
 // Returns the nodes visited in the order in which they were visited.
 fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
-    let mut visited = Vec::new();
+    let mut visited  = Vec::new();
     while !frontier.is_empty() {
         // Add visited nodes
         visited.append(&mut frontier.clone());
@@ -129,10 +132,10 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 }
 
 fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let mut frontier = vec![start_node];
-    let mut visited = Vec::new();
     let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
     let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let mut frontier = vec![start_node];
+    let mut visited  = Vec::new();
     while !frontier.is_empty() {
         visited.append(&mut frontier.clone());
         let prev_frontier = frontier.clone();
@@ -143,6 +146,41 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
                     let dst = dst_col[i];
                     if !visited.contains(&dst) && !frontier.contains(&dst) {
                         frontier.push(dst);
+                    }
+                }
+            }
+        }
+    }
+    visited
+}
+
+// This is pure bs, fix pls
+fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
+    let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let mut row_store: Vec<(i64, i64)> = Vec::with_capacity(adjacency_list.count);
+    for i in 0..adjacency_list.count {
+        row_store.push((src_col[i], dst_col[i]));
+    }
+    row_store.sort_by_key(|&k|k.0);
+    for i in 0..adjacency_list.count {
+        src_col[i] = row_store[i].0;
+        dst_col[i] = row_store[i].1;
+    }
+    let mut frontier = vec![start_node];
+    let mut visited  = Vec::new();
+    while !frontier.is_empty() {
+        println!("Visited: {:?} ; Visiting: {:?}", visited, frontier);
+        visited.append(&mut frontier.clone());
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            for i in 0..src_col.len() {
+                if src_col[i] == src {
+                    let dst = dst_col[i];
+                    if !visited.contains(&dst) && !frontier.contains(&dst) {
+                        frontier.push(dst);
+                        println!("Discovered {}", dst);
                     }
                 }
             }
