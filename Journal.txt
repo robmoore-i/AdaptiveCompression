@@ -106,3 +106,9 @@ check on the BFS implementation and make sure it's all 100% halal.
 Single values have caused a problem because they are messing with boundary
 checking of indices. I think I have now resolved all the issues, but time will
 tell.
+
+I have also implemented the beginnings of a benchmarking system for this,
+where first-class functions have been very useful. From a few runs with graphs
+of 100 nodes, adaptive clustering is about twice as fast as unoptimised vector
+scanning. I will do pre-clustering tomorrow, because for I'll want to include
+in my measurement for it the time taken to sort the vector.
