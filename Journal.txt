@@ -112,3 +112,19 @@ where first-class functions have been very useful. From a few runs with graphs
 of 100 nodes, adaptive clustering is about twice as fast as unoptimised vector
 scanning. I will do pre-clustering tomorrow, because for I'll want to include
 in my measurement for it the time taken to sort the vector.
+
+===============================================================
+## Thursday 21st December, 2017, Got a preclustered BFS working
+===============================================================
+
+Did some some dirty while loop hack to get BFS working for the preclustering
+variant of BFS. It works well with the benchmarks and I've checked it for
+correctness on large inputs, so that's all good. In terms of benchmarks, for
+a single run it performs slightly better than adaptive clustering for n=100
+which I've tested it on. For tiny inputs (<10) unoptimised is best - for a
+similar reason I imagine to why naive NLJ is best for joining tiny
+relations - less overhead.
+
+My current implementation for generating random connected graphs is
+painfully slow for >200 nodes, so I'll need to fix that in order to get some results for properly big inputs rather than the baby stuff I've got
+going at the moment.
