@@ -9,7 +9,7 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 100; // More than 200 tanks `randomly_connected_graph(n) below.
+    let n = 200; // More than 200 tanks `randomly_connected_graph(n) below.
     let adjacency_list = randomly_connected_graph(n);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
@@ -179,7 +179,7 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
                 Ok(i) => {
                     let mut inc_idx = i.clone();
                     let mut dec_idx = i.clone();
-                    while true {
+                    loop {
                         let dst = dst_col[inc_idx];
                         if !visited.contains(&dst) && !frontier.contains(&dst) {
                             frontier.push(dst);
