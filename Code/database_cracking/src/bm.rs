@@ -13,8 +13,8 @@ fn main() {
     let adjacency_list = randomly_connected_graph(n);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
-    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
-    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
+//    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
+//    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
     println!("nodes: {} ; edges: {} ; density: {}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
     time_bfs("adaptive    ", adaptive_bfs, &mut adjacency_list.clone(), start_node);
     time_bfs("unoptimised ", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
@@ -27,7 +27,7 @@ fn time_bfs<F>(name: &str, mut bfs: F, mut adjacency_list: &mut Table, start_nod
     let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
     println!("{}: {}", name, start.to(end));
-    println!("visited: {:?}", visited);
+//    println!("visited: {:?}", visited);
 }
 
 // Finds the directed density of a graph with n nodes and e edges. Returned as a float.
@@ -105,9 +105,19 @@ fn randomly_connected_graph(n: i64) -> Table {
     t
 }
 
-// Given a 2-column ADJACENCY_LIST of src_node!dst_node, this function visits every node in the
-// graph from START_NODE.
-// Returns the nodes visited in the order in which they were visited.
+/* BFS:
+    Given a 2-column ADJACENCY_LIST of src_node!dst_node, this function visits every node in the
+    graph from START_NODE.
+
+    Returns the nodes visited in the order in which they were visited.
+*/
+
+fn discover(dst: i64, visited: &mut Vec<i64>, frontier: &mut Vec<i64>) {
+    if !visited.contains(&dst) && !frontier.contains(&dst) {
+        frontier.push(dst);
+    }
+}
+
 fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited  = Vec::new();
@@ -121,9 +131,7 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         for src in prev_frontier {
             match adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()) {
                 Some(ref col) => for dst in col.v.clone() {
-                    if !visited.contains(&dst) && !frontier.contains(&dst) {
-                        frontier.push(dst);
-                    }
+                    discover(dst, &mut visited, &mut frontier);
                 },
                 None => panic!("bfs: No dst column in crack_in_three result for src node {}", src),
             }
@@ -144,10 +152,7 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         for src in prev_frontier {
             for i in 0..src_col.len() {
                 if src_col[i] == src {
-                    let dst = dst_col[i];
-                    if !visited.contains(&dst) && !frontier.contains(&dst) {
-                        frontier.push(dst);
-                    }
+                    discover(dst_col[i], &mut visited, &mut frontier);
                 }
             }
         }
@@ -180,10 +185,7 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
                     let mut inc_idx = i.clone();
                     let mut dec_idx = i.clone();
                     loop {
-                        let dst = dst_col[inc_idx];
-                        if !visited.contains(&dst) && !frontier.contains(&dst) {
-                            frontier.push(dst);
-                        }
+                        discover(dst_col[inc_idx], &mut visited, &mut frontier);
                         inc_idx += 1;
                         if inc_idx >= src_col.len() {
                             break;
@@ -192,10 +194,7 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
                         }
                     }
                     while src_col[dec_idx] == src {
-                        let dst = dst_col[dec_idx];
-                        if !visited.contains(&dst) && !frontier.contains(&dst) {
-                            frontier.push(dst);
-                        }
+                        discover(dst_col[dec_idx], &mut visited, &mut frontier);
                         if dec_idx == 0 {
                             break;
                         } else {
