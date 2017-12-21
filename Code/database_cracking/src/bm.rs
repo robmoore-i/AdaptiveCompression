@@ -9,23 +9,25 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 5;
-    let mut adjacency_list = randomly_connected_graph(n);
-    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
-    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
+    let n = 100; // More than 200 tanks `randomly_connected_graph(n) below.
+    let adjacency_list = randomly_connected_graph(n);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
+    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
+    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
     println!("nodes: {} ; edges: {} ; density: {}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-//    time_bfs("adaptive   ", adaptive_bfs, &mut adjacency_list.clone(), start_node);
-//    time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
-    preclustered_bfs(&mut adjacency_list, start_node);
+    time_bfs("adaptive    ", adaptive_bfs, &mut adjacency_list.clone(), start_node);
+    time_bfs("unoptimised ", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
+    time_bfs("preclustered", preclustered_bfs, &mut adjacency_list.clone(), start_node);
 }
 
 // Times a given bfs function against a given adjacency list using a given start node.
 fn time_bfs<F>(name: &str, mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
-    let start = PreciseTime::now(); bfs(&mut adjacency_list, start_node);
+    let start = PreciseTime::now();
+    let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
     println!("{}: {}", name, start.to(end));
+    println!("visited: {:?}", visited);
 }
 
 // Finds the directed density of a graph with n nodes and e edges. Returned as a float.
@@ -73,10 +75,9 @@ fn fully_connected_graph(n: i64) -> Table {
     t
 }
 
-// Returns a connected graph for n nodes, which are numbered 1-n inclusive
+// Returns a connected graph for n nodes, which are numbered 1-n inclusive.
+// This is slow af.
 fn randomly_connected_graph(n: i64) -> Table {
-    // Add a random edge and node in a loop until all the nodes are created
-    // Continue to add edges until there are e of them
     let mut t = Table::new();
     t.new_columns(vec!["src".to_string(), "dst".to_string()]);
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
@@ -154,7 +155,6 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     visited
 }
 
-// This is pure bs, fix pls
 fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
     let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
@@ -167,22 +167,43 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         src_col[i] = row_store[i].0;
         dst_col[i] = row_store[i].1;
     }
+
     let mut frontier = vec![start_node];
     let mut visited  = Vec::new();
     while !frontier.is_empty() {
-        println!("Visited: {:?} ; Visiting: {:?}", visited, frontier);
         visited.append(&mut frontier.clone());
         let prev_frontier = frontier.clone();
         frontier.clear();
         for src in prev_frontier {
-            for i in 0..src_col.len() {
-                if src_col[i] == src {
-                    let dst = dst_col[i];
-                    if !visited.contains(&dst) && !frontier.contains(&dst) {
-                        frontier.push(dst);
-                        println!("Discovered {}", dst);
+            match src_col.binary_search(&src) {
+                Ok(i) => {
+                    let mut inc_idx = i.clone();
+                    let mut dec_idx = i.clone();
+                    while true {
+                        let dst = dst_col[inc_idx];
+                        if !visited.contains(&dst) && !frontier.contains(&dst) {
+                            frontier.push(dst);
+                        }
+                        inc_idx += 1;
+                        if inc_idx >= src_col.len() {
+                            break;
+                        } else if src_col[inc_idx] != src {
+                            break;
+                        }
                     }
-                }
+                    while src_col[dec_idx] == src {
+                        let dst = dst_col[dec_idx];
+                        if !visited.contains(&dst) && !frontier.contains(&dst) {
+                            frontier.push(dst);
+                        }
+                        if dec_idx == 0 {
+                            break;
+                        } else {
+                            dec_idx -= 1;
+                        }
+                    }
+                },
+                Err(_e) => panic!("preclustered_bfs: Binary search on a node that doesn't exist"),
             }
         }
     }
