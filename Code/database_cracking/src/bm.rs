@@ -9,7 +9,7 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 400; // More than 200 tanks `randomly_connected_graph(n) below.
+    let n = 5000;
     let start = PreciseTime::now();
     let adjacency_list = randomly_connected_graph(n);
     let end = PreciseTime::now();
@@ -89,24 +89,29 @@ fn fully_connected_graph(n: i64) -> Table {
 fn randomly_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(vec!["src".to_string(), "dst".to_string()]);
-    let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
-    let mut nodes: Vec<i64> = Vec::with_capacity(n as usize);
-    nodes.push(*rand::thread_rng().choose(&all_nodes).unwrap());
-    let mut src_col = Vec::new();
-    let mut dst_col = Vec::new();
-    while nodes.len() < n as usize {
-        let rand_src = *rand::thread_rng().choose(&nodes).unwrap();
-        let rand_dst = *rand::thread_rng().choose(&all_nodes).unwrap();
-        if rand_src != rand_dst {
-            if !nodes.contains(&rand_dst) {
-                nodes.push(rand_dst);
-            }
-            if !nodes.contains(&rand_src) {
-                nodes.push(rand_src);
-            }
-            src_col.append(&mut vec![rand_src, rand_dst]);
-            dst_col.append(&mut vec![rand_dst, rand_src]);
-        }
+    let mut add_order: Vec<i64> = deal(n as usize).iter().map(|x|1 + *x as i64).collect();
+
+    let node_1 = *rand::thread_rng().choose(&add_order).unwrap();
+    let mut node_2 = *rand::thread_rng().choose(&add_order).unwrap();
+    while node_2 == node_1 {
+        node_2 = *rand::thread_rng().choose(&add_order).unwrap();
+    }
+
+    let index_1 = add_order.iter().position(|node| *node == node_1).unwrap();
+    add_order.remove(index_1);
+    let index_2 = add_order.iter().position(|node| *node == node_2).unwrap();
+    add_order.remove(index_2);
+
+    let mut src_col = vec![node_1, node_2];
+    let mut dst_col = vec![node_2, node_1];
+    for src in add_order {
+        let dst = *rand::thread_rng().choose(&src_col).unwrap();
+
+        src_col.push(src);
+        dst_col.push(dst);
+
+        src_col.push(dst);
+        dst_col.push(src);
     }
     let mut connections = HashMap::new();
     connections.insert("src".to_string(), src_col);
