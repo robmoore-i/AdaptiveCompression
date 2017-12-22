@@ -150,3 +150,11 @@ vector representing the order in which they will be added to the accumulating
 graph, which is initialised as a single edge. Bidirectional edges are then added
 according to this order until they have all been added. The resulting graph is
 therefore definitely a tree, but every node can be reached from every other node.
+
+I have just now extracted some functions such that I can print a valid csv to
+stdout containing data for runtime tests for each method (adaptive, unoptimised,
+preclustering) for many different sparse graph sizes all at once. I will now
+write a shell script + q script + J script for putting this data into a file,
+reading into KDB, computing some analytics perhaps and creating an appropriate
+graph. I'll probably consult Holger on which graphs I should be producing and how
+I ought to analyse this data.
