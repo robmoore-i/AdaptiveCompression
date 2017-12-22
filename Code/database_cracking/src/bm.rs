@@ -9,19 +9,36 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 5000;
+    benchmark_sparse_bfs_csv(vec![200, 500, 1000]);
+}
+
+// Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
+// by each value of the list.
+// This function prints to stdout a valid csv file containing the results.
+fn benchmark_sparse_bfs_csv(ns: Vec<i64>) {
+    println!("nodes,edges,density,adaptive,unoptimised,preclustered");
+    for n in ns {
+        benchmark_sparse_bfs(n);
+    }
+}
+
+// Given a number of nodes N, produces a sparse connected graph of that many nodes and gets runtime
+// performance for each of adaptive, unoptimised and preclustering methods. It prints to stdout a
+// line of a csv file.
+fn benchmark_sparse_bfs(n: i64) {
     let start = PreciseTime::now();
     let adjacency_list = randomly_connected_graph(n);
     let end = PreciseTime::now();
-    println!("Time taken to build graph: {}", start.to(end));
+//    println!("Time taken to build graph: {}", start.to(end));
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
-//    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
-//    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
-    println!("nodes: {} ; edges: {} ; density: {}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-    time_bfs("adaptive    ", adaptive_bfs, &mut adjacency_list.clone(), start_node);
-    time_bfs("unoptimised ", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
+    //    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
+    //    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
+    print!("{},{},{}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
+    time_bfs("adaptive", adaptive_bfs, &mut adjacency_list.clone(), start_node);
+    time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
     time_bfs("preclustered", preclustered_bfs, &mut adjacency_list.clone(), start_node);
+    println!();
 }
 
 // Times a given bfs function against a given adjacency list using a given start node.
@@ -29,7 +46,7 @@ fn time_bfs<F>(name: &str, mut bfs: F, mut adjacency_list: &mut Table, start_nod
     let start = PreciseTime::now();
     let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
-    println!("{}: {}", name, start.to(end));
+    print!(",{}", start.to(end));
 //    println!("visited: {:?}", visited);
 }
 
