@@ -9,7 +9,7 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    benchmark_sparse_bfs_csv(vec![200, 500, 1000]);
+    benchmark_sparse_bfs_csv(vec![10, 20, 30, 40, 50, 60, 70, 80, 90]);
 }
 
 // Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
@@ -27,7 +27,7 @@ fn benchmark_sparse_bfs_csv(ns: Vec<i64>) {
 // line of a csv file.
 fn benchmark_sparse_bfs(n: i64) {
     let start = PreciseTime::now();
-    let adjacency_list = randomly_connected_graph(n);
+    let adjacency_list = randomly_connected_tree(n);
     let end = PreciseTime::now();
 //    println!("Time taken to build graph: {}", start.to(end));
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
@@ -35,14 +35,14 @@ fn benchmark_sparse_bfs(n: i64) {
     //    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
     //    println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
     print!("{},{},{}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-    time_bfs("adaptive", adaptive_bfs, &mut adjacency_list.clone(), start_node);
-    time_bfs("unoptimised", unoptimised_bfs, &mut adjacency_list.clone(), start_node);
-    time_bfs("preclustered", preclustered_bfs, &mut adjacency_list.clone(), start_node);
+    time_bfs(unoptimised_bfs,  &mut adjacency_list.clone(), start_node);
+    time_bfs(adaptive_bfs,     &mut adjacency_list.clone(), start_node);
+    time_bfs(preclustered_bfs, &mut adjacency_list.clone(), start_node);
     println!();
 }
 
 // Times a given bfs function against a given adjacency list using a given start node.
-fn time_bfs<F>(name: &str, mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
+fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
     let start = PreciseTime::now();
     let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
@@ -102,8 +102,7 @@ fn fully_connected_graph(n: i64) -> Table {
 }
 
 // Returns a connected graph for n nodes, which are numbered 1-n inclusive.
-// This is slow af.
-fn randomly_connected_graph(n: i64) -> Table {
+fn randomly_connected_tree(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(vec!["src".to_string(), "dst".to_string()]);
     let mut add_order: Vec<i64> = deal(n as usize).iter().map(|x|1 + *x as i64).collect();
