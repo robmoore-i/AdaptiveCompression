@@ -126,5 +126,27 @@ similar reason I imagine to why naive NLJ is best for joining tiny
 relations - less overhead.
 
 My current implementation for generating random connected graphs is
-painfully slow for >200 nodes, so I'll need to fix that in order to get some results for properly big inputs rather than the baby stuff I've got
-going at the moment.
+painfully slow for >200 nodes, so I'll need to fix that in order to get some
+results for properly big inputs rather than the baby stuff I've got going at
+the moment.
+
+======================================================================
+## Friday 22nd December, 2017, Sped up random connected graph creation
+======================================================================
+
+I made it go faster, so now 400 nodes is tolerable. I'm also noticing that as the
+number of nodes increasing, the % difference between adaptive clustering and
+preclustering is reducing, making me think that there may be a graph size at which
+adaptive clustering outperforms preclustering even for a single run of BFS. I won't
+be able to find out until it is much faster though because it is probably a few
+thousand nodes or more.
+
+To the benchmarking output I've also added a println! for how long it takes to build
+the adjacency list used in the test.
+
+I've now sped it up. The new implementation creates graphs which are far more
+sparse than the earlier, slower implementation. It now deals the nodes into a
+vector representing the order in which they will be added to the accumulating
+graph, which is initialised as a single edge. Bidirectional edges are then added
+according to this order until they have all been added. The resulting graph is
+therefore definitely a tree, but every node can be reached from every other node.
