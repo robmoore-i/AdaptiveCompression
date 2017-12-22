@@ -51,20 +51,21 @@ order to define float columns, which I'll need for benchmarking on algorithms
 other than BFS. In my view, to hardcode i64 into the code makes it all a bit
 pointless, because the overall system is impractical.
 
-The steps here will be to find all the places where i64 is depended on and replace
-them with Field and use rust's dynamic dispatch + compiler optimisations to cleanly
-make the switch.
+The steps here will be to find all the places where i64 is depended on and
+replace them with Field and use rust's dynamic dispatch + compiler
+optimisations to cleanly make the switch.
 
 Furthermore, I'll need type checking around columns to ensure inserts are of the
 correct type by each column, which will involve adding a "type" field to the Col
 struct. I can here borrow the KDB idea of using a short integer as a type, or I
 could simply use a char.
 
-To sort out inclusivity, I'm going to keep my current method of using the cracker
-index to store v,p pairs such that all elements before p and strictly less than v.
-I'll use pattern matching to change the "adjusted_x" and upper_bound-using variables
-for inclusivity handling. An issue would be strings, but I have no need to crack on
-strings at the moment, so that's a problem I'm definitely going to evaluate lazily.
+To sort out inclusivity, I'm going to keep my current method of using the
+cracker index to store v,p pairs such that all elements before p and strictly
+less than v. I'll use pattern matching to change the "adjusted_x" and
+upper_bound-using variables for inclusivity handling. An issue would be
+strings, but I have no need to crack on strings at the moment, so that's a
+problem I'm definitely going to evaluate lazily.
 
 =========================================================================
 ## Saturday 16th December, 2017, just started back on after finishing exams 
@@ -81,23 +82,23 @@ e) On-line clustering + RLE on source nodes (using cracking)
 
 (c) and (e) may require changes to my cracking implementation => time consuming.
 
-I got some BFS code compiling and running pretty quickly actually, but I've found
-another edge case in my cracking implementation that I need to patch up, so I'll
-fix that tomorrow. I don't know what the problem is, but I'm going to wait for
-tomorrow because it's 1:40am (On Sunday) and I need to sleep.
+I got some BFS code compiling and running pretty quickly actually, but I've
+found another edge case in my cracking implementation that I need to patch
+up, so I'll fix that tomorrow. I don't know what the problem is, but I'm going
+to wait for tomorrow because it's 1:40am (On Sunday) and I need to sleep.
 
 After I've got it working, edge cases and all, I'll want to find a way to do
-benchmarks on the rust code, so that I have a fair way of comparing the different
-optimisation methods.
+benchmarks on the rust code, so that I have a fair way of comparing the
+different optimisation methods.
 
 =====================================================================
 ## Sunday 17th December, 2017, fixed failing edge case from yesterday
 =====================================================================
 
-I fixed the edge case and retained previous passing tests by making p_itr catch up
-with p_low if it ever fell behind. I improved the test I added to make sure
-cracking was working properly on the whole column, and indeed it's fine. Will now
-check on the BFS implementation and make sure it's all 100% halal.
+I fixed the edge case and retained previous passing tests by making p_itr
+catch up with p_low if it ever fell behind. I improved the test I added to
+make sure cracking was working properly on the whole column, and indeed it's
+fine. Will now check on the BFS implementation and make sure it's 100% halal.
 
 =========================================================================
 ## Sunday 17th December, 2017, found and fixed many, many more edge cases
@@ -134,27 +135,32 @@ the moment.
 ## Friday 22nd December, 2017, Sped up random connected graph creation
 ======================================================================
 
-I made it go faster, so now 400 nodes is tolerable. I'm also noticing that as the
-number of nodes increasing, the % difference between adaptive clustering and
-preclustering is reducing, making me think that there may be a graph size at which
-adaptive clustering outperforms preclustering even for a single run of BFS. I won't
-be able to find out until it is much faster though because it is probably a few
-thousand nodes or more.
+I made it go faster, so now 400 nodes is tolerable. I'm also noticing that as
+the number of nodes increasing, the % difference between adaptive clustering
+and preclustering is reducing, making me think that there may be a graph size
+at which adaptive clustering outperforms preclustering even for a single run
+of BFS. I won't be able to find out until it is much faster though because it
+is probably a few thousand nodes or more.
 
-To the benchmarking output I've also added a println! for how long it takes to build
-the adjacency list used in the test.
+To the benchmarking output I've also added a println! for how long it takes
+to build the adjacency list used in the test.
 
 I've now sped it up. The new implementation creates graphs which are far more
 sparse than the earlier, slower implementation. It now deals the nodes into a
 vector representing the order in which they will be added to the accumulating
 graph, which is initialised as a single edge. Bidirectional edges are then added
 according to this order until they have all been added. The resulting graph is
-therefore definitely a tree, but every node can be reached from every other node.
+therefore definitely a tree, but every node can be reached from every other
+node.
 
 I have just now extracted some functions such that I can print a valid csv to
 stdout containing data for runtime tests for each method (adaptive, unoptimised,
 preclustering) for many different sparse graph sizes all at once. I will now
 write a shell script + q script + J script for putting this data into a file,
 reading into KDB, computing some analytics perhaps and creating an appropriate
-graph. I'll probably consult Holger on which graphs I should be producing and how
-I ought to analyse this data.
+graph. I'll probably consult Holger on which graphs I should be producing and
+how I ought to analyse this data.
+
+It's now at the stage where the benchmarking data I need will flow easily into
+the Code/database_cracking/bms/ folder, and I just need to make some graphs
+for it/compute some analytics.
