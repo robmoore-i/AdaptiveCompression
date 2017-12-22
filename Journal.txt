@@ -164,3 +164,36 @@ how I ought to analyse this data.
 It's now at the stage where the benchmarking data I need will flow easily into
 the Code/database_cracking/bms/ folder, and I just need to make some graphs
 for it/compute some analytics.
+
+I got some results for the node ranges:
+  10-100 in tens
+  100-1000 in  hundreds
+  1000-10000 in thousands
+
+0-10 nodes:
+  Unoptimised is the fastest.
+  Both unoptimised and preclustering are around 3x faster than adaptive.
+
+Preclustering is always fastest for graphs >10 nodes.
+
+10-100 nodes:
+  Unoptimised is faster than adaptive clustering by 3x at 10 nodes, reducing
+  to being <5% faster at 100 nodes.
+  Preclustering goes from being about 3x faster at 10 nodes to being 2.5x
+  faster at 100 nodes.
+
+Adaptive is always faster than unoptimised for graphs >100 nodes.
+
+200-900 nodes:
+  Adaptive is 1.4x faster than unoptimised at 200 nodes, increasing to about
+  2x at 900 nodes.
+  Preclustering is 2x as fast as adaptive at 200 nodes, which reduces fairly
+  slowly to being about 1.7x faster at 900 nodes.
+  
+1000-10000 nodes:
+  Adaptive remains about 2x faster than unoptimised.
+  Preclustering remains about 1.7x as fast as adaptive.
+
+I'm sure there are more conclusions to draw from this data, but I'll need more
+readings first, and I'll probably want to spend some time optimising all of
+them as much as I possibly can.
