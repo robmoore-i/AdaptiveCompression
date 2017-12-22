@@ -35,6 +35,12 @@ fn graph_density(n: i64, e: usize) -> f64 {
     (e as f64) / ((n * (n - 1)) as f64)
 }
 
+/* GRAPH BUILDING:
+    Given a number of nodes N for a graph
+
+    Returns an adjacency list (Table) for a connected graph with N nodes.
+*/
+
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.
 fn deal(n: usize) -> Vec<usize> {
     let mut dealing: Vec<i64> = Vec::with_capacity(n as usize);
