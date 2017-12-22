@@ -9,8 +9,11 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    let n = 200; // More than 200 tanks `randomly_connected_graph(n) below.
+    let n = 400; // More than 200 tanks `randomly_connected_graph(n) below.
+    let start = PreciseTime::now();
     let adjacency_list = randomly_connected_graph(n);
+    let end = PreciseTime::now();
+    println!("Time taken to build graph: {}", start.to(end));
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
 //    println!("src: {:?}", adjacency_list.get_col("src".to_string()).unwrap().v);
@@ -89,6 +92,8 @@ fn randomly_connected_graph(n: i64) -> Table {
     let all_nodes: Vec<i64> = (1..(n+1)).map(|x|x as i64).collect();
     let mut nodes: Vec<i64> = Vec::with_capacity(n as usize);
     nodes.push(*rand::thread_rng().choose(&all_nodes).unwrap());
+    let mut src_col = Vec::new();
+    let mut dst_col = Vec::new();
     while nodes.len() < n as usize {
         let rand_src = *rand::thread_rng().choose(&nodes).unwrap();
         let rand_dst = *rand::thread_rng().choose(&all_nodes).unwrap();
@@ -99,12 +104,14 @@ fn randomly_connected_graph(n: i64) -> Table {
             if !nodes.contains(&rand_src) {
                 nodes.push(rand_src);
             }
-            let mut connections = HashMap::new();
-            connections.insert("src".to_string(), vec![rand_src, rand_dst]);
-            connections.insert("dst".to_string(), vec![rand_dst, rand_src]);
-            t.insert(&mut connections);
+            src_col.append(&mut vec![rand_src, rand_dst]);
+            dst_col.append(&mut vec![rand_dst, rand_src]);
         }
     }
+    let mut connections = HashMap::new();
+    connections.insert("src".to_string(), src_col);
+    connections.insert("dst".to_string(), dst_col);
+    t.insert(&mut connections);
     t.set_crk_col("src".to_string());
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());
