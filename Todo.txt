@@ -1,0 +1,51 @@
+=== Working todo based off the initial plan ===
+
+Read up on the state-of-the-art
+  2017.12.23: Barely
+
+Research current in-memory representations of graph databases
+  2017.12.23: Barely
+
+For a given query determine the fix-point for the database. Attempt a prove
+that this is in fact optimal.
+  2017.12.23: No
+
+Develop algorithms which ensure that queries to the database bring the
+structure closer to the fix-point. Attempt to prove that they do.
+  2017.12.23: No
+
+Implement cracking for a RDB.
+  2017.12.23: crack_in_two and crack_in_three both done for decomposed
+              multi-column tables.
+
+Model a graph database system on the RDB.
+  2017.12.23: Supports selection and insertion only, and only selection uses
+              the cracker index.
+
+Implement some graph algorithms on the cracked graph wrapped RDB.
+  2017.12.23: BFS
+
+Get/generate some data for running some graph algorithms with a non-trivial
+running time.
+  2017.12.23: BFS
+
+Run some performance benchmarks with the graph algorithm implementations on the
+cracked RDB using the data.
+  2017.12.23: BFS
+
+Implement a minimal graph database and the algorithms defined earlier in some
+high-performance programming language (probably Rust)
+  2017.12.23: No
+
+Implement the earlier graph algorithms using this system.
+  2017.12.23: No
+
+Run performance benchmarks using the same data used to benchmark the RDB
+system.
+  2017.12.23: No
+
+Write up findings
+  2017.12.23: No
+
+Finished
+  2017.12.23: No

@@ -36,17 +36,17 @@ January 31st
 Delivery: A column store represented in the previously created program with two tables: An adjacency table and a vertex table, which should be demoed to be queriable and updatable.
 
 Febraury 2nd
-7. Implement pagerank on the cracked graph wrapped RDB.
+7. Implement some graph algorithms on the cracked graph wrapped RDB.
 	Three days - Page rank is not a very complex algorithm and this should not be difficult if I am not lazy.
 Delivery: A function within the previously created program which for a pair of tables G = (V, E) will compute the page rank of each vertex. This should be demoed for more than one input graph.
 
 Febraury 5th
-8. Get/generate some data for running the pagerank algorithm with a non-trivial running time.
+8. Get/generate some data for running some graph algorithms with a non-trivial running time.
 	Three days - I'm not sure how I would do this off the top of my head. Defensive allocation of two days for researching how to 
 	produce a good dataset for this test - it will be important.
 
 Febraury 8th
-9. Run some performance benchmarks on the pagerank implementation on the cracked RDB using the data.
+9. Run some performance benchmarks with the graph algorithm implementations on the cracked RDB using the data.
 	One day - Should be as simple as running `time ./runPagerankRDB`
 Delivery: Some running times for the pagerank implementation.
 
@@ -57,7 +57,7 @@ Febraury 9th
 Delivery: A progam which acts as a queriable, updateable graph database, implementing the performance improving algorithms defined earlier in the project. This should be demoed and it should also be shown that the algorithms do indeed make it faster in the expected way.
 
 March 23rd
-11. Implement pagerank using this system.
+11. Implement the earlier graph algorithms using this system.
 	Two weeks - There will likely be issues with the implementation that will reveal themselves at this stage and need ironing out, 
 	hence a more defensive time allocation.
 Delivery: A program conforming to the same specification as the one produced in step 7.
@@ -76,10 +76,10 @@ Delivery: A well written report with correct references, good diagrams and clear
 May 7th
 14. Finished
 
-Lower bound on completion date: 		May 7th
-Christmas, New year, being ill, hangovers: 	Two week allowance
-Upper bound on completion date: 		May 21st
+Lower bound on completion date: May 7th
+Christmas, New year, being ill, hangovers: Two week allowance
+Upper bound on completion date: May 21st
 
-Hard deadline: 					June 18th
+Hard deadline: June 18th
 
 Failure tolerance (from lower bound): 28 days.
