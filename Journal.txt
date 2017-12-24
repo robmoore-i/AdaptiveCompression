@@ -197,3 +197,12 @@ Adaptive is always faster than unoptimised for graphs >100 nodes.
 I'm sure there are more conclusions to draw from this data, but I'll need more
 readings first, and I'll probably want to spend some time optimising all of
 them as much as I possibly can.
+
+=======================================================================================
+## Sunday 24th December, 2017, Got a working and really nice graphing tool for the data
+=======================================================================================
+
+I've now set up a tool for plotting graphs using the collected benchmarking data with
+the three methods being plotted on the same set of axes. It uses the lovely HTML5/JS
+UI stuff and integrates into q and even works for multiple columns. Very nice. The
+github repo is: https://github.com/komsit37/qchart
