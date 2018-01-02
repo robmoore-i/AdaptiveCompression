@@ -206,3 +206,20 @@ I've now set up a tool for plotting graphs using the collected benchmarking data
 the three methods being plotted on the same set of axes. It uses the lovely HTML5/JS
 UI stuff and integrates into q and even works for multiple columns. Very nice. The
 github repo is: https://github.com/komsit37/qchart
+
+===============================================================================
+## Tuesday 2nd January, 2018, Enabled optimisations on compiler, it's very fast
+===============================================================================
+
+After enabling optimisations and getting some more results, I discovered that there is a
+very big performance difference between my stuff and the simpler methods. On debug-compiled
+code I was doing fine, but for my adaptive techniques it is massively slower than both
+unoptimised and preclustering technqiues by a lot. Preclustering runs on 10000 nodes faster
+than adaptive runs on 2000 nodes. Unoptimised is barely slower than preclustering, the
+overtake happens at aroud 500 nodes.
+
+This pretty much means I am going to have to spend a LOT of time optimising the cracking
+implementation and I'm probably also going to want to cut out a lot of wrapping and break
+down all the overhead and reduce the implementation to act as a way of manipulating lists
+of floats. This is now the next item on the agenda because this whole thing is just a joke
+if nested for loops are a 10x performance improvement on the complicated mess I spew out.
