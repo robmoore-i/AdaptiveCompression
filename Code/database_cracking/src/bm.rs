@@ -9,14 +9,14 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    benchmark_sparse_bfs_csv(vec![10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]);
+    benchmark_sparse_bfs_csv(vec![10, 100, 500, 1000]);
 }
 
 // Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
 // by each value of the list.
 // This function prints to stdout a valid csv file containing the results.
 fn benchmark_sparse_bfs_csv(ns: Vec<i64>) {
-    println!("nodes,edges,density,adaptive,unoptimised,preclustered");
+    println!("nodes,edges,density,unoptimised,adaptive,preclustered");
     for n in ns {
         benchmark_sparse_bfs(n);
     }
@@ -163,12 +163,15 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            match adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()) {
-                Some(ref col) => for dst in col.v.clone() {
-                    discover(dst, &mut visited, &mut frontier);
-                },
-                None => panic!("bfs: No dst column in crack_in_three result for src node {}", src),
+            for dst in (*(adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()).unwrap())).v.clone() {
+                discover(dst, &mut visited, &mut frontier);
             }
+//            match adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()) {
+//                Some(ref col) => for dst in col.v.clone() {
+//                    discover(dst, &mut visited, &mut frontier);
+//                },
+//                None => panic!("bfs: No dst column in crack_in_three result for src node {}", src),
+//            }
         }
     }
     visited
