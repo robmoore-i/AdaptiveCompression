@@ -9,7 +9,10 @@ use rand::Rng;
 use time::PreciseTime;
 
 fn main() {
-    benchmark_sparse_bfs_csv(vec![10, 100, 500, 1000]);
+    benchmark_sparse_bfs_csv(
+        vec![10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+             10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
+             10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]);
 }
 
 // Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
@@ -166,12 +169,6 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
             for dst in (*(adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()).unwrap())).v.clone() {
                 discover(dst, &mut visited, &mut frontier);
             }
-//            match adjacency_list.cracker_select_in_three(src, src, true, true).get_col("dst".to_string()) {
-//                Some(ref col) => for dst in col.v.clone() {
-//                    discover(dst, &mut visited, &mut frontier);
-//                },
-//                None => panic!("bfs: No dst column in crack_in_three result for src node {}", src),
-//            }
         }
     }
     visited
