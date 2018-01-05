@@ -321,9 +321,13 @@ pub mod avl {
 
 // Implementation of Database
 pub mod db {
+    extern crate time;
+
     use avl::*;
     use std::collections::HashMap;
     use std::slice::Iter;
+    use self::time::PreciseTime;
+    use self::time::SteadyTime;
 
     #[derive(Clone)]
     pub struct Col<T:Ord+Copy> {
@@ -373,6 +377,15 @@ pub mod db {
         I(i64),
         F(f64),
     }
+
+    macro_rules! t {
+        ($work:block, $tvar:ident) => {
+            let start = PreciseTime::now();
+            $work;
+            let end = PreciseTime::now();
+            $tvar = $tvar + start.to(end);
+        };
+    }
     
     #[derive(Clone)]
     pub struct Table {
@@ -404,7 +417,7 @@ pub mod db {
         pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
             let mut n_new_tuples = 0;
             for (key, val) in self.columns.iter_mut() {
-                let new_elems = new_values.get_mut(key).expect("insert: new_values doesn't have values for all columns");
+                let new_elems = new_values.get_mut(key).unwrap();
                 let n = new_elems.len();
                 if n_new_tuples == 0 || n_new_tuples == n {
                     val.v.append(new_elems);
@@ -420,32 +433,40 @@ pub mod db {
             self.columns.get(&col)
         }
 
+        // Todo: Make get_indices way faster.
+        // Currently makes up approx. 74% of runtime in cracker_select_in_three.
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
-            let mut clone = self.clone(); // Optimise
-            for col in clone.columns.values_mut() {
-                let mut indexed_v = Vec::with_capacity(indices.len());
+            let mut selection: HashMap<String, Col<i64>> = HashMap::new();
+            for (name, col) in &self.columns {
+                let mut v_buffer = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
-                    indexed_v.push(col.v[i]);
+                    v_buffer.push(col.v[i]);
                 }
-                col.v = indexed_v;
+                let mut c_buffer = Col::empty();
+                c_buffer.v = v_buffer;
+                selection.insert(name.clone(), c_buffer);
             }
 
-            let mut indexed_crk_v   = Vec::with_capacity(indices.len());
+            let mut t = Table::new();
+            t.columns = selection;
+            t.count = indices.len();
+
+            let mut indexed_crk_v = Vec::with_capacity(indices.len());
             if self.crk_col.crk.len() > 0 {
                 let mut indexed_crk_col = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
                     indexed_crk_col.push(self.crk_col.crk[i]);
                     indexed_crk_v.push(self.crk_col.v[i]);
                 }
-                clone.crk_col.crk     = indexed_crk_col;
-                clone.crk_col.crk_idx = AVLTree::new();
+                t.crk_col.crk     = indexed_crk_col;
+                t.crk_col.crk_idx = AVLTree::new();
             } else {
                 for &i in indices.clone() {
                     indexed_crk_v.push(self.crk_col.v[i]);
                 }
             }
-            clone.crk_col.v = indexed_crk_v;
-            clone
+            t.crk_col.v = indexed_crk_v;
+            t
         }
 
         pub fn rearrange(&mut self, indices: Iter<usize>) {
@@ -481,15 +502,15 @@ pub mod db {
                 self.crk_col.base_idx = (0..self.count).collect();
             }
 
-            let adjusted_low  = low  + !inc_l as i64;
+            let adjusted_low = low + !inc_l as i64;
             let adjusted_high = high - !inc_h as i64;
             // c_low(x)  <=> x outside catchment at low  end
             // c_high(x) <=> x outside catchment at high end
-            #[inline] let c_low =  |x| x < adjusted_low;
+            #[inline] let c_low = |x| x < adjusted_low;
             #[inline] let c_high = |x| x > adjusted_high;
 
             // Start with a pointer at both ends of the array: p_low, p_high
-            let mut p_low  = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
+            let mut p_low = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
@@ -509,10 +530,12 @@ pub mod db {
             }
 
             if p_low == p_high {
-                return self.get_indices(self.crk_col.base_idx[p_low..(p_high+1)].iter());
+                return self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
             }
 
             let mut p_itr = p_low.clone();
+
+
             while p_itr <= p_high {
                 if c_low(self.crk_col.crk[p_itr]) {
                     self.crk_col.crk.swap(p_low, p_itr);
@@ -533,10 +556,13 @@ pub mod db {
                     p_itr += 1;
                 }
             }
-            self.crk_col.crk_idx.insert(adjusted_low, p_low);
+
             let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
+            self.crk_col.crk_idx.insert(adjusted_low, p_low);
             self.crk_col.crk_idx.insert(high + !inc_h as i64, high_ptr);
-            self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
+            let return_value = self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter());
+
+            return_value
         }
 
         // Returns the elements of T less than MED, with inclusivity given by INC
