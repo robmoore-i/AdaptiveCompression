@@ -223,3 +223,30 @@ implementation and I'm probably also going to want to cut out a lot of wrapping 
 down all the overhead and reduce the implementation to act as a way of manipulating lists
 of floats. This is now the next item on the agenda because this whole thing is just a joke
 if nested for loops are a 10x performance improvement on the complicated mess I spew out.
+
+==================================================================================
+## Friday 5th January, 2018, optimised adaptive clustering, it's now very fast too
+==================================================================================
+
+This morning, adaptive clustering was something like 20x slower than both preclustering
+and unoptimised BFS. Now is faster for graphs larger than 2000 nodes. I profiled the
+performance of the BFS to see if I was being an idiot, no, that was fine. I found that
+approximately 97% of the runtime of adaptive_bfs was inside the
+adjacency_list.cracker_select_in_three call as expected.
+
+Then I profiled cracker_select_in_three and discovered that about 74% of the runtime was
+in tuple reconstruction at the end of the run of the function. This was due to the cloning
+of the column in my initial naive implementation of tuple reconstruction. I fixed this
+and reduced the share of time spent in tuple reconstruction to around 3% - a massive
+improvement.
+
+After making the change I had to check correctness, making sure the tests all still
+passed and that everything was in order with a few manual tests as well just to satisfy
+my paranoia, because I was quite worried that the performance improvements were simply a
+result of work not being done. It seems all to be fine, but I might add some more tests
+anyway.
+
+Upon rerunning the benchmarks, I found that, as expected, for the smallest graphs,
+naive nested loops are the fasted, for slightly larger graphs, preclustering and using
+binary search is fastest, and for graphs larger than 2000 nodes, adaptive clustering is
+the fastest. Very encouraging progress today.
