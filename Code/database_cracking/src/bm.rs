@@ -10,10 +10,15 @@ use time::PreciseTime;
 use time::SteadyTime;
 
 fn main() {
-    benchmark_sparse_bfs_csv(
-        vec![10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
-             10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000,
-             10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]);
+    let n_readings = 5;
+    let mut bm_graph_sizes: Vec<i64> = Vec::new();
+    for i in 0..n_readings {
+        for j in 20..30 {
+            bm_graph_sizes.push(200 * i + 1000 * j - 100);
+        }
+    }
+    bm_graph_sizes.push(30000);
+    benchmark_sparse_bfs_csv(bm_graph_sizes);
 }
 
 // Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
