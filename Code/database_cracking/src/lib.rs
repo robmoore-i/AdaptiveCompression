@@ -433,7 +433,6 @@ pub mod db {
             self.columns.get(&col)
         }
 
-        // Todo: Make get_indices way faster.
         // Currently makes up approx. 74% of runtime in cracker_select_in_three.
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
             let mut selection: HashMap<String, Col<i64>> = HashMap::new();
