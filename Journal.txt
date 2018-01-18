@@ -250,3 +250,17 @@ Upon rerunning the benchmarks, I found that, as expected, for the smallest graph
 naive nested loops are the fasted, for slightly larger graphs, preclustering and using
 binary search is fastest, and for graphs larger than 2000 nodes, adaptive clustering is
 the fastest. Very encouraging progress today.
+
+=============================================================================
+## Thursday 18th January, 2018, preclustering is far slower than it should be
+=============================================================================
+
+As it turns out, preclustering is about 10x slower than it should be, because
+my implementation of bfs is awful. This is because the inbuilt binary search
+function finds an undefined value one of the values which equal what you're
+looking for, but because in the adjacency list there may be several edges from
+some node src, I look for others by checking adjacent values in the list with
+some loops. Apparently they are very terrible, because as I write this they
+constitute 96% of the running time of preclustering_bfs. The two loops seem to
+take pretty much the same amount of time. I am now working on a fix that will
+hopefully hugely speed up preclustered_bfs.
