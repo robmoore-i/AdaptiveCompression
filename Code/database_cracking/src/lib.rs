@@ -568,9 +568,7 @@ pub mod db {
             let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
             self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
             self.crk_col.crk_idx.insert(high + inc_h as i64, high_ptr);
-            let return_value = self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter());
-
-            return_value
+            self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
         }
 
         // Returns the elements of T where the cracker column's value is less than MED, with inclusivity given by INC
@@ -586,11 +584,11 @@ pub mod db {
             #[inline] let cond = |x| x < adjusted_med;
 
             // Start with pointers at the start and end of the array
-            let mut p_low  = 0;
+            let initial_p_low  = 0;
             let mut p_high = *(self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
 
             // Save p_low for later:
-            let initial_p_low = p_low.clone();
+            let mut p_low = initial_p_low.clone();
 
             // while p_low is pointing at an element already in the catchment, move it forwards
             while cond(self.crk_col.crk[p_low]) {
