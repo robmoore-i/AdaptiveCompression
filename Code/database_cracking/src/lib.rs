@@ -480,22 +480,6 @@ pub mod db {
             self.crk_col.rearrange(indices.clone());
         }
 
-        pub fn select_in_two(&self, col: String, strictly_less_than: i64) -> Table {
-            let candidate_col = self.get_col(col);
-            match candidate_col {
-                Some(ref c) => {
-                    let mut index = Vec::with_capacity(self.count);
-                    for i in 0..self.count {
-                        if c.v[i] < strictly_less_than {
-                            index.push(i);
-                        }
-                    }
-                    self.get_indices(index.iter())
-                }
-                None => panic!("select_in_two: No such column"), // TODO: Improve exception handling here
-            }
-        }
-
         // Returns the elements of T where the cracker columns's value equals X
         pub fn cracker_select_specific(&mut self, x: i64) -> Table {
             self.cracker_select_in_three(x, x, true, true)
@@ -959,14 +943,6 @@ mod tests {
         let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
         assert_base_column_equals(selection.clone(), "a", vec![13, 16, 12, 19, 14, 11]);
         assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1, 1, 1, 1]);
-    }
-
-    #[test]
-    fn can_select_from_multi_column_table() {
-        let table = two_col_test_table();
-        let selection = table.select_in_two("a".to_string(), 10);
-        assert_base_column_equals(selection.clone(), "a", vec![4, 9, 2, 7, 1, 3, 8, 6]);
-        assert_base_column_equals(selection.clone(), "b", vec![0, 0, 0, 0, 0, 0, 0, 0]);
     }
 
     #[test]
