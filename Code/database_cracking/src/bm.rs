@@ -67,7 +67,7 @@ fn graph_density(n: i64, e: usize) -> f64 {
 }
 
 /* PROFILING
-    Functions and macros for profiling the performance of a function
+    Macros for profiling the performance of a function
 */
 
 macro_rules! t_block {
