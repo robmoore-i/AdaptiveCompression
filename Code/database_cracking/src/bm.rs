@@ -10,29 +10,30 @@ use time::PreciseTime;
 use time::SteadyTime;
 
 fn main() {
-    let n = 30000;
-    let mut adjacency_list = randomly_connected_tree(n);
-    let all_nodes: Vec<i64> = (1..(n + 1)).map(|x| x as i64).collect();
-    let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
-    preclustered_bfs(&mut adjacency_list, start_node);
+    let graph_sizes = graph_size_range(5, 1000, 10000, 200);
+    benchmark_sparse_bfs_csv(graph_sizes);
 }
 
-fn build_graph_sizes(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
+fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
     let mut bm_graph_sizes: Vec<i64> = Vec::new();
     let mut size = min_graph_size;
-    while size <= max_graph_size {
-        bm_graph_sizes.push(size);
-        size += step;
+    for i in 0..n_readings {
+        while size <= max_graph_size {
+            bm_graph_sizes.push(size);
+            size += (i * step / n_readings) + step;
+        }
+        size = min_graph_size;
     }
+    bm_graph_sizes.push(max_graph_size);
     bm_graph_sizes
 }
 
 // Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
 // by each value of the list.
 // This function prints to stdout a valid csv file containing the results.
-fn benchmark_sparse_bfs_csv(ns: Vec<i64>) {
-    println!("nodes,edges,density,unoptimised,adaptive,preclustered");
-    for n in ns {
+fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
+    println!("nodes,edges,density,unoptimised,adaptive,preclustered,preclusteredRLE");
+    for n in graph_sizes {
         benchmark_sparse_bfs(n);
     }
 }
@@ -45,9 +46,10 @@ fn benchmark_sparse_bfs(n: i64) {
     let all_nodes: Vec<i64> = (1..(n + 1)).map(|x| x as i64).collect();
     let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
     print!("{},{},{}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-    time_bfs(unoptimised_bfs,  &mut adjacency_list.clone(), start_node);
-    time_bfs(adaptive_bfs,     &mut adjacency_list.clone(), start_node);
-    time_bfs(preclustered_bfs, &mut adjacency_list.clone(), start_node);
+    time_bfs(unoptimised_bfs,      &mut adjacency_list.clone(), start_node);
+    time_bfs(adaptive_bfs,         &mut adjacency_list.clone(), start_node);
+    time_bfs(preclustered_bfs,     &mut adjacency_list.clone(), start_node);
+    time_bfs(preclustered_rle_bfs, &mut adjacency_list.clone(), start_node);
     println!();
 }
 
@@ -243,10 +245,10 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
             }
         }, searching_time);
     }
-    println!("setup_time:            {}", setup_time - start_time);
-    println!("frontier_cloning_time: {}", frontier_cloning_time - start_time);
-    println!("searching_time:        {}", searching_time - start_time);
-    println!("total_time:            {}", precise_start_time.to(PreciseTime::now()));
+//    println!("setup_time:            {}", setup_time - start_time);
+//    println!("frontier_cloning_time: {}", frontier_cloning_time - start_time);
+//    println!("searching_time:        {}", searching_time - start_time);
+//    println!("total_time:            {}", precise_start_time.to(PreciseTime::now()));
     visited
 }
 
@@ -315,11 +317,48 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
                 }, span_out_search_time_loop_b);
         }
     }
-    println!("setup_time:                   {}", setup_time - start_time);
-    println!("frontier_cloning_time:        {}", frontier_cloning_time - start_time);
-    println!("binary_search_time:           {}", binary_search_time - start_time);
-    println!("span_out_search_time_loop_a:  {}", span_out_search_time_loop_a - start_time);
-    println!("span_out_search_time_loop_b:  {}", span_out_search_time_loop_b - start_time);
-    println!("total_time:                   {}", precise_start_time.to(PreciseTime::now()));
+//    println!("setup_time:                   {}", setup_time - start_time);
+//    println!("frontier_cloning_time:        {}", frontier_cloning_time - start_time);
+//    println!("binary_search_time:           {}", binary_search_time - start_time);
+//    println!("span_out_search_time_loop_a:  {}", span_out_search_time_loop_a - start_time);
+//    println!("span_out_search_time_loop_b:  {}", span_out_search_time_loop_b - start_time);
+//    println!("total_time:                   {}", precise_start_time.to(PreciseTime::now()));
+    visited
+}
+
+fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
+    let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+
+    let mut encoded_col: Vec<Vec<i64>> = Vec::new();
+    for i in 0..adjacency_list.count {
+        let src_as_usize = src_col[i] as usize;
+        let dst = dst_col[i];
+
+        while encoded_col.len() <= src_as_usize {
+            encoded_col.push(Vec::new());
+        }
+
+        if encoded_col[src_as_usize].is_empty() {
+            encoded_col[src_as_usize] = vec![dst];
+        } else {
+            encoded_col[src_as_usize].push(dst);
+        }
+    }
+
+    let mut frontier = vec![start_node];
+    let mut visited = Vec::new();
+    while !frontier.is_empty() {
+        let prev_frontier;
+        visited.append(&mut frontier.clone());
+        prev_frontier = frontier.clone();
+        frontier.clear();
+
+        for src in prev_frontier {
+            for dst in &encoded_col[src as usize] {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+        }
+    }
     visited
 }
