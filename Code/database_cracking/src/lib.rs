@@ -490,8 +490,12 @@ pub mod db {
             }
         }
 
-        // Returns indices of the base columns such that crk_col's values are between LOW and HIGH
-        // with inclusivity determined by INC_L and INC_H.
+        // Returns the elements of T where the cracker columns's value equals X
+        pub fn cracker_select_specific(&mut self, x: i64) -> Table {
+            self.cracker_select_in_three(x, x, true, true)
+        }
+
+        // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
             // If column hasn't been cracked before, copy it, and copy a reference to the current
             // indices of the base table.
@@ -563,7 +567,7 @@ pub mod db {
             return_value
         }
 
-        // Returns the elements of T less than MED, with inclusivity given by INC
+        // Returns the elements of T where the cracker column's value is less than MED, with inclusivity given by INC
         pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> Table {
             // If column hasn't been cracked before, copy it
             if self.crk_col.crk.len() == 0 {

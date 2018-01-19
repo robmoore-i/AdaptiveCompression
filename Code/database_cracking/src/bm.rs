@@ -10,7 +10,7 @@ use time::PreciseTime;
 use time::SteadyTime;
 
 fn main() {
-    let graph_sizes = graph_size_range(5, 1000, 10000, 200);
+    let graph_sizes = graph_size_range(5, 5, 200, 5);
     benchmark_sparse_bfs_csv(graph_sizes);
 }
 
@@ -199,7 +199,7 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_in_three(src, src, true, true);
+            let selection = adjacency_list.cracker_select_specific(src);
             let neighbours = (*(selection.get_col("dst".to_string()).unwrap())).v.clone();
             for dst in neighbours {
                 discover(dst, &mut visited, &mut frontier);
@@ -326,8 +326,8 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 }
 
 fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-    let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
 
     let mut encoded_col: Vec<Vec<i64>> = Vec::new();
     for i in 0..adjacency_list.count {
