@@ -1069,9 +1069,8 @@ mod tests {
 
     #[test]
     fn can_exploit_cracker_index_for_selecting_single_value_small_table() {
-        let mut adjacency_list
-        = adjacency_list_table(vec![4, 4, 4, 2, 4, 3],
-                               vec![3, 3, 2, 1, 5, 4]);
+        let mut adjacency_list = adjacency_list_table(vec![4, 4, 4, 2, 4, 3],
+                                                      vec![3, 3, 2, 1, 5, 4]);
 
         let selection_1 = adjacency_list.cracker_select_in_three(3, 3, true, true);
         assert_base_column_equals(selection_1.clone(), "src", vec![3]);
@@ -1093,5 +1092,33 @@ mod tests {
         assert_base_column_equals(selection_4.clone(), "dst", vec![]);
         // After the BFS the cracker column should be fully clustered
         assert_eq!(adjacency_list.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
+    }
+
+    #[test]
+    fn can_select_single_values_from_tables() {
+        let mut adjacency_list
+        = adjacency_list_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
+                               vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
+        let selection_1 = adjacency_list.cracker_select_specific(5);
+        assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+
+        let selection_2 = adjacency_list.cracker_select_specific(2);
+        assert_base_column_equals(selection_2.clone(), "src", vec![2]);
+        assert_base_column_equals(selection_2.clone(), "dst", vec![1]);
+
+        let selection_3 = adjacency_list.cracker_select_specific(3);
+        assert_base_column_equals(selection_3.clone(), "src", vec![3, 3, 3]);
+        assert_base_column_equals(selection_3.clone(), "dst", vec![4, 5, 5]);
+
+        let selection_4 = adjacency_list.cracker_select_specific(1);
+        assert_base_column_equals(selection_4.clone(), "src", vec![1, 1, 1]);
+        assert_base_column_equals(selection_4.clone(), "dst", vec![3, 3, 5]);
+
+        let selection_5 = adjacency_list.cracker_select_specific(4);
+        assert_base_column_equals(selection_5.clone(), "src", vec![]);
+        assert_base_column_equals(selection_5.clone(), "dst", vec![]);
+
+        assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
     }
 }
