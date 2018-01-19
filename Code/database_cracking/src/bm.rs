@@ -115,8 +115,7 @@ fn deal(n: usize) -> Vec<usize> {
     dealing_usize
 }
 
-// Returns a randomly shuffled adjacency list representing a complete graph for n nodes,
-// columns are src, dst. src is the cracked column.
+// Returns a randomly shuffled adjacency list representing a complete graph for n nodes
 fn fully_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(vec!["src".to_string(), "dst".to_string()]);
