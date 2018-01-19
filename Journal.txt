@@ -278,3 +278,7 @@ what that does.
 My table data structure is not very flexible at the moment, and changing it will
 require a lot of work and be pretty challenging due to the immense battle I'll need to
 have with the rust compiler.
+
+Found a new bug in cracking with single value selection - there is a problem with
+fetching offsets from the cracker index - the incorrect offsets are being pulled and
+so queries are not correct.
