@@ -1,6 +1,7 @@
 extern crate cracking;
 extern crate rand;
 extern crate time;
+extern crate bit_vec;
 
 use cracking::db::*;
 use std::collections::HashMap;
@@ -8,10 +9,28 @@ use std::iter;
 use rand::Rng;
 use time::PreciseTime;
 use time::SteadyTime;
+use bit_vec::BitVec;
 
 fn main() {
-    let graph_sizes = graph_size_range(5, 5, 200, 5);
-    benchmark_sparse_bfs_csv(graph_sizes);
+    // let graph_sizes = graph_size_range(5, 5, 200, 5);
+    // benchmark_sparse_bfs_csv(graph_sizes);
+    
+    let n = 5000;
+    let adjacency_list = randomly_connected_tree(n);
+    let all_nodes: Vec<i64> = (1..(n + 1)).map(|x| x as i64).collect();
+    let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
+    
+    let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+
+    println!("unoptimised");
+    time_bfs(unoptimised_bfs,      &mut adjacency_list.clone(), start_node);
+    println!("adaptive");
+    time_bfs(adaptive_bfs,         &mut adjacency_list.clone(), start_node);
+    println!("preclustered");
+    time_bfs(preclustered_bfs,     &mut adjacency_list.clone(), start_node);
+    println!("preclustered_rle");
+    time_bfs(preclustered_rle_bfs, &mut adjacency_list.clone(), start_node);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -58,7 +77,7 @@ fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) wher
     let start = PreciseTime::now();
     let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
-    print!(",{}", start.to(end));
+    println!("time = {}, nodes_visited = {}", start.to(end), visited.len());
 }
 
 // Finds the directed density of a graph with n nodes and e edges. Returned as a float.
@@ -186,13 +205,44 @@ fn discover(dst: i64, visited: &mut Vec<i64>, frontier: &mut Vec<i64>) {
     }
 }
 
+fn bv_discover(dst: i64, visited: &mut BitVec, frontier: &mut Vec<i64>) {
+    if !visited.get((dst as usize) - 1).unwrap_or(false) && !frontier.contains(&dst) {
+        frontier.push(dst);
+    }
+}
+
+fn set_indices(bv: &mut BitVec, indices: Vec<i64>) {
+    let l = bv.len();
+    for i in indices {
+        let i_usize = i as usize;
+        if i_usize >= l {
+            bv.grow(1 + i_usize - l, false);
+        }
+        bv.set(i_usize, true);
+    }
+}
+
+fn bv_where(bv: BitVec) -> Vec<i64> {
+    let mut v = Vec::with_capacity(bv.len());
+    for i in 0..bv.len() {
+        if bv.get(i).unwrap() {
+            v.push(1 + i as i64);
+        }
+    }
+    v
+}
+
+fn indicise(v: Vec<i64>) -> Vec<i64> {
+    v.iter().map(|x|x-1).collect()
+}
+
 fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
-    let mut visited = Vec::new();
+    let mut visited = BitVec::from_elem(start_node as usize, false);
 
     while !frontier.is_empty() {
         // Add visited nodes
-        visited.append(&mut frontier.clone());
+        set_indices(&mut visited, indicise(frontier.clone()));
 
         let prev_frontier = frontier.clone();
         frontier.clear();
@@ -202,11 +252,11 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
             let selection = adjacency_list.cracker_select_specific(src);
             let neighbours = (*(selection.get_col("dst".to_string()).unwrap())).v.clone();
             for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+                bv_discover(dst, &mut visited, &mut frontier);
             }
         }
     }
-    visited
+    bv_where(visited)
 }
 
 fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
