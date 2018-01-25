@@ -10,8 +10,22 @@ use time::PreciseTime;
 use time::SteadyTime;
 
 fn main() {
-    let graph_sizes = graph_size_range(5, 5, 200, 5);
-    benchmark_sparse_bfs_csv(graph_sizes);
+//    let graph_sizes = graph_size_range(5, 5, 200, 5);
+//    benchmark_sparse_bfs_csv(graph_sizes);
+
+    let mut adjacency_list = Table::new();
+    adjacency_list.new_columns(vec!["src".to_string(), "dst".to_string()]);
+    let mut connections = HashMap::new();
+    connections.insert("src".to_string(), vec![4, 2, 1, 4, 5, 4]);
+    connections.insert("dst".to_string(), vec![1, 2, 3, 4, 5, 6]);
+    adjacency_list.insert(&mut connections);
+    adjacency_list.set_crk_col("src".to_string());
+
+    let selected = adjacency_list.cracker_select_specific(4);
+    println!("Selected {:?}", (*selected.get_col("src".to_string()).unwrap()).v);
+
+    println!("Original {:?}", (*adjacency_list.get_col("src".to_string()).unwrap()).v);
+    println!("Cracker  {:?}", (adjacency_list.crk_col.crk));
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
