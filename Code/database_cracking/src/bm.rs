@@ -18,8 +18,8 @@ fn main() {
     let mut adjacency_list = Table::new();
     adjacency_list.new_columns(vec!["src".to_string(), "dst".to_string()]);
     let mut connections = HashMap::new();
-    connections.insert("src".to_string(), vec![4, 2, 1, 4, 5, 4]);
-    connections.insert("dst".to_string(), vec![1, 2, 3, 4, 5, 6]);
+    connections.insert("src".to_string(), vec![4, 2, 1, 4, 5, 4, 6]);
+    connections.insert("dst".to_string(), vec![1, 2, 3, 4, 5, 6, 7]);
     adjacency_list.insert(&mut connections);
     adjacency_list.set_crk_col("src".to_string());
 
