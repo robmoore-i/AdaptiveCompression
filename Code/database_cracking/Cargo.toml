@@ -6,6 +6,7 @@ authors = ["Rob <robmoore121@gmail.com>"]
 [dependencies]
 rand = "0.3"
 time = "*"
+bit-vec = "0.4.4"
 
 [lib]
 name = "cracking"

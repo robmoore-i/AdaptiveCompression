@@ -1,6 +1,7 @@
 extern crate cracking;
 extern crate rand;
 extern crate time;
+extern crate bit_vec;
 
 use cracking::db::*;
 use std::collections::HashMap;
@@ -8,6 +9,7 @@ use std::iter;
 use rand::Rng;
 use time::PreciseTime;
 use time::SteadyTime;
+use bit_vec::BitVec;
 
 fn main() {
 //    let graph_sizes = graph_size_range(5, 5, 200, 5);
@@ -72,7 +74,7 @@ fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) wher
     let start = PreciseTime::now();
     let visited = bfs(&mut adjacency_list, start_node);
     let end = PreciseTime::now();
-    print!(",{}", start.to(end));
+    println!("time = {}, nodes_visited = {}", start.to(end), visited.len());
 }
 
 // Finds the directed density of a graph with n nodes and e edges. Returned as a float.
@@ -193,20 +195,44 @@ fn randomly_connected_tree(n: i64) -> Table {
 
     Returns the nodes visited in the order in which they were visited.
 */
-
-fn discover(dst: i64, visited: &mut Vec<i64>, frontier: &mut Vec<i64>) {
-    if !visited.contains(&dst) && !frontier.contains(&dst) {
+fn discover(dst: i64, visited: &mut BitVec, frontier: &mut Vec<i64>) {
+    if !visited.get((dst as usize) - 1).unwrap_or(false) && !frontier.contains(&dst) {
         frontier.push(dst);
     }
 }
 
+fn set_indices(bv: &mut BitVec, indices: Vec<i64>) {
+    let l = bv.len();
+    for i in indices {
+        let i_usize = i as usize;
+        if i_usize >= l {
+            bv.grow(1 + i_usize - l, false);
+        }
+        bv.set(i_usize, true);
+    }
+}
+
+fn bv_where(bv: BitVec) -> Vec<i64> {
+    let mut v = Vec::with_capacity(bv.len());
+    for i in 0..bv.len() {
+        if bv.get(i).unwrap() {
+            v.push(1 + i as i64);
+        }
+    }
+    v
+}
+
+fn indicise(v: Vec<i64>) -> Vec<i64> {
+    v.iter().map(|x|x-1).collect()
+}
+
 fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
-    let mut visited = Vec::new();
+    let mut visited = BitVec::from_elem(start_node as usize, false);
 
     while !frontier.is_empty() {
         // Add visited nodes
-        visited.append(&mut frontier.clone());
+        set_indices(&mut visited, indicise(frontier.clone()));
 
         let prev_frontier = frontier.clone();
         frontier.clear();
@@ -220,123 +246,76 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
             }
         }
     }
-    visited
+    bv_where(visited)
 }
 
 fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let precise_start_time = PreciseTime::now();
-    let start_time = SteadyTime::now();
-    let mut setup_time = start_time;
-    let mut frontier_cloning_time = start_time;
-    let mut searching_time = start_time;
-
-    let src_col;
-    let dst_col;
-    let mut frontier;
-    let mut visited;
-    t_block!({
-        src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-        dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
-        frontier = vec![start_node];
-        visited = Vec::new();
-    }, setup_time);
+    let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
 
     while !frontier.is_empty() {
-        let prev_frontier;
-        t_block!({
-            visited.append(&mut frontier.clone());
-            prev_frontier = frontier.clone();
-            frontier.clear();
-        }, frontier_cloning_time);
-
-        t_expr!(
+        set_indices(&mut visited, indicise(frontier.clone()));
+        
+        let prev_frontier = frontier.clone();
+        frontier.clear();
         for src in prev_frontier {
             for i in 0..src_col.len() {
                 if src_col[i] == src {
                     discover(dst_col[i], &mut visited, &mut frontier);
                 }
             }
-        }, searching_time);
+        }
     }
-//    println!("setup_time:            {}", setup_time - start_time);
-//    println!("frontier_cloning_time: {}", frontier_cloning_time - start_time);
-//    println!("searching_time:        {}", searching_time - start_time);
-//    println!("total_time:            {}", precise_start_time.to(PreciseTime::now()));
-    visited
+    bv_where(visited)
 }
 
 fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let precise_start_time = PreciseTime::now();
-    let start_time = SteadyTime::now();
-    let mut setup_time = start_time;
-    let mut frontier_cloning_time = start_time;
-    let mut binary_search_time = start_time;
-    let mut span_out_search_time_loop_a = start_time;
-    let mut span_out_search_time_loop_b = start_time;
+    let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
+    let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let mut row_store = Vec::with_capacity(adjacency_list.count);
+    for i in 0..adjacency_list.count {
+        row_store.push((src_col[i], dst_col[i]));
+    }
+    row_store.sort_by_key(|&k| k.0);
+    for i in 0..adjacency_list.count {
+        src_col[i] = row_store[i].0;
+        dst_col[i] = row_store[i].1;
+    }
 
-    let mut src_col;
-    let mut dst_col;
-    let mut row_store;
-    let mut frontier;
-    let mut visited;
-    t_block!({
-        src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-        dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
-        row_store = Vec::with_capacity(adjacency_list.count);
-        for i in 0..adjacency_list.count {
-            row_store.push((src_col[i], dst_col[i]));
-        }
-        row_store.sort_by_key(|&k| k.0);
-        for i in 0..adjacency_list.count {
-            src_col[i] = row_store[i].0;
-            dst_col[i] = row_store[i].1;
-        }
-
-        frontier = vec![start_node];
-        visited = Vec::new();
-    }, setup_time);
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
 
     while !frontier.is_empty() {
-        let prev_frontier;
-        t_block!({
-            visited.append(&mut frontier.clone());
-            prev_frontier = frontier.clone();
-            frontier.clear();
-        }, frontier_cloning_time);
+        set_indices(&mut visited, indicise(frontier.clone()));
 
+        let prev_frontier = frontier.clone();
+        frontier.clear();
         for src in prev_frontier {
-            let i;
-            t_expr!(i = src_col.binary_search(&src).unwrap(), binary_search_time);
+            let i = src_col.binary_search(&src).unwrap();
             let mut inc_idx = i.clone();
             let mut dec_idx = i.clone();
-            t_expr!(
-                loop {
-                    discover(dst_col[inc_idx], &mut visited, &mut frontier);
-                    inc_idx += 1;
-                    if inc_idx >= src_col.len() {
-                        break;
-                    } else if src_col[inc_idx] != src {
-                        break;
-                    }
-                }, span_out_search_time_loop_a);
-            t_expr!(
-                while src_col[dec_idx] == src {
-                    discover(dst_col[dec_idx], &mut visited, &mut frontier);
-                    if dec_idx == 0 {
-                        break;
-                    } else {
-                        dec_idx -= 1;
-                    }
-                }, span_out_search_time_loop_b);
+            loop {
+                discover(dst_col[inc_idx], &mut visited, &mut frontier);
+                inc_idx += 1;
+                if inc_idx >= src_col.len() {
+                    break;
+                } else if src_col[inc_idx] != src {
+                    break;
+                }
+            }
+            while src_col[dec_idx] == src {
+                discover(dst_col[dec_idx], &mut visited, &mut frontier);
+                if dec_idx == 0 {
+                    break;
+                } else {
+                    dec_idx -= 1;
+                }
+            }
         }
     }
-//    println!("setup_time:                   {}", setup_time - start_time);
-//    println!("frontier_cloning_time:        {}", frontier_cloning_time - start_time);
-//    println!("binary_search_time:           {}", binary_search_time - start_time);
-//    println!("span_out_search_time_loop_a:  {}", span_out_search_time_loop_a - start_time);
-//    println!("span_out_search_time_loop_b:  {}", span_out_search_time_loop_b - start_time);
-//    println!("total_time:                   {}", precise_start_time.to(PreciseTime::now()));
-    visited
+    bv_where(visited)
 }
 
 fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
@@ -360,18 +339,18 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
     }
 
     let mut frontier = vec![start_node];
-    let mut visited = Vec::new();
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+    
     while !frontier.is_empty() {
-        let prev_frontier;
-        visited.append(&mut frontier.clone());
-        prev_frontier = frontier.clone();
+        set_indices(&mut visited, indicise(frontier.clone()));
+        
+        let prev_frontier = frontier.clone();
         frontier.clear();
-
         for src in prev_frontier {
             for dst in &encoded_col[src as usize] {
                 discover(*dst, &mut visited, &mut frontier);
             }
         }
     }
-    visited
+    bv_where(visited)
 }

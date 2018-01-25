@@ -1,0 +1,17 @@
+There are four main stages involved in the completion of this project, development, implementation, testing and reporting. This is not to say that we will be pursuing a "waterfall" style of development, rather, at each stage we may choose to adapt or simply backtrack on decisions made in previous stages, in order to ensure that our plan is flexible and resilient against unexpected setback and/or experimental results.
+
+Development
+
+We will in this stage have to select a graph database index, then come up with our proposed technique for adaptively constructing it. Having internally proposed a solution we will look to formally verify it to the extent that we are happy that it will be effective. This verification may involve the coding of proof-of-concept implementations and experiments.
+
+Implementation
+
+Having decided on a technique and being happy that it will perform well, we will implement it, along with a minimal graph database kernel, in the Rust programming language. We've chosen this language for a few reasons. Firstly and most importantly, it is very fast (often 1x performant with C or C++), meaning that the results we acheieve will be comparable with similar benchmarks on other machines and that inefficiencies within the compiler/interpreter of higher level languages will not mar out experiemental results. Secondly, its inclusion of high level programming concepts, and included notions of pointer safety, thread safety and garbage collection, mean that it is easier to program than C or C++ due to the help provided by the compiler.
+
+Testing
+
+Do da benchmarks
+
+Reporting
+
+Write da report
