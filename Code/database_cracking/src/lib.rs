@@ -5,9 +5,10 @@
 pub mod avl {
     use std::cmp;
     use std::cmp::Ordering;
+    use std::fmt::Debug;
 
     #[derive(Clone)]
-    pub struct Node<K: Ord, D> {
+    pub struct Node<K: Ord, D:Debug> {
         key: K,
         data: D,
         height: u64,
@@ -15,18 +16,18 @@ pub mod avl {
         right: Option<Box<Node<K,D>>>,
     }
 
-    impl<K:Ord, D> Node<K,D> {
+    impl<K:Ord, D:Debug> Node<K,D> {
         pub fn new(key: K, data: D) -> Node<K,D> {
             Node::<K,D>{key: key, data: data, height: 1, left: None, right: None}
         }
     }
     
-    fn height<K:Ord,D>(node: &Option<Box<Node<K,D>>>) -> u64  {
+    fn height<K:Ord,D:Debug>(node: &Option<Box<Node<K,D>>>) -> u64  {
         return node.as_ref().map_or(0, |succ| succ.height)
     }
     
     // Perform a single right rotation on this (sub) tree
-    fn rotate_right<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn rotate_right<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let mut new_root_box = root.left.take().expect("AVL broken");
         root.left = new_root_box.right.take();
         update_height(&mut root);
@@ -36,7 +37,7 @@ pub mod avl {
     }
 
     // Perform a single left rotation on this (sub) tree
-    fn rotate_left<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn rotate_left<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let mut new_root_box = root.right.take().expect("AVL broken");
         root.right = new_root_box.left.take();
         update_height(&mut root);
@@ -46,7 +47,7 @@ pub mod avl {
     }
 
     // Performs a rotation that counteracts the fact that the left successor is too high
-    fn rotate_left_successor<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn rotate_left_successor<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let left = root.left.take().expect("AVL broken");
         if height(&left.left) < height(&left.right) {
             let rotated = rotate_left(left);
@@ -60,7 +61,7 @@ pub mod avl {
     }
 
     // Performs a rotation that counteracts the fact that the right successor is too high
-    fn rotate_right_successor<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn rotate_right_successor<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let right = root.right.take().expect("AVL broken");
         if height(&right.left) > height(&right.right) {
             let rotated = rotate_right(right);
@@ -73,7 +74,7 @@ pub mod avl {
         rotate_left(root)
     }
 
-    fn diff_of_successors_height<K:Ord,D>(root: &Box<Node<K,D>>) -> i32 {
+    fn diff_of_successors_height<K:Ord,D:Debug>(root: &Box<Node<K,D>>) -> i32 {
         let l = height(&root.left);
         let r = height(&root.right);
         (l as i32) - (r as i32)
@@ -81,7 +82,7 @@ pub mod avl {
 
 
     // Apply all necessary rotations on root.
-    fn rotate_if_necessary<K:Ord,D>(root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn rotate_if_necessary<K:Ord,D:Debug>(root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let diff  = diff_of_successors_height(&root);
         if -1 <= diff && diff <= 1 {return root}
         match diff {
@@ -93,12 +94,12 @@ pub mod avl {
 
     // Update the cached height of root. To call this function make sure that the cached values of
     // both children of root ar up to date.
-    fn update_height<K:Ord,D>(root: &mut Node<K,D>) {
+    fn update_height<K:Ord,D:Debug>(root: &mut Node<K,D>) {
         root.height = cmp::max( height(&root.left), height(&root.right) )+1;
     }
 
     // Recursively insert the (key,data) pair into the given optional succesor and return its new value
-    fn insert_in_successor<K:Ord,D>(key: K, data: D, successor: Option<Box<Node<K,D>>>) -> Option<Box<Node<K,D>>> {
+    fn insert_in_successor<K:Ord,D:Debug>(key: K, data: D, successor: Option<Box<Node<K,D>>>) -> Option<Box<Node<K,D>>> {
                 Some(match successor {
                     Some(succ) => insert(key, data, succ),
                     None       => Box::new(Node::new(key, data))
@@ -108,7 +109,7 @@ pub mod avl {
     // Inserts the given data under the key in the tree root. It will replace old data stored
     // under this key if it was allready used in the tree. The resulting tree will be returned
     // (its root may now differ due to rotations, thus the old root is moved into the function)
-    pub fn insert<K:Ord,D>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    pub fn insert<K:Ord,D:Debug>(key: K, data: D, mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         match root.key.cmp(&key) {
             Ordering::Equal   => { root.data  = data; return root },
             Ordering::Less    => root.right = insert_in_successor(key, data, root.right.take()),
@@ -119,12 +120,12 @@ pub mod avl {
     }
 
     // Returns a read only reference to the data stored under key in the tree given by root
-    pub fn search<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<&'a D> {
+    pub fn search<'a, K:Ord,D:Debug>(key: &K, root: &'a Box<Node<K,D>>) -> Option<&'a D> {
         search_pair(key,root).map(|(_,v)| v )
     }
 
     // Returns a read only reference pair to the data stored under key in the tree given by root
-    pub fn search_pair<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
+    pub fn search_pair<'a, K:Ord,D:Debug>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
             Ordering::Less    => root.right.as_ref().map_or(None, |succ| search_pair(key, succ)),
@@ -133,7 +134,7 @@ pub mod avl {
     }
 
     // Returns the smallest key value pair (k, v) s.t. k >= given key.
-    pub fn min_after<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
+    pub fn min_after<'a, K:Ord,D:Debug>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),           
             Ordering::Less    => {
@@ -152,7 +153,7 @@ pub mod avl {
     }
     
     // Returns the greatest key value pair (k, v) s.t. k  <= given key.
-    pub fn max_before<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
+    pub fn max_before<'a, K:Ord,D:Debug>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
             Ordering::Less    => {
@@ -171,33 +172,33 @@ pub mod avl {
     }
     
     // Returns the minimal key,value pair within this tree
-    pub fn min_pair<K:Ord,D>(root: &Box<Node<K,D>>) -> (&K,&D) {
+    pub fn min_pair<K:Ord,D:Debug>(root: &Box<Node<K,D>>) -> (&K,&D) {
         root.left.as_ref().map_or((&root.key,&root.data), min_pair)
     }
 
     // Returns the maximal key,value pair within this tree
-    pub fn max_pair<K:Ord,D>(root: &Box<Node<K,D>>) -> (&K,&D) {
+    pub fn max_pair<K:Ord,D:Debug>(root: &Box<Node<K,D>>) -> (&K,&D) {
         root.right.as_ref().map_or((&root.key,&root.data), max_pair)
     }
 
     // Returns the minimal value within this tree
-    pub fn min<K:Ord,D>(root: &Box<Node<K,D>>) -> &D {
+    pub fn min<K:Ord,D:Debug>(root: &Box<Node<K,D>>) -> &D {
         root.left.as_ref().map_or(&root.data, min)
     }
 
     // Returns the minimal value within this tree
-    pub fn max<K:Ord,D>(root: &Box<Node<K,D>>) -> &D {
+    pub fn max<K:Ord,D:Debug>(root: &Box<Node<K,D>>) -> &D {
         root.right.as_ref().map_or(&root.data, max)
     }
 
     // Will update_heights and rotate the node if necessary, returns the rotated node
-    fn updated_node<K:Ord,D>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn updated_node<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Box<Node<K,D>> {
         update_height(&mut root);
         rotate_if_necessary(root)
     }
 
     // Performs recursive `drop_and_get_min` if a left  since a successor is available
-    fn drop_min_from_left<K:Ord,D>(mut root : Box<Node<K,D>>, left: Box<Node<K,D>>) -> (Option<Box<Node<K,D>>>,Box<Node<K,D>>) {
+    fn drop_min_from_left<K:Ord,D:Debug>(mut root : Box<Node<K,D>>, left: Box<Node<K,D>>) -> (Option<Box<Node<K,D>>>,Box<Node<K,D>>) {
         let (new_left, min) = drop_min(left);
         root.left = new_left;
         (Some(updated_node(root)),min)
@@ -205,7 +206,7 @@ pub mod avl {
 
     // Finds the minimal value below root and returns a new (optional) tree where the minimal value has been
     // removed and the (optional) minimal node as tuple (new_tree, min);
-    fn drop_min<K:Ord,D>(mut root: Box<Node<K,D>>) -> (Option<Box<Node<K,D>>>, Box<Node<K,D>>) {
+    fn drop_min<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> (Option<Box<Node<K,D>>>, Box<Node<K,D>>) {
         match root.left.take() {
             Some(left) => drop_min_from_left(root, left),
             None => (root.right.take(), root)
@@ -213,7 +214,7 @@ pub mod avl {
     }
 
     // Return a new AVL tree, as the combination of two subtrees with max(l) <= min(r)
-    fn combine_two_subtrees<K:Ord,D>(l: Box<Node<K,D>>, r: Box<Node<K,D>>) -> Box<Node<K,D>> {
+    fn combine_two_subtrees<K:Ord,D:Debug>(l: Box<Node<K,D>>, r: Box<Node<K,D>>) -> Box<Node<K,D>> {
         let (remaining_tree, min) = drop_min(r);
         let mut new_root = min;
         new_root.left = Some(l);
@@ -222,7 +223,7 @@ pub mod avl {
     }
 
     // Return a new AVL tree, where the root has been removed
-    fn delete_root<K:Ord,D>(mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>> {
+    fn delete_root<K:Ord,D:Debug>(mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>> {
         match ( root.left.take(), root.right.take() ) {
             ( None,     None)    => None,
             ( Some(l),  None)    => Some(l),
@@ -233,7 +234,7 @@ pub mod avl {
 
     // Deletes `key` from the tree `root`. Returns either `Some` tree or if the resilting tree is
     // empty: None.
-    pub fn delete<K:Ord,D>(key: K, mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>> {
+    pub fn delete<K:Ord,D:Debug>(key: K, mut root: Box<Node<K,D>>) -> Option<Box<Node<K,D>>> {
         match root.key.cmp(&key) {
             Ordering::Equal =>  return delete_root(root),
             Ordering::Less  => {
@@ -253,11 +254,11 @@ pub mod avl {
     }
 
     #[derive(Clone)]
-    pub struct AVLTree<K:Ord+Copy,D> {
+    pub struct AVLTree<K:Ord+Copy+Debug,D:Debug> {
         pub root: Option<Box<Node<K,D>>>
     }
 
-    impl <K:Ord+Copy,D> AVLTree<K,D> {
+    impl <K:Ord+Copy+Debug,D:Debug> AVLTree<K,D> {
         pub fn new() -> AVLTree<K,D> {
             AVLTree{root: None}
         }
@@ -318,6 +319,24 @@ pub mod avl {
                 None => None
             }            
         }
+
+        pub fn print_nodes(&self, keys: &mut Vec<K>) {
+            print!("[");
+            let first_key = *keys.first().unwrap();
+            match self.get(first_key) {
+                Some(d) => print!("{:?}:{:?}", first_key, *d),
+                None    => print!("__ "),
+            }
+            keys.remove(0);
+            for &k in keys.iter() {
+                print!(", ");
+                match self.get(k) {
+                    Some(d) => print!("{:?}:{:?}", k, *d),
+                    None    => print!("__ "),
+                }
+            }
+            print!("]");
+        }
     }
 }
 
@@ -328,11 +347,12 @@ pub mod db {
     use avl::*;
     use std::collections::HashMap;
     use std::slice::Iter;
+    use std::fmt::Debug;
     use self::time::PreciseTime;
     use self::time::SteadyTime;
 
     #[derive(Clone)]
-    pub struct Col<T:Ord+Copy> {
+    pub struct Col<T:Ord+Copy+Debug> {
         // Original
         pub v: Vec<T>,
         
@@ -349,7 +369,7 @@ pub mod db {
         pub base_idx: Vec<usize>,
     }
 
-    impl <T:Ord+Copy> Col<T> {
+    impl <T:Ord+Copy+Debug> Col<T> {
         pub fn empty() -> Col<T> {
             Col {
                 v: Vec::new(),

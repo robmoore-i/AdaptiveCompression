@@ -27,7 +27,10 @@ fn main() {
     println!("Selected {:?}", (*selected.get_col("src".to_string()).unwrap()).v);
 
     println!("Original {:?}", (*adjacency_list.get_col("src".to_string()).unwrap()).v);
-    println!("Cracker  {:?}", (adjacency_list.crk_col.crk));
+    println!("Cracker  {:?}", adjacency_list.crk_col.crk);
+    print!(  "Index    ");
+    adjacency_list.crk_col.crk_idx.print_nodes(&mut vec![4, 5]);
+    println!();
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
