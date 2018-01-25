@@ -123,7 +123,7 @@ pub mod avl {
         search_pair(key,root).map(|(_,v)| v )
     }
 
-    // Returns a read only reference paie to the data stored under key in the tree given by root
+    // Returns a read only reference pair to the data stored under key in the tree given by root
     pub fn search_pair<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
@@ -132,7 +132,7 @@ pub mod avl {
         }
     }
 
-    // Returns the smallest key >= given key.
+    // Returns the smallest key value pair (k, v) s.t. k >= given key.
     pub fn min_after<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),           
@@ -151,7 +151,7 @@ pub mod avl {
         }
     }
     
-    // Returns the smallest key >= given key.
+    // Returns the greatest key value pair (k, v) s.t. k  <= given key.
     pub fn max_before<'a, K:Ord,D>(key: &K, root: &'a Box<Node<K,D>>) -> Option<(&'a K,&'a D)> {
         match root.key.cmp(key) {
             Ordering::Equal   => Some((&root.key, &root.data)),
