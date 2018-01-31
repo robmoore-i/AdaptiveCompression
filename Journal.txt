@@ -282,3 +282,28 @@ have with the rust compiler.
 Found a new bug in cracking with single value selection - there is a problem with
 fetching offsets from the cracker index - the incorrect offsets are being pulled and
 so queries are not correct.
+
+=====================================================================================
+## Tuesday 30th January, 2018, Changed cracker index implementation for compression
+=====================================================================================
+
+We have been discussing quite often the prospect of compressive cracking. I came up with
+an initial naive format, and in last Friday's meeting Holger and I discussed and
+expanded to some better ideas. Eager vs lazy compression came up, and we also decided
+that flattening lists + compaction was not really what we wanted. I've written some
+notes also on squid regarding compression, hence the apparent reduction in writing.
+
+Having spent some time thinking about the easiest way to get compression in that isn't
+the naive method, I've got something quite similar that will also be easy to implement,
+however, it will be even easier still if the cracker index is not an AVL tree, but just
+an array. I have now implemented that change and also provided an abstraction for the
+cracker index in its own module.
+
+Using an array for the cracker index is also good because it means that we can get
+faster lookup times for values around another. When compressing opportunistically (the
+word I am giving for doing something not fully eagerly, but not really lazily either)
+we are looking for consecutive values which are keys in the cracker index. Using an AVL
+tree this is not trivial, but with an array it is, and moreover, it is very fast. One
+of my initial concerns with looking for compression opportunities was that it would
+require lots of cracker index probes in every scan, which I doubt would yield
+acceptable performance.
