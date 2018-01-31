@@ -1,6 +1,7 @@
 \l qchart.q
 
-t:value `:bms/bfsSparse
+ts:`$.z.x
+ts set' {value ` sv (`:bms,x)} each ts
 
 scatterAllNodes:{qchart.points select nodes,unoptimised,adaptive,preclustered,preclusteredRLE from t}
 scatterAllEdges:{qchart.points select edges,unoptimised,adaptive,preclustered,preclusteredRLE from t}
