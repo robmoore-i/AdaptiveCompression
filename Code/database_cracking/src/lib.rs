@@ -352,25 +352,25 @@ pub mod db {
     use self::time::SteadyTime;
 
     #[derive(Clone)]
-    pub struct Col<T:Ord+Copy+Debug> {
+    pub struct Col {
         // Original
-        pub v: Vec<T>,
+        pub v: Vec<i64>,
         
         // Cracked
-        pub crk: Vec<T>,
+        pub crk: Vec<i64>,
         
         // Cracker index - for a value v, stores the index p such that
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
-        pub crk_idx: AVLTree<T, usize>,
+        pub crk_idx: AVLTree<i64, usize>,
         
         // Base index - maintains an index into the base columns of the table for alignment
         // during tuple reconstruction.
         pub base_idx: Vec<usize>,
     }
 
-    impl <T:Ord+Copy+Debug> Col<T> {
-        pub fn empty() -> Col<T> {
+    impl Col {
+        pub fn empty() -> Col {
             Col {
                 v: Vec::new(),
                 crk:Vec::new(),
@@ -392,13 +392,6 @@ pub mod db {
             self.base_idx = Vec::new();
         }
     }
-    
-    // Tagged union for database types. Not used yet.
-    #[derive(PartialEq, PartialOrd)]
-    pub enum Field {
-        I(i64),
-        F(f64),
-    }
 
     macro_rules! t {
         ($work:block, $tvar:ident) => {
@@ -412,8 +405,8 @@ pub mod db {
     #[derive(Clone)]
     pub struct Table {
         pub count: usize,
-        pub crk_col: Col<i64>,
-        pub columns: HashMap<String, Col<i64>>,
+        pub crk_col: Col,
+        pub columns: HashMap<String, Col>,
     }
     
     impl Table {
@@ -455,12 +448,12 @@ pub mod db {
             self.count += n_new_tuples;
         }
 
-        pub fn get_col(&self, col: String) -> Option<&Col<i64>> {
+        pub fn get_col(&self, col: String) -> Option<&Col> {
             self.columns.get(&col)
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
-            let mut selection: HashMap<String, Col<i64>> = HashMap::new();
+            let mut selection: HashMap<String, Col> = HashMap::new();
             for (name, col) in &self.columns {
                 let mut v_buffer = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
@@ -630,8 +623,6 @@ pub mod db {
 #[cfg(test)]
 mod tests {
     use db::*;
-    use db::Field::I;
-    use db::Field::F;
     use std::collections::HashMap;
 
     // I credit these two macros (matches, _tt_as_expr_hack) to this chap:
@@ -980,20 +971,6 @@ mod tests {
         let selection = table.cracker_select_in_three(10, 14, false, false);
         assert_base_column_equals(selection.clone(), "a", vec![13, 12, 11]);
         assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1]);
-    }
-
-    #[test]
-    fn can_compare_i_fields() {
-        let x: Field = I(5);
-        let y: Field = I(7);
-        assert!(x < y);
-    }
-
-    #[test]
-    fn can_compare_f_fields() {
-        let x: Field = F(5.0);
-        let y: Field = F(5.5);
-        assert!(x < y);
     }
 
     #[test]
