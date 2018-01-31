@@ -294,7 +294,7 @@ pub mod avl {
 
         pub fn empty(&self) -> bool { self.root.is_none() }
 
-        // Returns the largest key <= key
+        // Returns the smallest key >= key
         pub fn upper_bound(&self, key: &K) -> Option<&D> {
             match self.root {
                 Some(ref tree) => {
@@ -307,7 +307,7 @@ pub mod avl {
             }            
         }
 
-        // Returns the smallest key >= key
+        // Returns the largest key <= key
         pub fn lower_bound(&self, key: &K) -> Option<&D> {
             match self.root {
                 Some(ref tree) => {
@@ -319,23 +319,86 @@ pub mod avl {
                 None => None
             }            
         }
+    }
+}
 
-        pub fn print_nodes(&self, keys: &mut Vec<K>) {
-            print!("[");
-            let first_key = *keys.first().unwrap();
-            match self.get(first_key) {
-                Some(d) => print!("{:?}:{:?}", first_key, *d),
-                None    => print!("__ "),
+// Implements the functions required for the cracker index.
+// Maps i64 -> usize
+pub mod cracker_index {
+    #[derive(Clone)]
+    pub struct CrackerIndex {
+        pub index: Vec<Option<usize>>
+    }
+
+    impl CrackerIndex {
+        pub fn new() -> CrackerIndex {
+            CrackerIndex { index: Vec::new() }
+        }
+
+        pub fn insert(&mut self, key: i64, data: usize) {
+            if key < 0 {
+                return;
             }
-            keys.remove(0);
-            for &k in keys.iter() {
-                print!(", ");
-                match self.get(k) {
-                    Some(d) => print!("{:?}:{:?}", k, *d),
-                    None    => print!("__ "),
+            while self.index.len() <= key as usize {
+                self.index.push(None);
+            }
+            self.index[key as usize] = Some(data);
+        }
+
+        pub fn delete(&mut self, key: i64) {
+            if self.index.len() > key as usize {
+                self.index.remove(key as usize);
+            }
+        }
+
+        pub fn get(&self, key: i64) -> Option<usize> {
+            if self.index.len() <= key as usize {
+                None
+            } else {
+                self.index[key as usize]
+            }
+        }
+
+        pub fn get_or(self, key: i64, default: usize) -> usize {
+            self.get(key).map_or(default, |data| data)
+        }
+
+        pub fn contains(&self, key: i64) -> bool {
+            self.get(key).is_some()
+        }
+
+        pub fn empty(&self) -> bool { self.index.len() == 0 }
+
+        // Returns the smallest key >= key
+        pub fn upper_bound(&self, key: &i64) -> Option<usize> {
+            if *key < 0 {
+                return None;
+            }
+            let mut k = (*key) as usize;
+            if k >= self.index.len() {
+                None
+            } else {
+                while self.index[k].is_none() && k < self.index.len() - 1 {
+                    k += 1;
                 }
+                self.index[k]
             }
-            print!("]");
+        }
+
+        // Returns the largest key <= key
+        pub fn lower_bound(&self, key: &i64) -> Option<usize> {
+            if *key < 0 {
+                return None;
+            }
+            let mut k = (*key) as usize;
+            if k >= self.index.len() {
+                None
+            } else {
+                while self.index[k].is_none() && k > 0 {
+                    k -= 1;
+                }
+                self.index[k]
+            }
         }
     }
 }
@@ -345,6 +408,7 @@ pub mod db {
     extern crate time;
 
     use avl::*;
+    use cracker_index::*;
     use std::collections::HashMap;
     use std::slice::Iter;
     use std::fmt::Debug;
@@ -362,7 +426,7 @@ pub mod db {
         // Cracker index - for a value v, stores the index p such that
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
-        pub crk_idx: AVLTree<i64, usize>,
+        pub crk_idx: CrackerIndex,
         
         // Base index - maintains an index into the base columns of the table for alignment
         // during tuple reconstruction.
@@ -374,7 +438,7 @@ pub mod db {
             Col {
                 v: Vec::new(),
                 crk:Vec::new(),
-                crk_idx: AVLTree::new(),
+                crk_idx: CrackerIndex::new(),
                 base_idx: Vec::new()
             }
         }
@@ -388,7 +452,7 @@ pub mod db {
 
             // Optimise
             self.crk = Vec::new();
-            self.crk_idx = AVLTree::new();
+            self.crk_idx = CrackerIndex::new();
             self.base_idx = Vec::new();
         }
     }
@@ -476,7 +540,7 @@ pub mod db {
                     indexed_crk_v.push(self.crk_col.v[i]);
                 }
                 t.crk_col.crk     = indexed_crk_col;
-                t.crk_col.crk_idx = AVLTree::new();
+                t.crk_col.crk_idx = CrackerIndex::new();
             } else {
                 for &i in indices.clone() {
                     indexed_crk_v.push(self.crk_col.v[i]);
@@ -515,8 +579,8 @@ pub mod db {
             #[inline] let c_high = |x| x > adjusted_high;
 
             // Start with a pointer at both ends of the array: p_low, p_high
-            let mut p_low = *(self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(&0));
-            let mut p_high = *(self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(&((self.count - 1) as usize)));
+            let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
+            let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) {
@@ -582,7 +646,7 @@ pub mod db {
 
             // Start with pointers at the start and end of the array
             let initial_p_low  = 0;
-            let mut p_high = *(self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(&((self.count - 1) as usize)));
+            let mut p_high = self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or((self.count - 1) as usize);
 
             // Save p_low for later:
             let mut p_low = initial_p_low.clone();
@@ -806,7 +870,7 @@ mod tests {
     }
     
     #[test]
-    fn crack_in_three_select_enture_column() {
+    fn crack_in_three_select_entire_column() {
         let mut table = one_col_test_table();
         {
             let selection = table.cracker_select_in_three(-50, 200, false, false);
