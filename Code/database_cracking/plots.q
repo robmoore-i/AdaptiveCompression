@@ -5,13 +5,16 @@
 
 ts set' {value ` sv (`:bms,x)} each ts:`$.z.x
 
-scatterAllNodes:{qchart.points select nodes,unoptimised,adaptive,preclustered,preclusteredRLE from t}
-scatterAllEdges:{qchart.points select edges,unoptimised,adaptive,preclustered,preclusteredRLE from t}
-scatterAllDensity:{qchart.points select density,unoptimised,adaptive,preclustered,preclusteredRLE from t}
+mergeResults:{[tMany;tSingle]
+    `nodes`edges`density`unoptimised`adaptive`adaptiveRLE`preclustered`preclusteredRLE xcols 0!(3!tMany) lj 3!tSingle}
 
-scatterNodesRange:{[lbound;ubound]
-  qchart.points select nodes,unoptimised,adaptive,preclustered,preclusteredRLE from t where nodes within (lbound;ubound)}
-scatterEdgesRange:{[lbound;ubound]
-  qchart.points select edges,unoptimised,adaptive,preclustered,preclusteredRLE from t where edges within (lbound;ubound)}
-scatterDensityRange:{[lbound;ubound]
-  qchart.points select density,unoptimised,adaptive,preclustered,preclusteredRLE from t where density within (lbound;ubound)}
+scatterAllNodes:  {[t]qchart.points delete edges,density from t}
+scatterAllEdges:  {[t]qchart.points delete nodes,density from t}
+scatterAllDensity:{[t]qchart.points delete nodes,edges   from t}
+
+scatterNodesRange:{[t;lbound;ubound]
+  qchart.points select from (delete edges,density from t) where nodes   within (lbound;ubound)}
+scatterEdgesRange:{[t;lbound;ubound]
+  qchart.points select from (delete nodes,density from t) where edges   within (lbound;ubound)}
+scatterDensityRange:{[t;lbound;ubound]
+  qchart.points select from (delete nodes,edges   from t) where density within (lbound;ubound)}
