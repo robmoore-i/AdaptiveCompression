@@ -578,7 +578,7 @@ pub mod db {
             #[inline] let c_low = |x| x < adjusted_low;
             #[inline] let c_high = |x| x > adjusted_high;
 
-            // Start with a pointer at both ends of the array: p_low, p_high
+            // Start with a pointer at both ends of the piece: p_low, p_high
             let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
             let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
 
