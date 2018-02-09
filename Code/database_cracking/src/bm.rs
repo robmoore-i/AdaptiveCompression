@@ -12,7 +12,7 @@ use time::SteadyTime;
 use bit_vec::BitVec;
 
 fn main() {
-    let graph_sizes = graph_size_range(5, 100, 5000, 100);
+    let graph_sizes = graph_size_range(5, 1000, 30000, 1000);
     benchmark_sparse_bfs_csv(graph_sizes);
 }
 
