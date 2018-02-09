@@ -1,5 +1,0 @@
-Analysis of connected data is becoming increasingly valuable in the world[REF], as social media and vast computer networks consisting of phones and other web-connected devices become ubiquitous[REF]. These increasingly large data mining tasks will require high-speed graph database queries to provide the answers to questions which will enable software providers to deliver value to consumers.
-
-There are currently not many indexing techniques available for graph databases - many use index-free adjacency[REF] or a hybrid index on the edges[REF]. There are however adaptive restructuring techniques available for graph databases in at least one recent PhD[REF].
-
-Our plan for implementing adaptive processing is to first choose a graph indexing technique and then figure out how that index can be constructed on-the-fly from incoming queries. We will then benchmark the system we produce against other potential techniques for solving our problem.

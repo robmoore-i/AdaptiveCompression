@@ -1,1 +1,0 @@
-We are looking to introduce a novel method of executing queries on graph databases to perform online restructuring and/or compression for improved query performance.
