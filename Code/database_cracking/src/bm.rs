@@ -11,6 +11,34 @@ use time::PreciseTime;
 use time::SteadyTime;
 use bit_vec::BitVec;
 
+/* PROFILING
+    Macros for profiling the performance of a function
+*/
+
+macro_rules! t_block {
+    ($work:block, $tvar:ident) => {
+            let start = PreciseTime::now();
+            $work;
+            let end = PreciseTime::now();
+            $tvar = $tvar + start.to(end);
+        };
+}
+
+macro_rules! t_expr {
+    ($work:expr, $tvar:ident) => {
+            let start = PreciseTime::now();
+            $work;
+            let end = PreciseTime::now();
+            $tvar = $tvar + start.to(end);
+        };
+}
+
+// Todo: Write a nice macro for printing all the profiler timing variables at the end of a fn.
+
+/* MAIN
+    Top level function. Executed with `cargo run [--release]` from terminal.
+*/
+
 fn main() {
     let graph_sizes = graph_size_range(5, 1000, 30000, 1000);
     benchmark_sparse_bfs_csv(graph_sizes);
@@ -67,30 +95,6 @@ fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) wher
 fn graph_density(n: i64, e: usize) -> f64 {
     (e as f64) / ((n * (n - 1)) as f64)
 }
-
-/* PROFILING
-    Macros for profiling the performance of a function
-*/
-
-macro_rules! t_block {
-    ($work:block, $tvar:ident) => {
-            let start = PreciseTime::now();
-            $work;
-            let end = PreciseTime::now();
-            $tvar = $tvar + start.to(end);
-        };
-}
-
-macro_rules! t_expr {
-    ($work:expr, $tvar:ident) => {
-            let start = PreciseTime::now();
-            $work;
-            let end = PreciseTime::now();
-            $tvar = $tvar + start.to(end);
-        };
-}
-
-// Todo: Write a nice macro for printing all the profiler timing variables at the end of a fn.
 
 /* GRAPH BUILDING:
     Given a number of nodes N for a graph
