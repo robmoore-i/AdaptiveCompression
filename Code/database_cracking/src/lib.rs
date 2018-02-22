@@ -582,6 +582,11 @@ pub mod db {
             let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
             let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
 
+            let is_uniform_column_piece = adjusted_low == adjusted_high && self.crk_col.crk_idx.contains(adjusted_low) && self.crk_col.crk_idx.contains(adjusted_low + 1);
+            if is_uniform_column_piece {
+                return self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
+            }
+
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) {
                 p_low += 1;
@@ -603,7 +608,6 @@ pub mod db {
             }
 
             let mut p_itr = p_low.clone();
-
 
             while p_itr <= p_high {
                 if c_low(self.crk_col.crk[p_itr]) {
