@@ -587,22 +587,18 @@ pub mod db {
             }
 
             // Check: After insertion, the columns must all still have the same length
-            match l_new {
-                Some(n) => {
-                    match l_old {
-                        Some(o) => {
-                            if n != o + self.count {
-                                panic!("insert: (new & old-column) Values to be inserted are not the correct lengths")
-                            }
-                        },
-                        None => {
-                            if n != self.count {
-                                panic!("insert: (new-column-only) Values to be inserted are not the correct lengths")
-                            }
-                        },
+            match (l_new, l_old) {
+                (Some(n), Some(o)) => {
+                    if n != o + self.count {
+                        panic!("insert: (new & old-column) Values to be inserted are not the correct lengths")
                     }
                 },
-                None => {},
+                (Some(n), None) => {
+                    if n != self.count {
+                        panic!("insert: (new-column-only) Values to be inserted are not the correct lengths")
+                    }
+                },
+                (None, _) => {},
             };
 
             // For every old-column entry, append the values to the current column
