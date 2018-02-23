@@ -622,6 +622,13 @@ pub mod db {
             }
         }
 
+        pub fn rearrange(&mut self, indices: Iter<usize>) {
+            for col in self.columns.values_mut() {
+                col.rearrange(indices.clone());
+            }
+            self.crk_col.rearrange(indices.clone());
+        }
+
         pub fn get_col(&self, col: String) -> Option<&CrackableCol> {
             self.columns.get(&col)
         }
@@ -658,13 +665,6 @@ pub mod db {
             }
             t.crk_col.v = indexed_crk_v;
             t
-        }
-
-        pub fn rearrange(&mut self, indices: Iter<usize>) {
-            for col in self.columns.values_mut() {
-                col.rearrange(indices.clone());
-            }
-            self.crk_col.rearrange(indices.clone());
         }
 
         // Returns the elements of T where the cracker columns's value equals X
