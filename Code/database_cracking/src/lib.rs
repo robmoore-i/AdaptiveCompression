@@ -420,6 +420,7 @@ pub mod db {
         fn empty() -> Self;
         fn rearrange(&mut self, indices: Iter<usize>);
         fn at(self, idx: usize) -> Self::Item;
+        fn append(&mut self, values: &mut Vec<Self::Item>);
     }
 
     #[derive(Clone)]
@@ -449,6 +450,10 @@ pub mod db {
 
         fn at(self, idx: usize) -> f64 {
             self.v[idx]
+        }
+
+        fn append(&mut self, values: &mut Vec<f64>) {
+            self.v.append(values);
         }
     }
 
@@ -497,6 +502,10 @@ pub mod db {
 
         fn at(self, idx: usize) -> i64 {
             self.v[idx]
+        }
+
+        fn append(&mut self, values: &mut Vec<i64>) {
+            self.v.append(values);
         }
     }
 
@@ -549,20 +558,72 @@ pub mod db {
             }
         }
 
-        // TODO: Improve exception handling in this function
         pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
-            let mut n_new_tuples = 0;
-            for (key, val) in self.columns.iter_mut() {
-                let new_elems = new_values.get_mut(key).unwrap();
-                let n = new_elems.len();
-                if n_new_tuples == 0 || n_new_tuples == n {
-                    val.v.append(new_elems);
-                    n_new_tuples = n;
-                } else {
-                    panic!("insert: new_values has vectors of differing lengths");
+            // Check: self.columns.keys SUBSET-OF new_values.keys
+            for k in self.columns.keys() {
+                if !new_values.contains_key(k) {
+                    panic!("insert: Tried to add tuples with nulls")
                 }
             }
-            self.count += n_new_tuples;
+
+            // Check: The length of the old or new- column entries must all be equal
+            let mut l_old = None;
+            let mut l_new = None;
+
+            #[inline] let check_length = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Columns to be inserted do not have the same length") };
+
+            for (k, v) in new_values.iter() {
+                if self.columns.contains_key(k) {
+                    match l_old {
+                        Some(l) => check_length(v, l),
+                        None    => l_old = Some(v.len()),
+                    };
+                } else {
+                    match l_new {
+                        Some(l) => check_length(v, l),
+                        None    => l_new = Some(v.len()),
+                    };
+                }
+            }
+
+            // Check: After insertion, the columns must all still have the same length
+            match l_new {
+                Some(n) => {
+                    match l_old {
+                        Some(o) => {
+                            if n != o + self.count {
+                                panic!("insert: (new & old-column) Values to be inserted are not the correct lengths")
+                            }
+                        },
+                        None => {
+                            if n != self.count {
+                                panic!("insert: (new-column-only) Values to be inserted are not the correct lengths")
+                            }
+                        },
+                    }
+                },
+                None => {},
+            };
+
+            // For every old-column entry, append the values to the current column
+            // For every new-column entry, create the column and add the values
+            for (k, v) in new_values.iter_mut() {
+                if self.columns.contains_key(k) {
+                    let c = self.columns.get_mut(k).unwrap();
+                    c.append(v);
+                } else {
+                    let mut new = CrackableCol::empty();
+                    new.append(v);
+                    self.columns.insert(k.clone(), new);
+                }
+            }
+
+            // Mark the increased size of the table
+            if l_new.is_some() {
+                self.count = l_new.unwrap();
+            } else {
+                self.count += l_old.unwrap();
+            }
         }
 
         pub fn get_col(&self, col: String) -> Option<&CrackableCol> {
