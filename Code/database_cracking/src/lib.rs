@@ -415,8 +415,42 @@ pub mod db {
     use self::time::PreciseTime;
     use self::time::SteadyTime;
 
+    pub trait Column<Item> {
+        fn empty() -> Self;
+        fn rearrange(&mut self, indices: Iter<usize>);
+        fn at(self, idx: usize) -> Item;
+    }
+
     #[derive(Clone)]
-    pub struct Col {
+    pub struct FloatCol {
+        pub v: Vec<f64>,
+        pub base_idx: Vec<usize>,
+    }
+
+    impl Column<f64> for FloatCol {
+        fn empty() -> FloatCol {
+            FloatCol {
+                v: Vec::new(),
+                base_idx: Vec::new()
+            }
+        }
+
+        fn rearrange(&mut self, indices: Iter<usize>) {
+            let mut replacement_v = Vec::with_capacity(self.v.len());
+            for &i in indices.clone() {
+                replacement_v.push(self.v[i]);
+            }
+            self.v = replacement_v;
+            self.base_idx = Vec::new();
+        }
+
+        fn at(self, idx: usize) -> f64 {
+            self.v[idx]
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct CrackableCol {
         // Original
         pub v: Vec<i64>,
         
@@ -433,9 +467,9 @@ pub mod db {
         pub base_idx: Vec<usize>,
     }
 
-    impl Col {
-        pub fn empty() -> Col {
-            Col {
+    impl Column<i64> for CrackableCol {
+        fn empty() -> CrackableCol {
+            CrackableCol {
                 v: Vec::new(),
                 crk:Vec::new(),
                 crk_idx: CrackerIndex::new(),
@@ -443,17 +477,21 @@ pub mod db {
             }
         }
 
-        pub fn rearrange(&mut self, indices: Iter<usize>) {
+        fn rearrange(&mut self, indices: Iter<usize>) {
             let mut replacement_v = Vec::with_capacity(self.v.len());
             for &i in indices.clone() {
                 replacement_v.push(self.v[i]);
             }
             self.v = replacement_v;
 
-            // Optimise
+            // Could be optimised for nested queries
             self.crk = Vec::new();
             self.crk_idx = CrackerIndex::new();
             self.base_idx = Vec::new();
+        }
+
+        fn at(self, idx: usize) -> i64 {
+            self.v[idx]
         }
     }
 
@@ -470,8 +508,8 @@ pub mod db {
     pub struct Table {
         pub count: usize,
         pub crk_col_name: String,
-        pub crk_col: Col,
-        pub columns: HashMap<String, Col>,
+        pub crk_col: CrackableCol,
+        pub columns: HashMap<String, CrackableCol>,
     }
     
     impl Table {
@@ -479,7 +517,7 @@ pub mod db {
             Table {
                 count: 0,
                 crk_col_name: "".to_string(),
-                crk_col: Col::empty(),
+                crk_col: CrackableCol::empty(),
                 columns: HashMap::new()
             }
         }
@@ -502,7 +540,7 @@ pub mod db {
 
         pub fn new_columns(&mut self, col_names: Vec<String>) {
             for col in col_names {
-                self.columns.insert(col, Col::empty());
+                self.columns.insert(col, CrackableCol::empty());
             }
         }
 
@@ -522,18 +560,18 @@ pub mod db {
             self.count += n_new_tuples;
         }
 
-        pub fn get_col(&self, col: String) -> Option<&Col> {
+        pub fn get_col(&self, col: String) -> Option<&CrackableCol> {
             self.columns.get(&col)
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
-            let mut selection: HashMap<String, Col> = HashMap::new();
+            let mut selection: HashMap<String, CrackableCol> = HashMap::new();
             for (name, col) in &self.columns {
                 let mut v_buffer = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
                     v_buffer.push(col.v[i]);
                 }
-                let mut c_buffer = Col::empty();
+                let mut c_buffer = CrackableCol::empty();
                 c_buffer.v = v_buffer;
                 selection.insert(name.clone(), c_buffer);
             }
