@@ -574,10 +574,6 @@ pub mod db {
 
         // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
-            if self.crk_col.crk.is_empty() {
-                panic!("cracker_select_in_three: crk_col hasn't been assigned")
-            }
-
             let adjusted_low = low + !inc_l as i64;
             let adjusted_high = high - !inc_h as i64;
             // c_low(x)  <=> x outside catchment at low  end
@@ -645,10 +641,6 @@ pub mod db {
 
         // Returns the elements of T where the cracker column's value is less than MED, with inclusivity given by INC
         pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> Table {
-            if self.crk_col.crk.is_empty() {
-                panic!("cracker_select_in_three: crk_col hasn't been assigned")
-            }
-
             let adjusted_med  = med + inc as i64;
             // cond(x) returns x inside catchment
             #[inline] let cond = |x| x < adjusted_med;
