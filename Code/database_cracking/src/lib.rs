@@ -629,8 +629,8 @@ pub mod db {
             self.crk_col.rearrange(indices.clone());
         }
 
-        pub fn get_col(&self, col: String) -> Option<&CrackableCol> {
-            self.columns.get(&col)
+        pub fn get_col(&self, col: &str) -> &CrackableCol {
+            self.columns.get(&(col.to_string())).expect(&*("get_col: No column called ".to_string() + col))
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
@@ -1083,6 +1083,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
     fn can_insert_into_multi_column_table() {
         let mut table = Table::new();
         table.new_columns(vec!["a".to_string(), "b".to_string()]);
@@ -1090,9 +1091,9 @@ mod tests {
         new_values.insert("a".to_string(), vec![1, 2, 3]);
         new_values.insert("b".to_string(), vec![4, 5, 6]);
         table.insert(&mut new_values);
-        assert!(matches!(table.get_col("a".to_string()), Some(ref _col)));
-        assert!(matches!(table.get_col("b".to_string()), Some(ref _col)));
-        assert!(matches!(table.get_col("c".to_string()), None));
+        assert_eq!(table.get_col("a").v, vec![1, 2, 3]);
+        assert_eq!(table.get_col("b").v, vec![4, 5, 6]);
+        table.get_col("c");
     }
 
     fn two_col_test_table() -> Table {
@@ -1107,9 +1108,8 @@ mod tests {
     }
 
     fn assert_base_column_equals(t: Table, column_name: &str, expected: Vec<i64>) {
-        match t.get_col(column_name.to_string()) {
-            Some(ref col) => assert_eq!(col.v, expected),
-            None          => assert!(false),
+        match t.get_col(column_name) {
+            ref col => assert_eq!(col.v, expected),
         }
     }
 
@@ -1124,9 +1124,8 @@ mod tests {
     #[test]
     fn can_set_cracked_column() {
         let table = two_col_test_table();
-        match table.get_col("a".to_string()) {
-            Some(ref col) => assert_eq!(table.crk_col.v, col.v),
-            None          => assert!(false),
+        match table.get_col("a") {
+            ref col => assert_eq!(table.crk_col.v, col.v),
         };
     }
 
@@ -1226,7 +1225,7 @@ mod tests {
         assert_base_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
 
         println!("src: {:?}", adjacency_list.crk_col.crk);
-        println!("dst: {:?}", adjacency_list.get_col("dst".to_string()).unwrap().v);
+        println!("dst: {:?}", adjacency_list.get_col("dst").v);
 
         let selection_3 = adjacency_list.cracker_select_in_three(2, 2, true, true);
         assert_base_column_equals(selection_3.clone(), "src", vec![2]);

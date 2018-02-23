@@ -230,7 +230,7 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
         // and add them to a new, empty frontier.
         for src in prev_frontier {
             let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_col("dst".to_string()).unwrap())).v.clone();
+            let neighbours = (*(selection.get_col("dst"))).v.clone();
             for dst in neighbours {
                 discover(dst, &mut visited, &mut frontier);
             }
@@ -240,8 +240,8 @@ fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 }
 
 fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-    let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let src_col = adjacency_list.get_col("src").v.clone();
+    let dst_col = adjacency_list.get_col("dst").v.clone();
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -262,8 +262,8 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 }
 
 fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let mut src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-    let mut dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let mut src_col = adjacency_list.get_col("src").v.clone();
+    let mut dst_col = adjacency_list.get_col("dst").v.clone();
     let mut row_store = Vec::with_capacity(adjacency_list.count);
     for i in 0..adjacency_list.count {
         row_store.push((src_col[i], dst_col[i]));
@@ -309,8 +309,8 @@ fn preclustered_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 }
 
 fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let src_col = adjacency_list.get_col("src".to_string()).unwrap().v.clone();
-    let dst_col = adjacency_list.get_col("dst".to_string()).unwrap().v.clone();
+    let src_col = adjacency_list.get_col("src").v.clone();
+    let dst_col = adjacency_list.get_col("dst").v.clone();
 
     let mut encoded_col: Vec<Vec<i64>> = Vec::new();
     for i in 0..adjacency_list.count {
