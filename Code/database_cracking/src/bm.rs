@@ -124,7 +124,7 @@ fn deal(n: usize) -> Vec<usize> {
 // Returns a randomly shuffled adjacency list representing a complete graph for n nodes
 fn fully_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
-    t.new_columns(vec!["src".to_string(), "dst".to_string()]);
+    t.new_columns(vec!["src", "dst"]);
     for i in 1..(n + 1) {
         let mut connections = HashMap::new();
         let i_vec: Vec<i64> = iter::repeat(i as i64).take((n - 1) as usize).collect();
@@ -144,7 +144,7 @@ fn fully_connected_graph(n: i64) -> Table {
 // Returns a connected graph for n nodes, which are numbered 1-n inclusive.
 fn randomly_connected_tree(n: i64) -> Table {
     let mut t = Table::new();
-    t.new_columns(vec!["src".to_string(), "dst".to_string()]);
+    t.new_columns(vec!["src", "dst"]);
     let mut add_order: Vec<i64> = deal(n as usize).iter().map(|x| 1 + *x as i64).collect();
 
     let node_1 = *rand::thread_rng().choose(&add_order).unwrap();

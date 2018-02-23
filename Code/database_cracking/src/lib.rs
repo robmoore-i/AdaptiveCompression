@@ -552,9 +552,9 @@ pub mod db {
             }
         }
 
-        pub fn new_columns(&mut self, col_names: Vec<String>) {
+        pub fn new_columns(&mut self, col_names: Vec<&str>) {
             for col in col_names {
-                self.columns.insert(col, CrackableCol::empty());
+                self.columns.insert(col.to_string(), CrackableCol::empty());
             }
         }
 
@@ -813,7 +813,7 @@ mod tests {
 
     fn one_col_test_table() -> Table {
         let mut table = Table::new();
-        table.new_columns(vec!["a".to_string()]);
+        table.new_columns(vec!["a"]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         table.insert(&mut new_values);
@@ -1072,7 +1072,7 @@ mod tests {
     #[test]
     fn can_create_table_with_three_columns() {
         let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        table.new_columns(vec!["a", "b", "c"]);
         let mut keys = Vec::new();
         for key in table.columns.keys() {
             keys.push(key);
@@ -1086,7 +1086,7 @@ mod tests {
     #[should_panic]
     fn can_insert_into_multi_column_table() {
         let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string()]);
+        table.new_columns(vec!["a", "b"]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![1, 2, 3]);
         new_values.insert("b".to_string(), vec![4, 5, 6]);
@@ -1098,7 +1098,7 @@ mod tests {
 
     fn two_col_test_table() -> Table {
         let mut table = Table::new();
-        table.new_columns(vec!["a".to_string(), "b".to_string()]);
+        table.new_columns(vec!["a", "b"]);
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
@@ -1147,7 +1147,7 @@ mod tests {
 
     fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> Table {
         let mut adjacency_list = Table::new();
-        adjacency_list.new_columns(vec!["src".to_string(), "dst".to_string()]);
+        adjacency_list.new_columns(vec!["src", "dst"]);
         let mut new_values = HashMap::new();
         new_values.insert("src".to_string(), src);
         new_values.insert("dst".to_string(), dst);
