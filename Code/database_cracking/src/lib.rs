@@ -469,6 +469,7 @@ pub mod db {
     #[derive(Clone)]
     pub struct Table {
         pub count: usize,
+        pub crk_col_name: String,
         pub crk_col: Col,
         pub columns: HashMap<String, Col>,
     }
@@ -477,23 +478,32 @@ pub mod db {
         pub fn new() -> Table {
             Table {
                 count: 0,
+                crk_col_name: "".to_string(),
                 crk_col: Col::empty(),
                 columns: HashMap::new()
             }
         }
-        
+
+        pub fn set_crk_col(&mut self, col_name: String) {
+            self.crk_col_name = col_name.clone();
+
+            match self.columns.get_mut(&col_name) {
+                Some(ref mut c) => {
+                    if c.crk.is_empty() {
+                        c.crk = c.v.clone();
+                    }
+                    self.crk_col.v        = c.crk.clone();
+                    self.crk_col.crk      = c.crk.clone();
+                    self.crk_col.base_idx = (0..self.count).collect();
+                },
+                None => panic!("set_crk_col: no such col"),
+            }
+        }
+
         pub fn new_columns(&mut self, col_names: Vec<String>) {
             for col in col_names {
                 self.columns.insert(col, Col::empty());
             }
-        }
-
-        pub fn set_crk_col(&mut self, col_name: String) {
-            let col = match self.columns.get(&col_name) {
-                Some(ref c) => *c,
-                None        => panic!("set_crk_col: no such col"),
-            };
-            self.crk_col = col.clone();
         }
 
         // TODO: Improve exception handling in this function
@@ -564,11 +574,8 @@ pub mod db {
 
         // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
         pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> Table {
-            // If column hasn't been cracked before, copy it, and copy a reference to the current
-            // indices of the base table.
-            if self.crk_col.crk.len() == 0 {
-                self.crk_col.crk = self.crk_col.v.clone();
-                self.crk_col.base_idx = (0..self.count).collect();
+            if self.crk_col.crk.is_empty() {
+                panic!("cracker_select_in_three: crk_col hasn't been assigned")
             }
 
             let adjusted_low = low + !inc_l as i64;
@@ -638,10 +645,8 @@ pub mod db {
 
         // Returns the elements of T where the cracker column's value is less than MED, with inclusivity given by INC
         pub fn cracker_select_in_two(&mut self, med: i64, inc: bool) -> Table {
-            // If column hasn't been cracked before, copy it
-            if self.crk_col.crk.len() == 0 {
-                self.crk_col.crk = self.crk_col.v.clone();
-                self.crk_col.base_idx = (0..self.count).collect();
+            if self.crk_col.crk.is_empty() {
+                panic!("cracker_select_in_three: crk_col hasn't been assigned")
             }
 
             let adjusted_med  = med + inc as i64;
