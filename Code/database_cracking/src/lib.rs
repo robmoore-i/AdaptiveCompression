@@ -558,10 +558,10 @@ pub mod db {
             }
         }
 
-        pub fn insert(&mut self, new_values: &mut HashMap<String, Vec<i64>>) {
+        pub fn insert(&mut self, new_values: &mut HashMap<&str, Vec<i64>>) {
             // Check: self.columns.keys SUBSET-OF new_values.keys
             for k in self.columns.keys() {
-                if !new_values.contains_key(k) {
+                if !new_values.contains_key(&*(k.clone())) {
                     panic!("insert: Tried to add tuples with nulls")
                 }
             }
@@ -573,7 +573,7 @@ pub mod db {
             #[inline] let check_length = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Columns to be inserted do not have the same length") };
 
             for (k, v) in new_values.iter() {
-                if self.columns.contains_key(k) {
+                if self.columns.contains_key(&(k.to_string())) {
                     match l_old {
                         Some(l) => check_length(v, l),
                         None    => l_old = Some(v.len()),
@@ -604,13 +604,13 @@ pub mod db {
             // For every old-column entry, append the values to the current column
             // For every new-column entry, create the column and add the values
             for (k, v) in new_values.iter_mut() {
-                if self.columns.contains_key(k) {
-                    let c = self.columns.get_mut(k).unwrap();
+                if self.columns.contains_key(&(k.to_string())) {
+                    let c = self.columns.get_mut(&(k.to_string())).unwrap();
                     c.append(v);
                 } else {
                     let mut new = CrackableCol::empty();
                     new.append(v);
-                    self.columns.insert(k.clone(), new);
+                    self.columns.insert(k.to_string(), new);
                 }
             }
 
@@ -815,7 +815,7 @@ mod tests {
         let mut table = Table::new();
         table.new_columns(vec!["a"]);
         let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         table.insert(&mut new_values);
         table.set_crk_col("a");
         table
@@ -1088,8 +1088,8 @@ mod tests {
         let mut table = Table::new();
         table.new_columns(vec!["a", "b"]);
         let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![1, 2, 3]);
-        new_values.insert("b".to_string(), vec![4, 5, 6]);
+        new_values.insert("a", vec![1, 2, 3]);
+        new_values.insert("b", vec![4, 5, 6]);
         table.insert(&mut new_values);
         assert_eq!(table.get_col("a").v, vec![1, 2, 3]);
         assert_eq!(table.get_col("b").v, vec![4, 5, 6]);
@@ -1100,8 +1100,8 @@ mod tests {
         let mut table = Table::new();
         table.new_columns(vec!["a", "b"]);
         let mut new_values = HashMap::new();
-        new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
+        new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
+        new_values.insert("b", vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
         table.insert(&mut new_values);
         table.set_crk_col("a");
         table
@@ -1149,8 +1149,8 @@ mod tests {
         let mut adjacency_list = Table::new();
         adjacency_list.new_columns(vec!["src", "dst"]);
         let mut new_values = HashMap::new();
-        new_values.insert("src".to_string(), src);
-        new_values.insert("dst".to_string(), dst);
+        new_values.insert("src", src);
+        new_values.insert("dst", dst);
         adjacency_list.insert(&mut new_values);
         adjacency_list.set_crk_col("src");
         adjacency_list
