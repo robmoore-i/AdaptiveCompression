@@ -135,7 +135,7 @@ fn fully_connected_graph(n: i64) -> Table {
         connections.insert("dst".to_string(), dst_nodes);
         t.insert(&mut connections)
     }
-    t.set_crk_col("src".to_string());
+    t.set_crk_col("src");
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());
     t
@@ -173,7 +173,7 @@ fn randomly_connected_tree(n: i64) -> Table {
     connections.insert("src".to_string(), src_col);
     connections.insert("dst".to_string(), dst_col);
     t.insert(&mut connections);
-    t.set_crk_col("src".to_string());
+    t.set_crk_col("src");
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());
     t

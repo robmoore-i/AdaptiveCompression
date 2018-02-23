@@ -536,10 +536,10 @@ pub mod db {
             }
         }
 
-        pub fn set_crk_col(&mut self, col_name: String) {
-            self.crk_col_name = col_name.clone();
+        pub fn set_crk_col(&mut self, col_name: &str) {
+            self.crk_col_name = col_name.to_string();
 
-            match self.columns.get_mut(&col_name) {
+            match self.columns.get_mut(&(col_name.to_string())) {
                 Some(ref mut c) => {
                     if c.crk.is_empty() {
                         c.crk = c.v.clone();
@@ -817,7 +817,7 @@ mod tests {
         let mut new_values = HashMap::new();
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         table.insert(&mut new_values);
-        table.set_crk_col("a".to_string());
+        table.set_crk_col("a");
         table
     }
 
@@ -1103,7 +1103,7 @@ mod tests {
         new_values.insert("a".to_string(), vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b".to_string(), vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
         table.insert(&mut new_values);
-        table.set_crk_col("a".to_string());
+        table.set_crk_col("a");
         table
     }
 
@@ -1152,7 +1152,7 @@ mod tests {
         new_values.insert("src".to_string(), src);
         new_values.insert("dst".to_string(), dst);
         adjacency_list.insert(&mut new_values);
-        adjacency_list.set_crk_col("src".to_string());
+        adjacency_list.set_crk_col("src");
         adjacency_list
     }
 
