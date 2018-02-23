@@ -415,10 +415,11 @@ pub mod db {
     use self::time::PreciseTime;
     use self::time::SteadyTime;
 
-    pub trait Column<Item> {
+    pub trait Column {
+        type Item;
         fn empty() -> Self;
         fn rearrange(&mut self, indices: Iter<usize>);
-        fn at(self, idx: usize) -> Item;
+        fn at(self, idx: usize) -> Self::Item;
     }
 
     #[derive(Clone)]
@@ -427,7 +428,9 @@ pub mod db {
         pub base_idx: Vec<usize>,
     }
 
-    impl Column<f64> for FloatCol {
+    impl Column for FloatCol {
+        type Item = f64;
+
         fn empty() -> FloatCol {
             FloatCol {
                 v: Vec::new(),
@@ -467,7 +470,9 @@ pub mod db {
         pub base_idx: Vec<usize>,
     }
 
-    impl Column<i64> for CrackableCol {
+    impl Column for CrackableCol {
+        type Item = i64;
+
         fn empty() -> CrackableCol {
             CrackableCol {
                 v: Vec::new(),
