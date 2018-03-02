@@ -102,6 +102,21 @@ fn graph_density(n: i64, e: usize) -> f64 {
     Returns an adjacency list (Table) for a connected graph with N nodes.
 */
 
+// Macro for making hashmaps
+// I credit this macro (map) to this bod:
+// https://stackoverflow.com/a/27582993/3803302
+macro_rules! map (
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
+
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.
 fn deal(n: usize) -> Vec<usize> {
     let mut dealing: Vec<i64> = Vec::with_capacity(n as usize);
@@ -124,7 +139,7 @@ fn deal(n: usize) -> Vec<usize> {
 // Returns a randomly shuffled adjacency list representing a complete graph for n nodes
 fn fully_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
-    t.new_columns(vec!["src", "dst"]);
+    t.new_columns(map!{"src" => 'j', "dst" => 'j'});
     for i in 1..(n + 1) {
         let mut connections = HashMap::new();
         let i_vec: Vec<i64> = iter::repeat(i as i64).take((n - 1) as usize).collect();
@@ -144,7 +159,7 @@ fn fully_connected_graph(n: i64) -> Table {
 // Returns a connected graph for n nodes, which are numbered 1-n inclusive.
 fn randomly_connected_tree(n: i64) -> Table {
     let mut t = Table::new();
-    t.new_columns(vec!["src", "dst"]);
+    t.new_columns(map!{"src" => 'j', "dst" => 'j'});
     let mut add_order: Vec<i64> = deal(n as usize).iter().map(|x| 1 + *x as i64).collect();
 
     let node_1 = *rand::thread_rng().choose(&add_order).unwrap();

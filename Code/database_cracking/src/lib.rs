@@ -523,7 +523,8 @@ pub mod db {
         pub count: usize,
         pub crk_col_name: String,
         pub crk_col: CrackableCol,
-        pub columns: HashMap<String, CrackableCol>,
+        pub i64_columns: HashMap<String, CrackableCol>,
+        pub f64_columns: HashMap<String, FloatCol>,
     }
     
     impl Table {
@@ -532,14 +533,15 @@ pub mod db {
                 count: 0,
                 crk_col_name: "".to_string(),
                 crk_col: CrackableCol::empty(),
-                columns: HashMap::new()
+                i64_columns: HashMap::new(),
+                f64_columns: HashMap::new()
             }
         }
 
         pub fn set_crk_col(&mut self, col_name: &str) {
             self.crk_col_name = col_name.to_string();
 
-            match self.columns.get_mut(&(col_name.to_string())) {
+            match self.i64_columns.get_mut(&(col_name.to_string())) {
                 Some(ref mut c) => {
                     if c.crk.is_empty() {
                         c.crk = c.v.clone();
@@ -552,15 +554,26 @@ pub mod db {
             }
         }
 
-        pub fn new_columns(&mut self, col_names: Vec<&str>) {
-            for col in col_names {
-                self.columns.insert(col.to_string(), CrackableCol::empty());
+        pub fn new_columns(&mut self, cols: HashMap<&str, char>) {
+            let types = "jf".to_string();
+            for (name, t) in cols {
+                if !types.contains(t) {
+                    panic!("new_columns: Can't create a column with type: {}", t);
+                }
+                let was_column_overwritten = match t {
+                    'j' => self.i64_columns.insert(name.to_string(), CrackableCol::empty()).is_some(),
+                    'f' => self.f64_columns.insert(name.to_string(), FloatCol::empty()).is_some(),
+                    _   => panic!("new_columns: failed to catch an invalid type: {}", t),
+                };
+                if was_column_overwritten {
+                    panic!("new_columns: Overwrote column: {} with type: {}", name, t);
+                }
             }
         }
 
         pub fn insert(&mut self, new_values: &mut HashMap<&str, Vec<i64>>) {
             // Check: self.columns.keys SUBSET-OF new_values.keys
-            for k in self.columns.keys() {
+            for k in self.i64_columns.keys() {
                 if !new_values.contains_key(&*(k.clone())) {
                     panic!("insert: Tried to add tuples with nulls")
                 }
@@ -573,7 +586,7 @@ pub mod db {
             #[inline] let check_length = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Columns to be inserted do not have the same length") };
 
             for (k, v) in new_values.iter() {
-                if self.columns.contains_key(&(k.to_string())) {
+                if self.i64_columns.contains_key(&(k.to_string())) {
                     match l_old {
                         Some(l) => check_length(v, l),
                         None    => l_old = Some(v.len()),
@@ -604,13 +617,13 @@ pub mod db {
             // For every old-column entry, append the values to the current column
             // For every new-column entry, create the column and add the values
             for (k, v) in new_values.iter_mut() {
-                if self.columns.contains_key(&(k.to_string())) {
-                    let c = self.columns.get_mut(&(k.to_string())).unwrap();
+                if self.i64_columns.contains_key(&(k.to_string())) {
+                    let c = self.i64_columns.get_mut(&(k.to_string())).unwrap();
                     c.append(v);
                 } else {
                     let mut new = CrackableCol::empty();
                     new.append(v);
-                    self.columns.insert(k.to_string(), new);
+                    self.i64_columns.insert(k.to_string(), new);
                 }
             }
 
@@ -623,19 +636,19 @@ pub mod db {
         }
 
         pub fn rearrange(&mut self, indices: Iter<usize>) {
-            for col in self.columns.values_mut() {
+            for col in self.i64_columns.values_mut() {
                 col.rearrange(indices.clone());
             }
             self.crk_col.rearrange(indices.clone());
         }
 
         pub fn get_col(&self, col: &str) -> &CrackableCol {
-            self.columns.get(&(col.to_string())).expect(&*("get_col: No column called ".to_string() + col))
+            self.i64_columns.get(&(col.to_string())).expect(&*("get_col: No column called ".to_string() + col))
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
             let mut selection: HashMap<String, CrackableCol> = HashMap::new();
-            for (name, col) in &self.columns {
+            for (name, col) in &self.i64_columns {
                 let mut v_buffer = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
                     v_buffer.push(col.v[i]);
@@ -646,7 +659,7 @@ pub mod db {
             }
 
             let mut t = Table::new();
-            t.columns = selection;
+            t.i64_columns = selection;
             t.count = indices.len();
 
             let mut indexed_crk_v = Vec::with_capacity(indices.len());
@@ -790,6 +803,20 @@ mod tests {
     use db::*;
     use std::collections::HashMap;
 
+    // I credit this macro (map) to this bod:
+    // https://stackoverflow.com/a/27582993/3803302
+    macro_rules! map (
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
+
     // I credit these two macros (matches, _tt_as_expr_hack) to this chap:
     // http://rrichardson.github.io/reactor/src/mac/matches.rs.html#18-27
     #[macro_export]
@@ -813,7 +840,7 @@ mod tests {
 
     fn one_col_test_table() -> Table {
         let mut table = Table::new();
-        table.new_columns(vec!["a"]);
+        table.new_columns(map!{"a" => 'j'});
         let mut new_values = HashMap::new();
         new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         table.insert(&mut new_values);
@@ -1072,9 +1099,9 @@ mod tests {
     #[test]
     fn can_create_table_with_three_columns() {
         let mut table = Table::new();
-        table.new_columns(vec!["a", "b", "c"]);
+        table.new_columns(map!{"a" => 'j', "b" => 'j', "c" => 'j'});
         let mut keys = Vec::new();
-        for key in table.columns.keys() {
+        for key in table.i64_columns.keys() {
             keys.push(key);
         }
         assert!(keys.contains(&&"a".to_string()));
@@ -1086,7 +1113,7 @@ mod tests {
     #[should_panic]
     fn can_insert_into_multi_column_table() {
         let mut table = Table::new();
-        table.new_columns(vec!["a", "b"]);
+        table.new_columns(map!{"a" => 'j', "b" => 'j'});
         let mut new_values = HashMap::new();
         new_values.insert("a", vec![1, 2, 3]);
         new_values.insert("b", vec![4, 5, 6]);
@@ -1098,7 +1125,7 @@ mod tests {
 
     fn two_col_test_table() -> Table {
         let mut table = Table::new();
-        table.new_columns(vec!["a", "b"]);
+        table.new_columns(map!{"a" => 'j', "b" => 'j'});
         let mut new_values = HashMap::new();
         new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
         new_values.insert("b", vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
@@ -1147,7 +1174,7 @@ mod tests {
 
     fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> Table {
         let mut adjacency_list = Table::new();
-        adjacency_list.new_columns(vec!["src", "dst"]);
+        adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j'});
         let mut new_values = HashMap::new();
         new_values.insert("src", src);
         new_values.insert("dst", dst);
@@ -1251,5 +1278,14 @@ mod tests {
         let selection_2 = adjacency_list.cracker_select_specific(5);
         assert_base_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
         assert_base_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
+    }
+
+    #[test]
+    fn can_create_new_float_columns() {
+        let mut adjacency_list = Table::new();
+        adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
+        assert_eq!(adjacency_list.count, 0);
+        assert_eq!(adjacency_list.i64_columns.len(), 2);
+        assert_eq!(adjacency_list.f64_columns.len(), 1);
     }
 }
