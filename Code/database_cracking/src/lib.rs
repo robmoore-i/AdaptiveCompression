@@ -571,11 +571,16 @@ pub mod db {
             }
         }
 
-        pub fn insert(&mut self, new_values: &mut HashMap<&str, Vec<i64>>) {
+        pub fn insert_multityped(&mut self, new_ints: &mut HashMap<&str, Vec<i64>>, new_floats: &mut HashMap<&str, Vec<f64>>) {
             // Check: self.columns.keys SUBSET-OF new_values.keys
             for k in self.i64_columns.keys() {
-                if !new_values.contains_key(&*(k.clone())) {
-                    panic!("insert: Tried to add tuples with nulls")
+                if !new_ints.contains_key(&*(k.clone())) {
+                    panic!("insert: (i64) Tried to add tuples with nulls")
+                }
+            }
+            for k in self.f64_columns.keys() {
+                if !new_floats.contains_key(&*(k.clone())) {
+                    panic!("insert: (f64) Tried to add tuples with nulls")
                 }
             }
 
@@ -583,17 +588,105 @@ pub mod db {
             let mut l_old = None;
             let mut l_new = None;
 
-            #[inline] let check_length = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Columns to be inserted do not have the same length") };
+            #[inline] let check_length_ints   = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: (i64) Columns to be inserted do not have the same length") };
+            #[inline] let check_length_floats = |v: &Vec<f64>, l: usize| if v.len() != l { panic!("insert: (f64) Columns to be inserted do not have the same length") };
 
-            for (k, v) in new_values.iter() {
+            for (k, v) in new_ints.iter() {
                 if self.i64_columns.contains_key(&(k.to_string())) {
                     match l_old {
-                        Some(l) => check_length(v, l),
+                        Some(l) => check_length_ints(v, l),
                         None    => l_old = Some(v.len()),
                     };
                 } else {
                     match l_new {
-                        Some(l) => check_length(v, l),
+                        Some(l) => check_length_ints(v, l),
+                        None    => l_new = Some(v.len()),
+                    };
+                }
+            }
+            for (k, v) in new_floats.iter() {
+                if self.f64_columns.contains_key(&(k.to_string())) {
+                    match l_old {
+                        Some(l) => check_length_floats(v, l),
+                        None    => panic!("insert: (f64) Unreachable"),
+                    };
+                } else {
+                    match l_new {
+                        Some(l) => check_length_floats(v, l),
+                        None    => panic!("insert: (f64) Unreachable"),
+                    };
+                }
+            }
+
+            // Check: After insertion, the columns must all still have the same length
+            match (l_new, l_old) {
+                (Some(n), Some(o)) => {
+                    if n != o + self.count {
+                        panic!("insert: (new & old-column) Values to be inserted are not the correct lengths")
+                    }
+                },
+                (Some(n), None) => {
+                    if n != self.count {
+                        panic!("insert: (new-column-only) Values to be inserted are not the correct lengths")
+                    }
+                },
+                (None, _) => {},
+            };
+
+            // For every old-column entry, append the values to the current column
+            // For every new-column entry, create the column and add the values
+            for (k, v) in new_ints.iter_mut() {
+                if self.i64_columns.contains_key(&(k.to_string())) {
+                    let c = self.i64_columns.get_mut(&(k.to_string())).unwrap();
+                    c.append(v);
+                } else {
+                    let mut new = CrackableCol::empty();
+                    new.append(v);
+                    self.i64_columns.insert(k.to_string(), new);
+                }
+            }
+            for (k, v) in new_floats.iter_mut() {
+                if self.f64_columns.contains_key(&(k.to_string())) {
+                    let c = self.f64_columns.get_mut(&(k.to_string())).unwrap();
+                    c.append(v);
+                } else {
+                    let mut new = FloatCol::empty();
+                    new.append(v);
+                    self.f64_columns.insert(k.to_string(), new);
+                }
+            }
+
+            // Mark the increased size of the table
+            if l_new.is_some() {
+                self.count = l_new.unwrap();
+            } else {
+                self.count += l_old.unwrap();
+            }
+        }
+
+        pub fn insert(&mut self, new_ints: &mut HashMap<&str, Vec<i64>>) {
+            // Check: self.columns.keys SUBSET-OF new_values.keys
+            for k in self.i64_columns.keys() {
+                if !new_ints.contains_key(&*(k.clone())) {
+                    panic!("insert: (i64) Tried to add tuples with nulls")
+                }
+            }
+
+            // Check: The length of the old or new- column entries must all be equal
+            let mut l_old = None;
+            let mut l_new = None;
+
+            #[inline] let check_length_ints   = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: (i64) Columns to be inserted do not have the same length") };
+
+            for (k, v) in new_ints.iter() {
+                if self.i64_columns.contains_key(&(k.to_string())) {
+                    match l_old {
+                        Some(l) => check_length_ints(v, l),
+                        None    => l_old = Some(v.len()),
+                    };
+                } else {
+                    match l_new {
+                        Some(l) => check_length_ints(v, l),
                         None    => l_new = Some(v.len()),
                     };
                 }
@@ -616,7 +709,7 @@ pub mod db {
 
             // For every old-column entry, append the values to the current column
             // For every new-column entry, create the column and add the values
-            for (k, v) in new_values.iter_mut() {
+            for (k, v) in new_ints.iter_mut() {
                 if self.i64_columns.contains_key(&(k.to_string())) {
                     let c = self.i64_columns.get_mut(&(k.to_string())).unwrap();
                     c.append(v);
@@ -1299,5 +1392,15 @@ mod tests {
         adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
         let pr = adjacency_list.get_f64_col("pr");
         assert!(pr.v.is_empty());
+    }
+
+    #[test]
+    fn can_populate_float_column() {
+        let mut adjacency_list = Table::new();
+        adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
+        let v = vec![0.1, 0.2, 0.3];
+        adjacency_list.insert_multityped(&mut map!{"src" => vec![1, 2, 3], "dst" => vec![3, 2, 1]}, &mut map!{"pr" => v.clone()});
+        let pr = adjacency_list.get_f64_col("pr");
+        assert_eq!(pr.v, v);
     }
 }
