@@ -307,3 +307,20 @@ tree this is not trivial, but with an array it is, and moreover, it is very fast
 of my initial concerns with looking for compression opportunities was that it would
 require lots of cracker index probes in every scan, which I doubt would yield
 acceptable performance.
+
+==============================================================================
+## Sunday 4th March, 2018, Updating implementation to support f64 column types
+==============================================================================
+
+I've had to spend some time upgrading the implementation in order to enable me to write
+pagerank nicely, which has been a pain, but will hopefully pay off after I get it done.
+At the moment you can currently add new columns of f64, get the f64 column, and insert
+into f64 columns. This is implemented as having multiple hashmaps of columns, one map
+per type. Some functions must still be updated and I need many, many more tests,
+especially for insert.
+
+I also did a little optimisation on ordinary cracking by enabling lazy "compression",
+which involves no actual compression step, but when cracking for a single value, the
+program checks if the cracker index contains consecutive values such that the indices
+for the base column are known and can be returned in constant time. This saved a little
+bit of runtime, but not loads.
