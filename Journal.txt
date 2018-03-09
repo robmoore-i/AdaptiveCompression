@@ -324,3 +324,14 @@ which involves no actual compression step, but when cracking for a single value,
 program checks if the cracker index contains consecutive values such that the indices
 for the base column are known and can be returned in constant time. This saved a little
 bit of runtime, but not loads.
+
+===================================================================================
+## Friday 9th March, 2018, Completed implementation update to support float columns
+===================================================================================
+
+I copied a lot of the tests for checking that integer-only cracking was okay, to make sure
+that the updates I made to support float columns have gone through successfully. It seems
+they have, which is great. Now that this is done, that should hopefully be the last change
+I have to make that is not really related to the underlying implementation - I can focus
+on experiments and optimisations. Off to see Holger now to discuss CSR exploitation and
+how work is going to stonewall on this for a couple of weeks while I do exams.
