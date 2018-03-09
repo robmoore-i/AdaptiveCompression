@@ -744,7 +744,7 @@ pub mod db {
         }
 
         pub fn get_indices(&self, indices: Iter<usize>) -> Table {
-            let mut selection: HashMap<String, CrackableCol> = HashMap::new();
+            let mut selection_i64: HashMap<String, CrackableCol> = HashMap::new();
             for (name, col) in &self.i64_columns {
                 let mut v_buffer = Vec::with_capacity(indices.len());
                 for &i in indices.clone() {
@@ -752,11 +752,22 @@ pub mod db {
                 }
                 let mut c_buffer = CrackableCol::empty();
                 c_buffer.v = v_buffer;
-                selection.insert(name.clone(), c_buffer);
+                selection_i64.insert(name.clone(), c_buffer);
+            }
+            let mut selection_f64: HashMap<String, FloatCol> = HashMap::new();
+            for (name, col) in &self.f64_columns {
+                let mut v_buffer = Vec::with_capacity(indices.len());
+                for &i in indices.clone() {
+                    v_buffer.push(col.v[i]);
+                }
+                let mut c_buffer = FloatCol::empty();
+                c_buffer.v = v_buffer;
+                selection_f64.insert(name.clone(), c_buffer);
             }
 
             let mut t = Table::new();
-            t.i64_columns = selection;
+            t.i64_columns = selection_i64;
+            t.f64_columns = selection_f64;
             t.count = indices.len();
 
             let mut indexed_crk_v = Vec::with_capacity(indices.len());
