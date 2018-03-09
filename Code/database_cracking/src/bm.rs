@@ -141,14 +141,11 @@ fn fully_connected_graph(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(map!{"src" => 'j', "dst" => 'j'});
     for i in 1..(n + 1) {
-        let mut connections = HashMap::new();
         let i_vec: Vec<i64> = iter::repeat(i as i64).take((n - 1) as usize).collect();
-        connections.insert("src", i_vec);
         let mut dst_nodes: Vec<i64> = Vec::with_capacity((n - 1) as usize);
         dst_nodes.extend(1..i);
         dst_nodes.extend((i + 1)..(n + 1));
-        connections.insert("dst", dst_nodes);
-        t.insert(&mut connections)
+        t.insert(&mut map!{"src" => i_vec, "dst" => dst_nodes})
     }
     t.set_crk_col("src");
     let t_count = t.count;
@@ -184,10 +181,7 @@ fn randomly_connected_tree(n: i64) -> Table {
         src_col.push(dst);
         dst_col.push(src);
     }
-    let mut connections = HashMap::new();
-    connections.insert("src", src_col);
-    connections.insert("dst", dst_col);
-    t.insert(&mut connections);
+    t.insert(&mut map!{"src" => src_col, "dst" => dst_col});
     t.set_crk_col("src");
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());

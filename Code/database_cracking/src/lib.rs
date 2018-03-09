@@ -949,9 +949,7 @@ mod tests {
     fn one_col_test_table() -> Table {
         let mut table = Table::new();
         table.new_columns(map!{"a" => 'j'});
-        let mut new_values = HashMap::new();
-        new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        table.insert(&mut new_values);
+        table.insert(&mut map!{"a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]});
         table.set_crk_col("a");
         table
     }
@@ -1222,10 +1220,7 @@ mod tests {
     fn can_insert_into_multi_column_table() {
         let mut table = Table::new();
         table.new_columns(map!{"a" => 'j', "b" => 'j'});
-        let mut new_values = HashMap::new();
-        new_values.insert("a", vec![1, 2, 3]);
-        new_values.insert("b", vec![4, 5, 6]);
-        table.insert(&mut new_values);
+        table.insert(&mut map!{"a" => vec![1, 2, 3], "b" => vec![4, 5, 6]});
         assert_eq!(table.get_i64_col("a").v, vec![1, 2, 3]);
         assert_eq!(table.get_i64_col("b").v, vec![4, 5, 6]);
         table.get_i64_col("c");
@@ -1234,10 +1229,9 @@ mod tests {
     fn two_col_test_table() -> Table {
         let mut table = Table::new();
         table.new_columns(map!{"a" => 'j', "b" => 'j'});
-        let mut new_values = HashMap::new();
-        new_values.insert("a", vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-        new_values.insert("b", vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]);
-        table.insert(&mut new_values);
+        table.insert(&mut map!{
+            "a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6],
+            "b" => vec![1,  1,  0, 0, 0, 1,  0, 0, 1,  0, 1,  1,  0, 0]});
         table.set_crk_col("a");
         table
     }
@@ -1283,10 +1277,7 @@ mod tests {
     fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> Table {
         let mut adjacency_list = Table::new();
         adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j'});
-        let mut new_values = HashMap::new();
-        new_values.insert("src", src);
-        new_values.insert("dst", dst);
-        adjacency_list.insert(&mut new_values);
+        adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
         adjacency_list.set_crk_col("src");
         adjacency_list
     }
@@ -1413,5 +1404,13 @@ mod tests {
         adjacency_list.insert_multityped(&mut map!{"src" => vec![1, 2, 3], "dst" => vec![3, 2, 1]}, &mut map!{"pr" => v.clone()});
         let pr = adjacency_list.get_f64_col("pr");
         assert_eq!(pr.v, v);
+    }
+
+    fn pr_table(src: Vec<i64>, dst: Vec<i64>, pr: Vec<f64>) -> Table {
+        let mut prt = Table::new();
+        prt.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
+        prt.insert_multityped(&mut map!{"src" => src, "dst" => dst}, &mut map!{"pr" => pr});
+        prt.set_crk_col("src");
+        prt
     }
 }
