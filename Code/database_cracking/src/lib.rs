@@ -1236,8 +1236,14 @@ mod tests {
         table
     }
 
-    fn assert_base_column_equals(t: Table, column_name: &str, expected: Vec<i64>) {
+    fn assert_base_i64_column_equals(t: Table, column_name: &str, expected: Vec<i64>) {
         match t.get_i64_col(column_name) {
+            ref col => assert_eq!(col.v, expected),
+        }
+    }
+
+    fn assert_base_f64_column_equals(t: Table, column_name: &str, expected: Vec<f64>) {
+        match t.get_f64_col(column_name) {
             ref col => assert_eq!(col.v, expected),
         }
     }
@@ -1246,8 +1252,8 @@ mod tests {
     fn can_index_into_multi_column_table() {
         let table = two_col_test_table();
         let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
-        assert_base_column_equals(selection.clone(), "a", vec![13, 16, 12, 19, 14, 11]);
-        assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1, 1, 1, 1]);
+        assert_base_i64_column_equals(selection.clone(), "a", vec![13, 16, 12, 19, 14, 11]);
+        assert_base_i64_column_equals(selection.clone(), "b", vec![1, 1, 1, 1, 1, 1]);
     }
 
     #[test]
@@ -1262,16 +1268,16 @@ mod tests {
     fn crack_returns_indices_into_base_columns() {
         let mut table = two_col_test_table();
         let selection = table.cracker_select_in_three(10, 14, false, false);
-        assert_base_column_equals(selection.clone(), "a", vec![13, 12, 11]);
-        assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1]);
+        assert_base_i64_column_equals(selection.clone(), "a", vec![13, 12, 11]);
+        assert_base_i64_column_equals(selection.clone(), "b", vec![1, 1, 1]);
     }
 
     #[test]
     fn can_rearrange_tuples() {
         let mut table = two_col_test_table();
         table.rearrange(vec![3, 5, 12, 6, 8, 13, 10, 9, 4, 11, 0, 1, 2, 7].iter());
-        assert_base_column_equals(table.clone(), "a", vec![9, 12, 8, 7, 19, 6, 14, 3, 2, 11, 13, 16, 4, 1]);
-        assert_base_column_equals(table.clone(), "b", vec![0, 1,  0, 0, 1,  0, 1,  0, 0, 1,  1,  1,  0, 0]);
+        assert_base_i64_column_equals(table.clone(), "a", vec![9, 12, 8, 7, 19, 6, 14, 3, 2, 11, 13, 16, 4, 1]);
+        assert_base_i64_column_equals(table.clone(), "b", vec![0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
     }
 
     fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> Table {
@@ -1288,8 +1294,8 @@ mod tests {
             = adjacency_list_table(vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5],
                                    vec![3, 5, 5, 3, 4, 1, 2, 5, 2, 5, 2, 1, 2, 4, 1, 4, 3, 1, 3, 4]);
         let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
-        assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
-        assert_base_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
         assert_eq!(selection.count, 4);
         assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
     }
@@ -1298,8 +1304,8 @@ mod tests {
     fn can_crack_in_three_for_single_value_out_of_lower_bound() {
         let mut adjacency_list = adjacency_list_table(vec![4, 4, 3, 3, 4, 4], vec![4, 2, 1, 4, 3, 5]);
         let selection = adjacency_list.cracker_select_in_three(1, 1, true, true);
-        assert_base_column_equals(selection.clone(), "src", vec![]);
-        assert_base_column_equals(selection.clone(), "dst", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
         assert_eq!(adjacency_list.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
     }
 
@@ -1307,8 +1313,8 @@ mod tests {
     fn can_crack_in_three_for_single_value_out_of_upper_bound() {
         let mut adjacency_list = adjacency_list_table(vec![2, 2, 4, 3, 2, 2], vec![3, 2, 1, 5, 4, 4]);
         let selection = adjacency_list.cracker_select_in_three(5, 5, true, true);
-        assert_base_column_equals(selection.clone(), "src", vec![]);
-        assert_base_column_equals(selection.clone(), "dst", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
         assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
     }
 
@@ -1319,20 +1325,20 @@ mod tests {
                                    vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
 
         let selection_1 = adjacency_list.cracker_select_in_three(5, 5, true, true);
-        assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-        assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
 
         let selection_2 = adjacency_list.cracker_select_in_three(2, 2, true, true);
-        assert_base_column_equals(selection_2.clone(), "src", vec![2]);
-        assert_base_column_equals(selection_2.clone(), "dst", vec![1]);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![2]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![1]);
 
         let selection_3 = adjacency_list.cracker_select_in_three(1, 1, true, true);
-        assert_base_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
-        assert_base_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
+        assert_base_i64_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
+        assert_base_i64_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
 
         let selection_4 = adjacency_list.cracker_select_in_three(3, 3, true, true);
-        assert_base_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
-        assert_base_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
+        assert_base_i64_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
+        assert_base_i64_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
         // After the BFS the cracker column should be fully clustered
         assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
     }
@@ -1343,23 +1349,23 @@ mod tests {
                                                       vec![3, 3, 2, 1, 5, 4]);
 
         let selection_1 = adjacency_list.cracker_select_in_three(3, 3, true, true);
-        assert_base_column_equals(selection_1.clone(), "src", vec![3]);
-        assert_base_column_equals(selection_1.clone(), "dst", vec![4]);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![3]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![4]);
 
         let selection_2 = adjacency_list.cracker_select_in_three(4, 4, true, true);
-        assert_base_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
-        assert_base_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
 
         println!("src: {:?}", adjacency_list.crk_col.crk);
         println!("dst: {:?}", adjacency_list.get_i64_col("dst").v);
 
         let selection_3 = adjacency_list.cracker_select_in_three(2, 2, true, true);
-        assert_base_column_equals(selection_3.clone(), "src", vec![2]);
-        assert_base_column_equals(selection_3.clone(), "dst", vec![1]);
+        assert_base_i64_column_equals(selection_3.clone(), "src", vec![2]);
+        assert_base_i64_column_equals(selection_3.clone(), "dst", vec![1]);
 
         let selection_4 = adjacency_list.cracker_select_in_three(5, 5, true, true);
-        assert_base_column_equals(selection_4.clone(), "src", vec![]);
-        assert_base_column_equals(selection_4.clone(), "dst", vec![]);
+        assert_base_i64_column_equals(selection_4.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection_4.clone(), "dst", vec![]);
         // After the BFS the cracker column should be fully clustered
         assert_eq!(adjacency_list.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
     }
@@ -1371,12 +1377,12 @@ mod tests {
                                vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
 
         let selection_1 = adjacency_list.cracker_select_specific(5);
-        assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-        assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
 
         let selection_2 = adjacency_list.cracker_select_specific(5);
-        assert_base_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
-        assert_base_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
     }
 
     #[test]
@@ -1412,5 +1418,117 @@ mod tests {
         prt.insert_multityped(&mut map!{"src" => src, "dst" => dst}, &mut map!{"pr" => pr});
         prt.set_crk_col("src");
         prt
+    }
+
+    #[test]
+    fn float_can_crack_in_three_for_single_value() {
+        let mut prt = pr_table(vec![5,    2,    4,     1,    1,    4,   4,    3,    3,    1,    5,    2,   1,    2,    3,    3,   4,    5,    2,    5],
+                               vec![3,    5,    5,     3,    4,    1,   2,    5,    2,    5,    2,    1,   2,    4,    1,    4,   3,    1,    3,    4],
+                               vec![0.89, 0.44, 0.078, 0.42, 0.62, 0.2, 0.81, 0.24, 0.55, 0.53, 0.94, 0.3, 0.44, 0.44, 0.73, 1.0, 0.74, 0.24, 0.57, 0.43]);
+        let selection = prt.cracker_select_in_three(3, 3, true, true);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
+        assert_base_f64_column_equals(selection.clone(), "pr",  vec![0.55, 0.73, 1.0, 0.24]);
+        assert_eq!(selection.count, 4);
+        assert_eq!(prt.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
+    }
+
+    #[test]
+    fn float_can_crack_in_three_for_single_value_out_of_lower_bound() {
+        let mut prt = pr_table(vec![4,    4,     3,    3,     4,    4],
+                               vec![4,    2,     1,    4,     3,    5],
+                               vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
+        let selection = prt.cracker_select_in_three(1, 1, true, true);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
+        assert_base_f64_column_equals(selection.clone(), "pr",  vec![]);
+        assert_eq!(prt.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
+    }
+
+    #[test]
+    fn float_can_crack_in_three_for_single_value_out_of_upper_bound() {
+        let mut prt = pr_table(vec![2,    2,     4,    3,     2,    2],
+                               vec![3,    2,     1,    5,     4,    4],
+                               vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
+        let selection = prt.cracker_select_in_three(5, 5, true, true);
+        assert_base_i64_column_equals(selection.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
+        assert_base_f64_column_equals(selection.clone(), "pr",  vec![]);
+        assert_eq!(prt.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
+    }
+
+    #[test]
+    fn float_can_exploit_cracker_index_for_selecting_single_value_medium_table() {
+        let mut prt = pr_table(vec![3,     1,   5,    5,   1,    5,     2,    3,    1,    5,    5,    3],
+                               vec![5,     3,   2,    1,   5,    1,     1,    4,    3,    1,    2,    5],
+                               vec![0.038, 0.9, 0.79, 0.2, 0.78, 0.069, 0.41, 0.23, 0.71, 0.14, 0.27, 0.64]);
+
+        let selection_1 = prt.cracker_select_in_three(5, 5, true, true);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.79, 0.069, 0.14, 0.27, 0.2]);
+
+        let selection_2 = prt.cracker_select_in_three(2, 2, true, true);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![2]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![1]);
+        assert_base_f64_column_equals(selection_2.clone(), "pr",  vec![0.41]);
+
+        let selection_3 = prt.cracker_select_in_three(1, 1, true, true);
+        assert_base_i64_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
+        assert_base_i64_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
+        assert_base_f64_column_equals(selection_3.clone(), "pr",  vec![0.71, 0.9, 0.78]);
+
+        let selection_4 = prt.cracker_select_in_three(3, 3, true, true);
+        assert_base_i64_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
+        assert_base_i64_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
+        assert_base_f64_column_equals(selection_4.clone(), "pr",  vec![0.23, 0.038, 0.64]);
+        // After the BFS the cracker column should be fully clustered
+        assert_eq!(prt.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
+    }
+
+    #[test]
+    fn float_can_exploit_cracker_index_for_selecting_single_value_small_table() {
+        let mut prt = pr_table(vec![4,    4,     4,    2,    4,    3],
+                               vec![3,    3,     2,    1,    5,    4],
+                               vec![0.78, 0.082, 0.51, 0.49, 0.87, 0.64]);
+
+        let selection_1 = prt.cracker_select_in_three(3, 3, true, true);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![3]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![4]);
+        assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.64]);
+
+        let selection_2 = prt.cracker_select_in_three(4, 4, true, true);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
+        assert_base_f64_column_equals(selection_2.clone(), "pr",  vec![0.51, 0.082, 0.87, 0.78]);
+
+        let selection_3 = prt.cracker_select_in_three(2, 2, true, true);
+        assert_base_i64_column_equals(selection_3.clone(), "src", vec![2]);
+        assert_base_i64_column_equals(selection_3.clone(), "dst", vec![1]);
+        assert_base_f64_column_equals(selection_3.clone(), "pr",  vec![0.49]);
+
+        let selection_4 = prt.cracker_select_in_three(5, 5, true, true);
+        assert_base_i64_column_equals(selection_4.clone(), "src", vec![]);
+        assert_base_i64_column_equals(selection_4.clone(), "dst", vec![]);
+        assert_base_f64_column_equals(selection_4.clone(), "pr",  vec![]);
+        // After the BFS the cracker column should be fully clustered
+        assert_eq!(prt.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
+    }
+
+    #[test]
+    fn float_repeat_queries_return_same_results() {
+        let mut prt = pr_table(vec![3,    1,    5,    5,    1,    5,    2,    3,    1,     5,    5,    3],
+                               vec![5,    3,    2,    1,    5,    1,    1,    4,    3,     1,    2,    5],
+                               vec![0.91, 0.98, 0.31, 0.37, 0.96, 0.41, 0.63, 0.58, 0.009, 0.14, 0.77, 0.3]);
+
+        let selection_1 = prt.cracker_select_specific(5);
+        assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
+
+        let selection_2 = prt.cracker_select_specific(5);
+        assert_base_i64_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
+        assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
+        assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
     }
 }
