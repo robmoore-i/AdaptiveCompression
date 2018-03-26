@@ -43,10 +43,11 @@ fn main() {
     let start = SteadyTime::now();
     let mut time = start;
     t_block!({
-        let n = 100000;
-        let t = randomly_connected_tree(n);
+        let n = 30000; let e = 100000;
+        let t = randomly_connected_graph(n, e);
         println!("|E| = {}", t.count);
         println!("|V| = {}", n);
+        println!("({}, {})", t.crk_col.v.iter().min().unwrap(), t.crk_col.v.iter().max().unwrap());
     }, time);
     println!("time = {}", (time - start).to_string());
 }
@@ -161,7 +162,7 @@ fn fully_connected_graph(n: i64) -> Table {
     t
 }
 
-// Returns a bidirectionally connected graph for n nodes, which are numbered 1-n inclusive.
+// Returns a bidirectionally connected tree for n nodes, which are numbered 1 to n inclusive.
 fn randomly_connected_tree(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(map!{"src" => 'j', "dst" => 'j'});
@@ -189,6 +190,34 @@ fn randomly_connected_tree(n: i64) -> Table {
         src_col.push(dst);
         dst_col.push(src);
     }
+    t.insert(&mut map!{"src" => src_col, "dst" => dst_col});
+    t.set_crk_col("src");
+    let t_count = t.count;
+    t.rearrange(deal(t_count).iter());
+    t
+}
+
+// Returns a connected graph for n nodes, which are numbered 1 to n inclusive, having e edges, where
+// e is presumed to be larger than n.
+fn randomly_connected_graph(n: i64, e: i64) -> Table {
+    if e < n { println!("e < n, aborting."); return Table::new(); };
+    let mut t = Table::new();
+    t.new_columns(map!{"src" => 'j', "dst" => 'j'});
+
+    let mut src_col = Vec::with_capacity(e as usize);
+    let mut dst_col = Vec::with_capacity(e as usize);
+    let mut rng = rand::thread_rng();
+    for i in 0..e {
+        // Choose two random, non-equal numbers within 1..n.
+        let src = rng.gen_range(1, n + 1);
+        let mut dst = rng.gen_range(1, n + 1);
+        while src == dst {
+            dst = rng.gen_range(1, n + 1);
+        }
+        src_col.push(src);
+        dst_col.push(dst);
+    }
+
     t.insert(&mut map!{"src" => src_col, "dst" => dst_col});
     t.set_crk_col("src");
     let t_count = t.count;
