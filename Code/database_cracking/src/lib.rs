@@ -461,15 +461,15 @@ pub mod db {
     pub struct CrackableCol {
         // Original
         pub v: Vec<i64>,
-        
+
         // Cracked
         pub crk: Vec<i64>,
-        
+
         // Cracker index - for a value v, stores the index p such that
         // for all i < p: c[i] < v. That is - Every value before p in the column
         // is less than v.
         pub crk_idx: CrackerIndex,
-        
+
         // Base index - maintains an index into the base columns of the table for alignment
         // during tuple reconstruction.
         pub base_idx: Vec<usize>,
@@ -517,7 +517,7 @@ pub mod db {
             $tvar = $tvar + start.to(end);
         };
     }
-    
+
     #[derive(Clone)]
     pub struct Table {
         pub count: usize,
@@ -526,7 +526,7 @@ pub mod db {
         pub i64_columns: HashMap<String, CrackableCol>,
         pub f64_columns: HashMap<String, FloatCol>,
     }
-    
+
     impl Table {
         pub fn new() -> Table {
             Table {
@@ -535,6 +535,16 @@ pub mod db {
                 crk_col: CrackableCol::empty(),
                 i64_columns: HashMap::new(),
                 f64_columns: HashMap::new()
+            }
+        }
+
+        pub fn print_cols(&self) {
+            println!("crk: {:?}", self.crk_col.crk);
+            for (name, int) in self.i64_columns.clone() {
+                println!("{}: {:?}", name, int.v);
+            }
+            for (name, float) in self.f64_columns.clone() {
+                println!("{}: {:?}", name, float.v);
             }
         }
 

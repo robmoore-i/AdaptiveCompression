@@ -40,16 +40,10 @@ macro_rules! t_expr {
 */
 
 fn main() {
-    let start = SteadyTime::now();
-    let mut time = start;
-    t_block!({
-        let n = 30000; let e = 100000;
-        let t = randomly_connected_graph(n, e);
-        println!("|E| = {}", t.count);
-        println!("|V| = {}", n);
-        println!("({}, {})", t.crk_col.v.iter().min().unwrap(), t.crk_col.v.iter().max().unwrap());
-    }, time);
-    println!("time = {}", (time - start).to_string());
+    let n = 5; let e = 20;
+    let mut adjacency_list = randomly_connected_graph(n, e);
+    // let pageranks = unoptimised_pagerank(&mut adjacency_list.clone());
+    adjacency_list.print_cols();
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -64,39 +58,6 @@ fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, s
     }
     bm_graph_sizes.push(max_graph_size);
     bm_graph_sizes
-}
-
-// Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
-// by each value of the list.
-// This function prints to stdout a valid csv file containing the results.
-fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
-    println!("nodes,edges,density,unoptimised,adaptive,preclustered,preclusteredRLE");
-    for n in graph_sizes {
-        benchmark_sparse_bfs(n);
-    }
-}
-
-// Given a number of nodes N, produces a sparse connected graph of that many nodes and gets runtime
-// performance for each of adaptive, unoptimised and preclustering methods. It prints to stdout a
-// line of a csv file.
-fn benchmark_sparse_bfs(n: i64) {
-    let adjacency_list = randomly_connected_tree(n);
-    let all_nodes: Vec<i64> = (1..(n + 1)).map(|x| x as i64).collect();
-    let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
-    print!("{},{},{}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
-    time_bfs(unoptimised_bfs,      &mut adjacency_list.clone(), start_node);
-    time_bfs(adaptive_bfs,         &mut adjacency_list.clone(), start_node);
-    time_bfs(preclustered_bfs,     &mut adjacency_list.clone(), start_node);
-    time_bfs(preclustered_rle_bfs, &mut adjacency_list.clone(), start_node);
-    println!();
-}
-
-// Times a given bfs function against a given adjacency list using a given start node.
-fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
-    let start = PreciseTime::now();
-    let visited = bfs(&mut adjacency_list, start_node);
-    let end = PreciseTime::now();
-    print!(",{}", start.to(end));
 }
 
 // Finds the directed density of a graph with n nodes and e edges. Returned as a float.
@@ -223,6 +184,43 @@ fn randomly_connected_graph(n: i64, e: i64) -> Table {
     let t_count = t.count;
     t.rearrange(deal(t_count).iter());
     t
+}
+
+/* BENCHMARK-BFS:
+    Run and print in csv-format benchmarks for BFS runs.
+*/
+
+// Given a list of numbers, does a bfs benchmark for sparse graphs with a number of nodes given
+// by each value of the list.
+// This function prints to stdout a valid csv file containing the results.
+fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
+    println!("nodes,edges,density,unoptimised,adaptive,preclustered,preclusteredRLE");
+    for n in graph_sizes {
+        benchmark_sparse_bfs(n);
+    }
+}
+
+// Given a number of nodes N, produces a sparse connected graph of that many nodes and gets runtime
+// performance for each of adaptive, unoptimised and preclustering methods. It prints to stdout a
+// line of a csv file.
+fn benchmark_sparse_bfs(n: i64) {
+    let adjacency_list = randomly_connected_tree(n);
+    let all_nodes: Vec<i64> = (1..(n + 1)).map(|x| x as i64).collect();
+    let start_node = *rand::thread_rng().choose(&all_nodes).unwrap();
+    print!("{},{},{}", n, adjacency_list.count, graph_density(n, adjacency_list.count));
+    time_bfs(unoptimised_bfs,      &mut adjacency_list.clone(), start_node);
+    time_bfs(adaptive_bfs,         &mut adjacency_list.clone(), start_node);
+    time_bfs(preclustered_bfs,     &mut adjacency_list.clone(), start_node);
+    time_bfs(preclustered_rle_bfs, &mut adjacency_list.clone(), start_node);
+    println!();
+}
+
+// Times a given bfs function against a given adjacency list using a given start node.
+fn time_bfs<F>(mut bfs: F, mut adjacency_list: &mut Table, start_node: i64) where F: FnMut(&mut Table, i64) -> Vec<i64> {
+    let start = PreciseTime::now();
+    let visited = bfs(&mut adjacency_list, start_node);
+    let end = PreciseTime::now();
+    print!(",{}", start.to(end));
 }
 
 /* BFS:
@@ -396,3 +394,4 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
     perform an iterative computation of the pagerank until |PR(t) - PR(t-1)|<epsilon, for some
     defined and given error, epsilon. The damping factor is also given as a parameter.
 */
+
