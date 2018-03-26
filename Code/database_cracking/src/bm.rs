@@ -40,8 +40,15 @@ macro_rules! t_expr {
 */
 
 fn main() {
-    let graph_sizes = graph_size_range(5, 1000, 30000, 1000);
-    benchmark_sparse_bfs_csv(graph_sizes);
+    let start = SteadyTime::now();
+    let mut time = start;
+    t_block!({
+        let n = 100000;
+        let t = randomly_connected_tree(n);
+        println!("|E| = {}", t.count);
+        println!("|V| = {}", n);
+    }, time);
+    println!("time = {}", (time - start).to_string());
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -119,21 +126,22 @@ macro_rules! map (
 
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.
 fn deal(n: usize) -> Vec<usize> {
-    let mut dealing: Vec<i64> = Vec::with_capacity(n as usize);
-    let half_n_as_f64 = (0.5 * (n % 2) as f64) + (n / 2) as f64;
-    let scaling_factor: f64 = half_n_as_f64 / (<i64>::max_value() as f64);
-    while dealing.len() < n {
-        let candidate: f64 = (half_n_as_f64 + scaling_factor * (rand::random::<i64>() as f64)).floor();
-        let candidate_as_i64 = candidate as i64;
-        if !dealing.contains(&candidate_as_i64) {
-            dealing.push(candidate_as_i64);
-        }
+    // Put 1 - n in a bag.
+    let mut dealing: Vec<usize> = Vec::with_capacity(n as usize);
+    for i in 0..n {
+        dealing.push(i);
     }
-    let mut dealing_usize = Vec::with_capacity(n as usize);
-    for x in dealing.iter_mut() {
-        dealing_usize.push(*x as usize);
+    let mut dealt: Vec<usize> = Vec::with_capacity(n as usize);
+    let mut rng = rand::thread_rng();
+    let mut chosen = 0;
+    while dealing.len() > 1 {
+        let random = rng.gen_range(0, n - chosen);
+        dealt.push(dealing[random]);
+        dealing.remove(random);
+        chosen = chosen + 1;
     }
-    dealing_usize
+    dealt.push(dealing[0]);
+    dealt
 }
 
 // Returns a randomly shuffled adjacency list representing a complete graph for n nodes
@@ -353,3 +361,9 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
     }
     bv_where(visited)
 }
+
+/* PAGERANK
+    Given an adjacency list with a pagerank column, where every pagerank is initialised to 1/|V|,
+    perform an iterative computation of the pagerank until |PR(t) - PR(t-1)|<epsilon, for some
+    defined and given error, epsilon. The damping factor is also given as a parameter.
+*/
