@@ -161,7 +161,7 @@ fn fully_connected_graph(n: i64) -> Table {
     t
 }
 
-// Returns a connected graph for n nodes, which are numbered 1-n inclusive.
+// Returns a bidirectionally connected graph for n nodes, which are numbered 1-n inclusive.
 fn randomly_connected_tree(n: i64) -> Table {
     let mut t = Table::new();
     t.new_columns(map!{"src" => 'j', "dst" => 'j'});
