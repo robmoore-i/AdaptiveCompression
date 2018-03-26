@@ -40,10 +40,10 @@ macro_rules! t_expr {
 */
 
 fn main() {
-    let n = 5; let e = 20;
+    let n = 20; let e = 20;
     let mut adjacency_list = randomly_connected_graph(n, e);
-    // let pageranks = unoptimised_pagerank(&mut adjacency_list.clone());
-    adjacency_list.print_cols();
+    let pageranks = initialise_pageranks(n);
+    println!("{:?}", pageranks);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -390,8 +390,16 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
 }
 
 /* PAGERANK
-    Given an adjacency list with a pagerank column, where every pagerank is initialised to 1/|V|,
-    perform an iterative computation of the pagerank until |PR(t) - PR(t-1)|<epsilon, for some
+    Given an adjacency list and a set of pageranks, where every pagerank is initialised to 1/|V|,
+    perform an iterative computation of the pagerank until |PR(t) - PR(t-1)| < epsilon, for some
     defined and given error, epsilon. The damping factor is also given as a parameter.
 */
 
+fn initialise_pageranks(n: i64) -> Vec<f64> {
+    let initial_pr = (n as f64).recip();
+    let mut initial_prs: Vec<f64> = Vec::with_capacity(n as usize);
+    for i in 0..n {
+        initial_prs.push(initial_pr);
+    }
+    initial_prs
+}
