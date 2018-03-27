@@ -462,8 +462,7 @@ fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsil
             for i in 0..e {
                 if dst_col[i] == v as i64 {
                     let w = src_col[i] as usize;
-                    let mut lw = l[w];
-                    if lw == -1 { lw = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] = lw; };
+                    let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
                     inherit(&mut inherited_rank, pageranks[w], lw);
                 }
             }
