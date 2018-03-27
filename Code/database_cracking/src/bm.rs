@@ -438,6 +438,11 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>
     println!("Passed!");
 }
 
+fn inherit(inherited_rank: &mut f64, prw: f64, lw: i64) {
+    let contribution = prw / (lw as f64);
+    (*inherited_rank) += contribution;
+}
+
 fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
     let src_col = adjacency_list.get_i64_col("src").v.clone();
     let dst_col = adjacency_list.get_i64_col("dst").v.clone();
@@ -459,9 +464,7 @@ fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsil
                     let w = src_col[i] as usize;
                     let mut lw = l[w];
                     if lw == -1 { lw = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] = lw; };
-                    let prw = pageranks[w];
-                    let contribution_w = prw / (lw as f64);
-                    inherited_rank += contribution_w;
+                    inherit(&mut inherited_rank, pageranks[w], lw);
                 }
             }
             new_pageranks[v] = m + d * inherited_rank;
