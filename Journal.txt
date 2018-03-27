@@ -335,3 +335,34 @@ they have, which is great. Now that this is done, that should hopefully be the l
 I have to make that is not really related to the underlying implementation - I can focus
 on experiments and optimisations. Off to see Holger now to discuss CSR exploitation and
 how work is going to stonewall on this for a couple of weeks while I do exams.
+
+============================================================================
+## Monday 26th March, 2018, Finished exams. Implemented unoptimised pagerank
+============================================================================
+
+The implementation of the deal function currently has a big effect on the performance of
+my graph generation functions. This might change in the future when I move to real world
+graphs. I have sped it up significantly by removing the duplication polling, which was a
+completely stupid idea to begin with, but I guess I was drunk or something.
+
+It has also turned out that through a feat of unimaginable stupidity, I forogt that
+actually float columns are not at all necessary for implementing pagerank. They might
+come in handy simply because I can then throw them in as a column after compression,
+since at that point the src column is indeed corresponding to nodes. Maybe other ideas
+will come up and it will turn out not to have been a stupid waste of time. I hope so.
+
+Just now (1AM, technically it's Tuesday) I have finished writing/debugging my initial
+unoptimised implementation of pagerank, whcih I've tested using the example on the
+wikipedia page. I am using damping, as suggested.
+
+For termination, the wikipedia page suggests using an epsilon, however I found that for
+this example, without damping, there is no steady state - it is cyclic and unstable.
+Therefore I'm also using a max_iterations method as a backup behind the epsilon method.
+
+I will also need to look into the cache-optimised pagerank paper that Holger sent me at
+the start of this project, because it will hopefully give me insights into writing faster
+pageranks for all of the methods.
+
+I'm also needing to chase up Paul Kelly about CSR exploitation, because I don't really
+know anything about it. I will perhaps also read something in one of the many papers I'm
+printing off tomorrow. I should also ask other people who might know something.
