@@ -11,8 +11,8 @@ use time::PreciseTime;
 use time::SteadyTime;
 use bit_vec::BitVec;
 
-/* PROFILING
-    Macros for profiling the performance of a function
+/* MACROS
+    For profiling the performance of a function and making hashmaps.
 */
 
 macro_rules! t_block {
@@ -33,6 +33,21 @@ macro_rules! t_expr {
         };
 }
 
+// Macro for making hashmaps
+// I credit this macro (map) to this bod:
+// https://stackoverflow.com/a/27582993/3803302
+macro_rules! map (
+        { $($key:expr => $value:expr),+ } => {
+            {
+                let mut m = ::std::collections::HashMap::new();
+                $(
+                    m.insert($key, $value);
+                )+
+                m
+            }
+        };
+    );
+
 // Todo: Write a nice macro for printing all the profiler timing variables at the end of a fn.
 
 /* MAIN
@@ -40,10 +55,7 @@ macro_rules! t_expr {
 */
 
 fn main() {
-    let n = 20; let e = 20;
-    let mut adjacency_list = randomly_connected_graph(n, e);
-    let pageranks = initialise_pageranks(n);
-    println!("{:?}", pageranks);
+    pagerank_example_test(unoptimised_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -70,21 +82,6 @@ fn graph_density(n: i64, e: usize) -> f64 {
 
     Returns an adjacency list (Table) for a connected graph with N nodes.
 */
-
-// Macro for making hashmaps
-// I credit this macro (map) to this bod:
-// https://stackoverflow.com/a/27582993/3803302
-macro_rules! map (
-        { $($key:expr => $value:expr),+ } => {
-            {
-                let mut m = ::std::collections::HashMap::new();
-                $(
-                    m.insert($key, $value);
-                )+
-                m
-            }
-        };
-    );
 
 // Deals out the numbers from 0 to n-1 inclusive in a random order as usizes.
 fn deal(n: usize) -> Vec<usize> {
@@ -160,6 +157,7 @@ fn randomly_connected_tree(n: i64) -> Table {
 
 // Returns a connected graph for n nodes, which are numbered 1 to n inclusive, having e edges, where
 // e is presumed to be larger than n.
+// Todo: Generate edges using cantor's pairing function for efficient dedup.
 fn randomly_connected_graph(n: i64, e: i64) -> Table {
     if e < n { println!("e < n, aborting."); return Table::new(); };
     let mut t = Table::new();
@@ -390,16 +388,92 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
 }
 
 /* PAGERANK
-    Given an adjacency list and a set of pageranks, where every pagerank is initialised to 1/|V|,
+    Given an adjacency list and a vector of pageranks, where every pagerank is initialised to 1/|V|,
     perform an iterative computation of the pagerank until |PR(t) - PR(t-1)| < epsilon, for some
     defined and given error, epsilon. The damping factor is also given as a parameter.
+    => prs[i] is the pagerank of node i.
 */
 
 fn initialise_pageranks(n: i64) -> Vec<f64> {
     let initial_pr = (n as f64).recip();
-    let mut initial_prs: Vec<f64> = Vec::with_capacity(n as usize);
+    let mut pageranks: Vec<f64> = Vec::with_capacity(1 + n as usize);
+    pageranks.push(0.0); // Nodes start at 1.
     for i in 0..n {
-        initial_prs.push(initial_pr);
+        pageranks.push(initial_pr);
     }
-    initial_prs
+    pageranks
+}
+
+fn terminate(pageranks: &Vec<f64>, new_pageranks: &Vec<f64>, n: usize, epsilon: f64) -> bool {
+    let mut sum_of_squared_differences = 0.0;
+    for v in 1..n {
+        let d = new_pageranks[v] - pageranks[v];
+        let d_squared = d * d;
+        sum_of_squared_differences += d_squared;
+    }
+    let e = sum_of_squared_differences.sqrt();
+    e < epsilon
+}
+
+// Example from https://en.wikipedia.org/wiki/PageRank
+fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>, f64, f64, i64) -> Vec<f64> {
+    let mut adjacency_list = Table::new();
+    let n = 11;
+    let src = vec![2, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11];
+    let dst = vec![3, 2, 1, 2, 2, 4, 6, 2, 5, 2, 5, 2, 5, 2, 5, 5,  5];
+    adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j'});
+    adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
+    adjacency_list.set_crk_col("src");
+    let mut pageranks = initialise_pageranks(11);
+    pageranks = pagerank(adjacency_list, &mut pageranks, 0.85, 0.001, 50);
+    let expected = vec![0.0, 0.02534, 0.29696, 0.26549, 0.03022, 0.06253, 0.03022, 0.01250, 0.01250, 0.01250, 0.01250, 0.01250];
+    for i in 0..11 {
+        if (pageranks[i] - expected[i]).abs() > 0.001 {
+            println!("Failed!");
+            println!("expected: {:?}", expected);
+            println!("actual:   {:?}", pageranks);
+            panic!();
+        }
+    }
+    println!("Passed!");
+}
+
+fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+    let src_col = adjacency_list.get_i64_col("src").v.clone();
+    let dst_col = adjacency_list.get_i64_col("dst").v.clone();
+    let e = adjacency_list.count;
+    let n = prs.len();
+    let m = (1.0 - d) / (n as f64);
+    let mut l = Vec::with_capacity(1 + n);
+    for _ in 0..(n + 1) {
+        l.push(-1);
+    }
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+    let mut iterations = 0;
+    loop {
+        for v in 1..n {
+            let mut inherited_rank = 0.0;
+            for i in 0..e {
+                if dst_col[i] == v as i64 {
+                    let w = src_col[i] as usize;
+                    let mut lw = l[w];
+                    if lw == -1 { lw = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] = lw; };
+                    let prw = pageranks[w];
+                    let contribution_w = prw / (lw as f64);
+                    inherited_rank += contribution_w;
+                }
+            }
+            new_pageranks[v] = m + d * inherited_rank;
+        }
+        if terminate(&pageranks, &new_pageranks, n, epsilon) {
+            break;
+        }
+        pageranks = new_pageranks.clone();
+        iterations += 1;
+        if iterations > max_iterations {
+            break;
+        }
+    }
+    new_pageranks
 }
