@@ -532,7 +532,6 @@ fn preclustered_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsi
             let mut inc_idx = i.clone();
             let mut dec_idx = i.clone();
 
-            // Hits the correct nodes
             loop {
                 let w = src_col[inc_idx] as usize;
                 let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
