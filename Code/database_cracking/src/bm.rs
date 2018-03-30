@@ -11,7 +11,7 @@ use time::PreciseTime;
 use time::SteadyTime;
 use bit_vec::BitVec;
 
-/* MACROS
+/* MACROS/helpers
     For profiling the performance of a function and making hashmaps.
 */
 
@@ -47,6 +47,16 @@ macro_rules! map (
             }
         };
     );
+
+// Prints a float vec where each float is to 4dp.
+fn pretty_println_f64vec(floats: &Vec<f64>) {
+    print!("[");
+    print!("{}", floats[0]);
+    for i in 1..floats.len() {
+        print!(", {:.4}", floats[i]);
+    }
+    print!("]\n");
+}
 
 // Todo: Write a nice macro for printing all the profiler timing variables at the end of a fn.
 
@@ -430,9 +440,9 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>
     for i in 0..11 {
         if (pageranks[i] - expected[i]).abs() > 0.001 {
             println!("Failed!");
-            println!("expected: {:?}", expected);
-            println!("actual:   {:?}", pageranks);
-            panic!();
+            print!("expected: ");pretty_println_f64vec(expected);
+            print!("actual:   ");pretty_println_f64vec(pageranks);
+            panic!()
         }
     }
     println!("Passed!");
@@ -441,15 +451,6 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>
 fn inherit(inherited_rank: &mut f64, prw: f64, lw: i64) {
     let contribution = prw / (lw as f64);
     (*inherited_rank) += contribution;
-}
-
-fn pretty_println_f64vec(floats: &Vec<f64>) {
-    print!("[");
-    print!("{}", floats[0]);
-    for i in 1..floats.len() {
-        print!(", {:.4}", floats[i]);
-    }
-    print!("]\n");
 }
 
 fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
