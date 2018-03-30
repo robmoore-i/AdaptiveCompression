@@ -440,8 +440,8 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>
     for i in 0..11 {
         if (pageranks[i] - expected[i]).abs() > 0.001 {
             println!("Failed!");
-            print!("expected: ");pretty_println_f64vec(expected);
-            print!("actual:   ");pretty_println_f64vec(pageranks);
+            print!("expected: ");pretty_println_f64vec(&expected);
+            print!("actual:   ");pretty_println_f64vec(&pageranks);
             panic!()
         }
     }
