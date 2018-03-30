@@ -366,3 +366,14 @@ pageranks for all of the methods.
 I'm also needing to chase up Paul Kelly about CSR exploitation, because I don't really
 know anything about it. I will perhaps also read something in one of the many papers I'm
 printing off tomorrow. I should also ask other people who might know something.
+
+=============================================================
+## Friday 30th March, 2018, Implemented preclustered pagerank
+=============================================================
+
+Finished implementing preclustered pagerank and have been reading up on the cache
+optimised graph analytics paper by Kiriansky et. al. In the implementation I had a bug,
+which I've just fixed, where after finding that an edge has no in-neighbours, I
+continued in the loop, but I forgot to update the pagerank to be (1-d)/|V|, which
+caused the result to be wrong. I still need implementations for preclustered_rle and
+of course for both adaptive_rle and adaptive.
