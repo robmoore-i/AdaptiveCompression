@@ -55,7 +55,7 @@ macro_rules! map (
 */
 
 fn main() {
-    pagerank_example_test(unoptimised_pagerank);
+    pagerank_example_test(preclustered_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -443,6 +443,15 @@ fn inherit(inherited_rank: &mut f64, prw: f64, lw: i64) {
     (*inherited_rank) += contribution;
 }
 
+fn pretty_println_f64vec(floats: &Vec<f64>) {
+    print!("[");
+    print!("{}", floats[0]);
+    for i in 1..floats.len() {
+        print!(", {:.4}", floats[i]);
+    }
+    print!("]\n");
+}
+
 fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
     let src_col = adjacency_list.get_i64_col("src").v.clone();
     let dst_col = adjacency_list.get_i64_col("dst").v.clone();
@@ -465,6 +474,83 @@ fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsil
                     let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
                     inherit(&mut inherited_rank, pageranks[w], lw);
                 }
+            }
+            new_pageranks[v] = m + d * inherited_rank;
+        }
+        if terminate(&pageranks, &new_pageranks, n, epsilon) {
+            break;
+        }
+        pageranks = new_pageranks.clone();
+        iterations += 1;
+        if iterations > max_iterations {
+            break;
+        }
+    }
+    new_pageranks
+}
+
+fn preclustered_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+    let e = adjacency_list.count;
+    let mut src_col = adjacency_list.get_i64_col("src").v.clone();
+    let mut dst_col = adjacency_list.get_i64_col("dst").v.clone();
+
+    // Cluster by dst column.
+    let mut row_store = Vec::with_capacity(e);
+    for i in 0..e {
+        row_store.push((src_col[i], dst_col[i]));
+    }
+    row_store.sort_by_key(|&k| k.1);
+    for i in 0..e {
+        src_col[i] = row_store[i].0;
+        dst_col[i] = row_store[i].1;
+    }
+
+    let n = prs.len();
+    let m = (1.0 - d) / (n as f64);
+    let mut l = Vec::with_capacity(1 + n);
+    for _ in 0..(n + 1) {
+        l.push(-1);
+    }
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+
+    let mut iterations = 0;
+    loop {
+        for v in 1..n {
+            let mut inherited_rank = 0.0;
+
+            let i;
+            match dst_col.binary_search(&(v as i64)) {
+                Ok(x)  => i = x,
+                Err(_) => {
+                    new_pageranks[v] = m;
+                    continue;
+                },
+            }
+
+            let mut inc_idx = i.clone();
+            let mut dec_idx = i.clone();
+
+            // Hits the correct nodes
+            loop {
+                let w = src_col[inc_idx] as usize;
+                let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
+                inc_idx += 1;
+                inherit(&mut inherited_rank, pageranks[w], lw);
+                if inc_idx >= src_col.len() {
+                    break;
+                } else if dst_col[inc_idx] != (v as i64) {
+                    break;
+                }
+            }
+            while dec_idx > 0 {
+                dec_idx -= 1;
+                if dst_col[dec_idx] != (v as i64) {
+                    break;
+                }
+                let w = src_col[dec_idx] as usize;
+                let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
+                inherit(&mut inherited_rank, pageranks[w], lw);
             }
             new_pageranks[v] = m + d * inherited_rank;
         }
