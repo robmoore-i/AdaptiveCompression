@@ -1544,4 +1544,13 @@ mod tests {
         assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
         assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
     }
+
+    #[test]
+    fn can_rearrange_tuples_in_multityped_table() {
+        let mut table = pr_table(vec![1, 2, 3, 4], vec![5, 6, 7, 8], vec![0.1, 0.2, 0.3, 0.4]);
+        table.rearrange(vec![2, 1, 3, 0].iter());
+        assert_base_i64_column_equals(table.clone(), "src", vec![3, 2, 4, 1]);
+        assert_base_i64_column_equals(table.clone(), "dst", vec![7, 6, 8, 5]);
+        assert_base_f64_column_equals(table.clone(), "pr", vec![0.3, 0.2, 0.4, 0.1]);
+    }
 }
