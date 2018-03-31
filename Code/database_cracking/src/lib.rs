@@ -916,6 +916,11 @@ pub mod db {
             self.crk_col.crk_idx.insert(adjusted_med, p_low);
             self.get_indices(self.crk_col.base_idx[initial_p_low..p_low].iter())
         }
+
+        // Counts the places where a given column equals a given value
+        pub fn count_col_eq(&self, col: &str, eq: i64) -> i64 {
+            self.get_i64_col(col).v.iter().map(|&x|(x==eq)as i64).fold(0,|sum,x|sum+x) as i64
+        }
     }
 }
 

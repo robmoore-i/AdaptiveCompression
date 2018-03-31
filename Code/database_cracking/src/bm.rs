@@ -65,7 +65,12 @@ fn pretty_println_f64vec(floats: &Vec<f64>) {
 */
 
 fn main() {
+    println!("Unoptimised");
+    pagerank_example_test(unoptimised_pagerank);
+    println!("Preclustered");
     pagerank_example_test(preclustered_pagerank);
+//    println!("Adaptive");
+//    pagerank_example_test(adaptive_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -426,16 +431,16 @@ fn terminate(pageranks: &Vec<f64>, new_pageranks: &Vec<f64>, n: usize, epsilon: 
 }
 
 // Example from https://en.wikipedia.org/wiki/PageRank
-fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Table, &mut Vec<f64>, f64, f64, i64) -> Vec<f64> {
+fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(&mut Table, &mut Vec<f64>, f64, f64, i64) -> Vec<f64> {
     let mut adjacency_list = Table::new();
     let n = 11;
     let src = vec![2, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11];
     let dst = vec![3, 2, 1, 2, 2, 4, 6, 2, 5, 2, 5, 2, 5, 2, 5, 5,  5];
     adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j'});
     adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
-    adjacency_list.set_crk_col("src");
+    adjacency_list.set_crk_col("dst");
     let mut pageranks = initialise_pageranks(11);
-    pageranks = pagerank(adjacency_list, &mut pageranks, 0.85, 0.001, 50);
+    pageranks = pagerank(&mut adjacency_list, &mut pageranks, 0.85, 0.001, 50);
     let expected = vec![0.0, 0.02534, 0.29696, 0.26549, 0.03022, 0.06253, 0.03022, 0.01250, 0.01250, 0.01250, 0.01250, 0.01250];
     for i in 0..11 {
         if (pageranks[i] - expected[i]).abs() > 0.001 {
@@ -453,16 +458,16 @@ fn inherit(inherited_rank: &mut f64, prw: f64, lw: i64) {
     (*inherited_rank) += contribution;
 }
 
-fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+fn unoptimised_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
     let src_col = adjacency_list.get_i64_col("src").v.clone();
     let dst_col = adjacency_list.get_i64_col("dst").v.clone();
     let e = adjacency_list.count;
     let n = prs.len();
     let m = (1.0 - d) / (n as f64);
+
     let mut l = Vec::with_capacity(1 + n);
-    for _ in 0..(n + 1) {
-        l.push(-1);
-    }
+    for _ in 0..(n + 1) { l.push(-1); }
+
     let mut pageranks     = prs.clone();
     let mut new_pageranks = prs.clone();
     let mut iterations = 0;
@@ -490,7 +495,7 @@ fn unoptimised_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsil
     new_pageranks
 }
 
-fn preclustered_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+fn preclustered_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
     let e = adjacency_list.count;
     let mut src_col = adjacency_list.get_i64_col("src").v.clone();
     let mut dst_col = adjacency_list.get_i64_col("dst").v.clone();
@@ -508,10 +513,10 @@ fn preclustered_pagerank(adjacency_list: Table, prs: &mut Vec<f64>, d: f64, epsi
 
     let n = prs.len();
     let m = (1.0 - d) / (n as f64);
+
     let mut l = Vec::with_capacity(1 + n);
-    for _ in 0..(n + 1) {
-        l.push(-1);
-    }
+    for _ in 0..(n + 1) { l.push(-1); }
+
     let mut pageranks     = prs.clone();
     let mut new_pageranks = prs.clone();
 
