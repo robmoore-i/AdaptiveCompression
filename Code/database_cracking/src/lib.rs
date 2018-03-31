@@ -742,6 +742,9 @@ pub mod db {
             for col in self.i64_columns.values_mut() {
                 col.rearrange(indices.clone());
             }
+            for col in self.f64_columns.values_mut() {
+                col.rearrange(indices.clone());
+            }
             self.crk_col.rearrange(indices.clone());
         }
 
