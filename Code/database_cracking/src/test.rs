@@ -478,7 +478,7 @@ fn repeat_queries_return_same_results() {
 #[test]
 fn can_create_new_float_columns() {
     let mut adjacency_list = Table::new();
-    adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
+    adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "f" => 'f'});
     assert_eq!(adjacency_list.count, 0);
     assert_eq!(adjacency_list.i64_columns.len(), 2);
     assert_eq!(adjacency_list.f64_columns.len(), 1);
@@ -487,8 +487,8 @@ fn can_create_new_float_columns() {
 #[test]
 fn can_get_float_column() {
     let mut adjacency_list = Table::new();
-    adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
-    let pr = adjacency_list.get_f64_col("pr");
+    adjacency_list.new_columns(map!{"src" => 'j', "dst" => 'j', "f" => 'f'});
+    let pr = adjacency_list.get_f64_col("f");
     assert!(pr.v.is_empty());
 }
 
@@ -502,131 +502,138 @@ fn can_populate_float_column() {
     assert_eq!(pr.v, v);
 }
 
-fn pr_table(src: Vec<i64>, dst: Vec<i64>, pr: Vec<f64>) -> Table {
-    let mut prt = Table::new();
-    prt.new_columns(map!{"src" => 'j', "dst" => 'j', "pr" => 'f'});
-    prt.insert_multityped(&mut map!{"src" => src, "dst" => dst}, &mut map!{"pr" => pr});
-    prt.set_crk_col("src");
-    prt
+fn f_table(src: Vec<i64>, dst: Vec<i64>, f: Vec<f64>) -> Table {
+    let mut ft = Table::new();
+    ft.new_columns(map!{"src" => 'j', "dst" => 'j', "f" => 'f'});
+    ft.insert_multityped(&mut map!{"src" => src, "dst" => dst}, &mut map!{"f" => f});
+    ft.set_crk_col("src");
+    ft
 }
 
 #[test]
 fn float_can_crack_in_three_for_single_value() {
-    let mut prt = pr_table(vec![5,    2,    4,     1,    1,    4,   4,    3,    3,    1,    5,    2,   1,    2,    3,    3,   4,    5,    2,    5],
-                           vec![3,    5,    5,     3,    4,    1,   2,    5,    2,    5,    2,    1,   2,    4,    1,    4,   3,    1,    3,    4],
-                           vec![0.89, 0.44, 0.078, 0.42, 0.62, 0.2, 0.81, 0.24, 0.55, 0.53, 0.94, 0.3, 0.44, 0.44, 0.73, 1.0, 0.74, 0.24, 0.57, 0.43]);
-    let selection = prt.cracker_select_in_three(3, 3, true, true);
+    let mut ft = f_table(vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5],
+                          vec![3,    5,    5,     3,    4,    1,   2,    5,    2,    5,    2,    1,   2,    4,    1,    4,   3,    1,    3,    4],
+                          vec![0.89, 0.44, 0.078, 0.42, 0.62, 0.2, 0.81, 0.24, 0.55, 0.53, 0.94, 0.3, 0.44, 0.44, 0.73, 1.0, 0.74, 0.24, 0.57, 0.43]);
+    let selection = ft.cracker_select_in_three(3, 3, true, true);
     assert_base_i64_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
     assert_base_i64_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
-    assert_base_f64_column_equals(selection.clone(), "pr",  vec![0.55, 0.73, 1.0, 0.24]);
+    assert_base_f64_column_equals(selection.clone(), "f",  vec![0.55, 0.73, 1.0, 0.24]);
     assert_eq!(selection.count, 4);
-    assert_eq!(prt.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
+    assert_eq!(ft.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
 }
 
 #[test]
 fn float_can_crack_in_three_for_single_value_out_of_lower_bound() {
-    let mut prt = pr_table(vec![4,    4,     3,    3,     4,    4],
-                           vec![4,    2,     1,    4,     3,    5],
-                           vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
-    let selection = prt.cracker_select_in_three(1, 1, true, true);
+    let mut ft = f_table(vec![4, 4, 3, 3, 4, 4],
+                          vec![4,    2,     1,    4,     3,    5],
+                          vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
+    let selection = ft.cracker_select_in_three(1, 1, true, true);
     assert_base_i64_column_equals(selection.clone(), "src", vec![]);
     assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
-    assert_base_f64_column_equals(selection.clone(), "pr",  vec![]);
-    assert_eq!(prt.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
+    assert_base_f64_column_equals(selection.clone(), "f",  vec![]);
+    assert_eq!(ft.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
 }
 
 #[test]
 fn float_can_crack_in_three_for_single_value_out_of_upper_bound() {
-    let mut prt = pr_table(vec![2,    2,     4,    3,     2,    2],
-                           vec![3,    2,     1,    5,     4,    4],
-                           vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
-    let selection = prt.cracker_select_in_three(5, 5, true, true);
+    let mut ft = f_table(vec![2, 2, 4, 3, 2, 2],
+                          vec![3,    2,     1,    5,     4,    4],
+                          vec![0.77, 0.016, 0.36, 0.025, 0.69, 0.64]);
+    let selection = ft.cracker_select_in_three(5, 5, true, true);
     assert_base_i64_column_equals(selection.clone(), "src", vec![]);
     assert_base_i64_column_equals(selection.clone(), "dst", vec![]);
-    assert_base_f64_column_equals(selection.clone(), "pr",  vec![]);
-    assert_eq!(prt.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
+    assert_base_f64_column_equals(selection.clone(), "f",  vec![]);
+    assert_eq!(ft.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
 }
 
 #[test]
 fn float_can_exploit_cracker_index_for_selecting_single_value_medium_table() {
-    let mut prt = pr_table(vec![3,     1,   5,    5,   1,    5,     2,    3,    1,    5,    5,    3],
-                           vec![5,     3,   2,    1,   5,    1,     1,    4,    3,    1,    2,    5],
-                           vec![0.038, 0.9, 0.79, 0.2, 0.78, 0.069, 0.41, 0.23, 0.71, 0.14, 0.27, 0.64]);
+    let mut ft = f_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
+                          vec![5,     3,   2,    1,   5,    1,     1,    4,    3,    1,    2,    5],
+                          vec![0.038, 0.9, 0.79, 0.2, 0.78, 0.069, 0.41, 0.23, 0.71, 0.14, 0.27, 0.64]);
 
-    let selection_1 = prt.cracker_select_in_three(5, 5, true, true);
+    let selection_1 = ft.cracker_select_in_three(5, 5, true, true);
     assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
     assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
-    assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.79, 0.069, 0.14, 0.27, 0.2]);
+    assert_base_f64_column_equals(selection_1.clone(), "f",  vec![0.79, 0.069, 0.14, 0.27, 0.2]);
 
-    let selection_2 = prt.cracker_select_in_three(2, 2, true, true);
+    let selection_2 = ft.cracker_select_in_three(2, 2, true, true);
     assert_base_i64_column_equals(selection_2.clone(), "src", vec![2]);
     assert_base_i64_column_equals(selection_2.clone(), "dst", vec![1]);
-    assert_base_f64_column_equals(selection_2.clone(), "pr",  vec![0.41]);
+    assert_base_f64_column_equals(selection_2.clone(), "f",  vec![0.41]);
 
-    let selection_3 = prt.cracker_select_in_three(1, 1, true, true);
+    let selection_3 = ft.cracker_select_in_three(1, 1, true, true);
     assert_base_i64_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
     assert_base_i64_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
-    assert_base_f64_column_equals(selection_3.clone(), "pr",  vec![0.71, 0.9, 0.78]);
+    assert_base_f64_column_equals(selection_3.clone(), "f",  vec![0.71, 0.9, 0.78]);
 
-    let selection_4 = prt.cracker_select_in_three(3, 3, true, true);
+    let selection_4 = ft.cracker_select_in_three(3, 3, true, true);
     assert_base_i64_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
     assert_base_i64_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
-    assert_base_f64_column_equals(selection_4.clone(), "pr",  vec![0.23, 0.038, 0.64]);
+    assert_base_f64_column_equals(selection_4.clone(), "f",  vec![0.23, 0.038, 0.64]);
     // After the BFS the cracker column should be fully clustered
-    assert_eq!(prt.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
+    assert_eq!(ft.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
 }
 
 #[test]
 fn float_can_exploit_cracker_index_for_selecting_single_value_small_table() {
-    let mut prt = pr_table(vec![4,    4,     4,    2,    4,    3],
-                           vec![3,    3,     2,    1,    5,    4],
-                           vec![0.78, 0.082, 0.51, 0.49, 0.87, 0.64]);
+    let mut ft = f_table(vec![4, 4, 4, 2, 4, 3],
+                          vec![3,    3,     2,    1,    5,    4],
+                          vec![0.78, 0.082, 0.51, 0.49, 0.87, 0.64]);
 
-    let selection_1 = prt.cracker_select_in_three(3, 3, true, true);
+    let selection_1 = ft.cracker_select_in_three(3, 3, true, true);
     assert_base_i64_column_equals(selection_1.clone(), "src", vec![3]);
     assert_base_i64_column_equals(selection_1.clone(), "dst", vec![4]);
-    assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.64]);
+    assert_base_f64_column_equals(selection_1.clone(), "f",  vec![0.64]);
 
-    let selection_2 = prt.cracker_select_in_three(4, 4, true, true);
+    let selection_2 = ft.cracker_select_in_three(4, 4, true, true);
     assert_base_i64_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
     assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
-    assert_base_f64_column_equals(selection_2.clone(), "pr",  vec![0.51, 0.082, 0.87, 0.78]);
+    assert_base_f64_column_equals(selection_2.clone(), "f",  vec![0.51, 0.082, 0.87, 0.78]);
 
-    let selection_3 = prt.cracker_select_in_three(2, 2, true, true);
+    let selection_3 = ft.cracker_select_in_three(2, 2, true, true);
     assert_base_i64_column_equals(selection_3.clone(), "src", vec![2]);
     assert_base_i64_column_equals(selection_3.clone(), "dst", vec![1]);
-    assert_base_f64_column_equals(selection_3.clone(), "pr",  vec![0.49]);
+    assert_base_f64_column_equals(selection_3.clone(), "f",  vec![0.49]);
 
-    let selection_4 = prt.cracker_select_in_three(5, 5, true, true);
+    let selection_4 = ft.cracker_select_in_three(5, 5, true, true);
     assert_base_i64_column_equals(selection_4.clone(), "src", vec![]);
     assert_base_i64_column_equals(selection_4.clone(), "dst", vec![]);
-    assert_base_f64_column_equals(selection_4.clone(), "pr",  vec![]);
+    assert_base_f64_column_equals(selection_4.clone(), "f",  vec![]);
     // After the BFS the cracker column should be fully clustered
-    assert_eq!(prt.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
+    assert_eq!(ft.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
 }
 
 #[test]
 fn float_repeat_queries_return_same_results() {
-    let mut prt = pr_table(vec![3,    1,    5,    5,    1,    5,    2,    3,    1,     5,    5,    3],
-                           vec![5,    3,    2,    1,    5,    1,    1,    4,    3,     1,    2,    5],
-                           vec![0.91, 0.98, 0.31, 0.37, 0.96, 0.41, 0.63, 0.58, 0.009, 0.14, 0.77, 0.3]);
+    let mut ft = f_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
+                          vec![5,    3,    2,    1,    5,    1,    1,    4,    3,     1,    2,    5],
+                          vec![0.91, 0.98, 0.31, 0.37, 0.96, 0.41, 0.63, 0.58, 0.009, 0.14, 0.77, 0.3]);
 
-    let selection_1 = prt.cracker_select_specific(5);
+    let selection_1 = ft.cracker_select_specific(5);
     assert_base_i64_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
     assert_base_i64_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
-    assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
+    assert_base_f64_column_equals(selection_1.clone(), "f",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
 
-    let selection_2 = prt.cracker_select_specific(5);
+    let selection_2 = ft.cracker_select_specific(5);
     assert_base_i64_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
     assert_base_i64_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
-    assert_base_f64_column_equals(selection_1.clone(), "pr",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
+    assert_base_f64_column_equals(selection_1.clone(), "f",  vec![0.31, 0.41, 0.14, 0.77, 0.37]);
 }
 
 #[test]
 fn can_rearrange_tuples_in_multityped_table() {
-    let mut table = pr_table(vec![1, 2, 3, 4], vec![5, 6, 7, 8], vec![0.1, 0.2, 0.3, 0.4]);
+    let mut table = f_table(vec![1, 2, 3, 4], vec![5, 6, 7, 8], vec![0.1, 0.2, 0.3, 0.4]);
     table.rearrange(vec![2, 1, 3, 0].iter());
     assert_base_i64_column_equals(table.clone(), "src", vec![3, 2, 4, 1]);
     assert_base_i64_column_equals(table.clone(), "dst", vec![7, 6, 8, 5]);
-    assert_base_f64_column_equals(table.clone(), "pr", vec![0.3, 0.2, 0.4, 0.1]);
+    assert_base_f64_column_equals(table.clone(), "f", vec![0.3, 0.2, 0.4, 0.1]);
+}
+
+#[test]
+fn can_do_pagerank_iteration() {
+    let mut table = adjacency_list_table(vec![2, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11],
+                                         vec![3, 2, 1, 2, 2, 4, 6, 2, 5, 2, 5, 2, 5, 2, 5, 5,  5]);
+
 }

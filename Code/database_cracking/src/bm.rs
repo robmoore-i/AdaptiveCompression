@@ -69,8 +69,8 @@ fn main() {
     pagerank_example_test(unoptimised_pagerank);
     println!("Preclustered");
     pagerank_example_test(preclustered_pagerank);
-//    println!("Adaptive");
-//    pagerank_example_test(adaptive_pagerank);
+    println!("Adaptive");
+    pagerank_example_test(adaptive_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -559,6 +559,42 @@ fn preclustered_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64,
             }
             new_pageranks[v] = m + d * inherited_rank;
         }
+        if terminate(&pageranks, &new_pageranks, n, epsilon) {
+            break;
+        }
+        pageranks = new_pageranks.clone();
+        iterations += 1;
+        if iterations > max_iterations {
+            break;
+        }
+    }
+    new_pageranks
+}
+
+// NB. The adjacency list should be cracked on dst.
+fn adaptive_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+    let n = prs.len();
+    let m = (1.0 - d) / (n as f64);
+
+    let mut l = Vec::with_capacity(1 + n);
+    for _ in 0..(n+1) { l.push(-1); }
+
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+
+    let mut iterations = 0;
+    loop {
+        for v in 1..n {
+            let mut inherited_rank = 0.0;
+
+            for w in adjacency_list.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+                let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
+                inherit(&mut inherited_rank, pageranks[w], lw);
+            }
+
+            new_pageranks[v] = m + d * inherited_rank;
+        }
+
         if terminate(&pageranks, &new_pageranks, n, epsilon) {
             break;
         }
