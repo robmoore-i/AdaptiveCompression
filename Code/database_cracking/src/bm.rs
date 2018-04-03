@@ -69,10 +69,10 @@ fn main() {
     pagerank_example_test(unoptimised_pagerank);
     println!("Preclustered");
     pagerank_example_test(preclustered_pagerank);
-    println!("Adaptive");
-    pagerank_example_test(adaptive_pagerank);
     println!("Preclustered_RLE");
     pagerank_example_test(preclustered_rle_pagerank);
+    println!("Adaptive");
+    pagerank_example_test(adaptive_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
