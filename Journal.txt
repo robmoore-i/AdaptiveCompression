@@ -377,3 +377,22 @@ which I've just fixed, where after finding that an edge has no in-neighbours, I
 continued in the loop, but I forgot to update the pagerank to be (1-d)/|V|, which
 caused the result to be wrong. I still need implementations for preclustered_rle and
 of course for both adaptive_rle and adaptive.
+
+================================================================================
+## Tuesday 3rd April, 2018, Implemented adaptive(+rle) and preclustered pagerank
+================================================================================
+
+Implementing adaptive-rle pagerank was extremely straightforward. There was a bug with
+the standard cracking implementation regarding inserts to the cracker index for values
+which were at the end of the column. I fixed that and then adaptive pagerank worked for
+non-compacting cracking as well. Preclustered-rle was completely straightforward.
+
+Next up I have to benchmark all this stuff to see who's hot and who's not. My suspicion
+is that compacting cracking performs nicely on this benchmark because really only the
+first iteration is slow - after that it's as fast as preclustered-rle, which is faster
+than just standard clustering.
+
+After that I'll be looking at implementing adaptive frequency based clustering and
+benchmarking that. Once I've done that I'll be happy to do a write up, but if I am very
+fast, I'd also like to try implementing CSR segmentation and perhaps and adaptive spin
+on it would be cool. Seeing Holger tomorrow (I think), can discuss then.
