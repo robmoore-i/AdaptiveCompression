@@ -578,9 +578,9 @@ fn float_can_exploit_cracker_index_for_selecting_single_value_medium_table() {
 
 #[test]
 fn float_can_exploit_cracker_index_for_selecting_single_value_small_table() {
-    let mut ft = f_table(vec![4, 4, 4, 2, 4, 3],
-                          vec![3,    3,     2,    1,    5,    4],
-                          vec![0.78, 0.082, 0.51, 0.49, 0.87, 0.64]);
+    let mut ft = f_table(vec![4,    4,     4,    2,    4,    3],
+                         vec![3,    3,     2,    1,    5,    4],
+                         vec![0.78, 0.082, 0.51, 0.49, 0.87, 0.64]);
 
     let selection_1 = ft.cracker_select_in_three(3, 3, true, true);
     assert_base_i64_column_equals(selection_1.clone(), "src", vec![3]);
@@ -633,7 +633,63 @@ fn can_rearrange_tuples_in_multityped_table() {
 
 #[test]
 fn can_do_pagerank_iteration() {
-    let mut table = adjacency_list_table(vec![2, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11],
-                                         vec![3, 2, 1, 2, 2, 4, 6, 2, 5, 2, 5, 2, 5, 2, 5, 5,  5]);
+    let d = 0.85;
+    let n = 11;
+    let m = 0.01363636; // = (1 - d) / n
+
+    // Edge data
+    let mut table = Table::new();
+    table.new_columns(map!{"src" => 'j', "dst" => 'j'});
+    table.insert(&mut map!{"src" => vec![7, 4, 2, 3, 5, 9, 6, 5, 11, 4, 10, 8, 5, 6, 8, 7, 9],
+                           "dst" => vec![2, 2, 3, 2, 4, 5, 5, 6, 5,  1, 5,  5, 2, 2, 2, 5, 2]});
+    table.set_crk_col("dst");
+
+    // Vertex data
+    let prs = vec![0.0, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.09090909];
+    let mut l = vec![-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+
+    let mut in_degree = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for v in 1..n {
+        let mut inherited_rank = 0.0;
+
+        for w in table.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+            let lw = if l[w] == -1 { l[w] = (&table).count_col_eq("src", w as i64); l[w] } else { l[w] };
+            in_degree[v] += 1;
+            inherited_rank += pageranks[w] / (lw as f64);
+        }
+
+        new_pageranks[v] = m + d * inherited_rank;
+    }
+    pageranks = new_pageranks.clone();
+    assert_eq!(l, vec![-1, -1, 1, 1, 2, 3, 2, 2, 2, 2, 1, 1]);
+    assert_eq!(in_degree, vec![0, 1, 7, 1, 1, 6, 1, 0, 0, 0, 0, 0]);
+
+    println!("Adjacency list:");
+    table.print_cols();
+
+    let one_dst_selection = table.cracker_select_specific(1);
+    println!("Selection where dst=1:");
+    one_dst_selection.print_cols();
+    let one_in_neighbours: Vec<usize> = one_dst_selection.get_i64_col("src").v.iter().map(|&x|x as usize).collect();
+    assert_eq!(one_in_neighbours, vec![4]);
+
+    let mut in_degree = vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    for v in 1..n {
+        let mut inherited_rank = 0.0;
+
+        for w in table.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+            let lw = if l[w] == -1 { l[w] = (&table).count_col_eq("src", w as i64); l[w] } else { l[w] };
+            in_degree[v] += 1;
+            inherited_rank += pageranks[w] / (lw as f64);
+        }
+
+        new_pageranks[v] = m + d * inherited_rank;
+    }
+    pageranks = new_pageranks.clone();
+    assert_eq!(l, vec![-1, -1, 1, 1, 2, 3, 2, 2, 2, 2, 1, 1]);
+    assert_eq!(in_degree, vec![0, 1, 7, 1, 1, 6, 1, 0, 0, 0, 0, 0]);
 
 }

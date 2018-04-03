@@ -817,12 +817,14 @@ pub mod db {
 
             // Start with a pointer at both ends of the piece: p_low, p_high
             let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
-            let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
+            let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(self.count);
 
-            let is_uniform_column_piece = adjusted_low == adjusted_high && self.crk_col.crk_idx.contains(adjusted_low) && self.crk_col.crk_idx.contains(adjusted_low + 1);
+            let is_uniform_column_piece = adjusted_low == adjusted_high && self.crk_col.crk_idx.contains(adjusted_low) && self.crk_col.crk_idx.contains(high + inc_h as i64);
             if is_uniform_column_piece {
-                return self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
+                return self.get_indices(self.crk_col.base_idx[p_low..p_high].iter());
             }
+            if p_high == self.count { p_high = self.count - 1 };
+            if p_low  == self.count { p_low  = self.count - 1 };
 
             // while p_low is pointing at an element satisfying c_low,  move it forwards
             while c_low(self.crk_col.crk[p_low]) {
@@ -867,9 +869,9 @@ pub mod db {
                 }
             }
 
-            let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
+            // let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
             self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
-            self.crk_col.crk_idx.insert(high + inc_h as i64, high_ptr);
+            self.crk_col.crk_idx.insert(high + inc_h as i64, p_itr);
             self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
         }
 
@@ -881,7 +883,8 @@ pub mod db {
 
             // Start with pointers at the start and end of the array
             let initial_p_low  = 0;
-            let mut p_high = self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or((self.count - 1) as usize);
+            let mut p_high = self.crk_col.crk_idx.upper_bound(&adjusted_med).unwrap_or(self.count);
+            if p_high == self.count { p_high = self.count - 1 };
 
             // Save p_low for later:
             let mut p_low = initial_p_low.clone();
