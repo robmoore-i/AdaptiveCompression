@@ -71,6 +71,8 @@ fn main() {
     pagerank_example_test(preclustered_pagerank);
     println!("Adaptive");
     pagerank_example_test(adaptive_pagerank);
+    println!("Preclustered_RLE");
+    pagerank_example_test(preclustered_rle_pagerank);
 }
 
 fn graph_size_range(n_readings: i64, min_graph_size: i64, max_graph_size: i64, step: i64) -> Vec<i64> {
@@ -304,7 +306,7 @@ fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
 
     while !frontier.is_empty() {
         set_indices(&mut visited, indicise(frontier.clone()));
-        
+
         let prev_frontier = frontier.clone();
         frontier.clear();
         for src in prev_frontier {
@@ -387,10 +389,10 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
 
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
-    
+
     while !frontier.is_empty() {
         set_indices(&mut visited, indicise(frontier.clone()));
-        
+
         let prev_frontier = frontier.clone();
         frontier.clear();
         for src in prev_frontier {
@@ -554,6 +556,63 @@ fn preclustered_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64,
                     break;
                 }
                 let w = src_col[dec_idx] as usize;
+                let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
+                inherit(&mut inherited_rank, pageranks[w], lw);
+            }
+            new_pageranks[v] = m + d * inherited_rank;
+        }
+        if terminate(&pageranks, &new_pageranks, n, epsilon) {
+            break;
+        }
+        pageranks = new_pageranks.clone();
+        iterations += 1;
+        if iterations > max_iterations {
+            break;
+        }
+    }
+    new_pageranks
+}
+
+fn preclustered_rle_pagerank(adjacency_list: &mut Table, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+    let src_col = adjacency_list.get_i64_col("src").v.clone();
+    let dst_col = adjacency_list.get_i64_col("dst").v.clone();
+
+    let n = prs.len();
+    let m = (1.0 - d) / (n as f64);
+
+    // Cluster with RLE by the dst column.
+    let mut encoded_col: Vec<Vec<i64>> = Vec::with_capacity(n + 1);
+    for i in 0..adjacency_list.count {
+        let dst_as_usize = dst_col[i] as usize;
+        let src = src_col[i];
+
+        while encoded_col.len() <= dst_as_usize {
+            encoded_col.push(Vec::new());
+        }
+
+        if encoded_col[dst_as_usize].is_empty() {
+            encoded_col[dst_as_usize] = vec![src];
+        } else {
+            encoded_col[dst_as_usize].push(src);
+        }
+    }
+    while encoded_col.len() < n {
+        encoded_col.push(vec![]);
+    }
+
+    let mut l = Vec::with_capacity(1 + n);
+    for _ in 0..(n + 1) { l.push(-1); }
+
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+
+    let mut iterations = 0;
+    loop {
+        for v in 1..n {
+            let mut inherited_rank = 0.0;
+
+            let in_neighbours = encoded_col[v].iter().map(|&x|x as usize);
+            for w in in_neighbours {
                 let lw = if l[w] == -1 { l[w] = src_col.iter().fold(0, |acc, x| acc + ((x == &(w as i64)) as i64)); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }
