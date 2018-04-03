@@ -275,29 +275,6 @@ fn indicise(v: Vec<i64>) -> Vec<i64> {
     v.iter().map(|x|x-1).collect()
 }
 
-fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
-    let mut frontier = vec![start_node];
-    let mut visited = BitVec::from_elem(start_node as usize, false);
-
-    while !frontier.is_empty() {
-        // Add visited nodes
-        set_indices(&mut visited, indicise(frontier.clone()));
-
-        let prev_frontier = frontier.clone();
-        frontier.clear();
-        // For each src in the previous frontier, find the dsts which haven't been visited yet,
-        // and add them to a new, empty frontier.
-        for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_i64_col("dst"))).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
-            }
-        }
-    }
-    bv_where(visited)
-}
-
 fn unoptimised_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
     let src_col = adjacency_list.get_i64_col("src").v.clone();
     let dst_col = adjacency_list.get_i64_col("dst").v.clone();
@@ -398,6 +375,29 @@ fn preclustered_rle_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64>
         for src in prev_frontier {
             for dst in &encoded_col[src as usize] {
                 discover(*dst, &mut visited, &mut frontier);
+            }
+        }
+    }
+    bv_where(visited)
+}
+
+fn adaptive_bfs(adjacency_list: &mut Table, start_node: i64) -> Vec<i64> {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    while !frontier.is_empty() {
+        // Add visited nodes
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        // For each src in the previous frontier, find the dsts which haven't been visited yet,
+        // and add them to a new, empty frontier.
+        for src in prev_frontier {
+            let selection = adjacency_list.cracker_select_specific(src);
+            let neighbours = (*(selection.get_i64_col("dst"))).v.clone();
+            for dst in neighbours {
+                discover(dst, &mut visited, &mut frontier);
             }
         }
     }
