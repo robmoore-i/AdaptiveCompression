@@ -1,0 +1,44 @@
+\chapter{Adaptive Compression}
+
+\label{ch:adaptivecompression}
+
+\section{Cracking}
+
+\section{Compression}
+
+In this section we demonstrate that online restructuring of an adjacency list into a CSR formatted 
+adjacency matrix is feasible by using cracking, and discuss how this can be exploited to improve the
+performance of the execution of graph traversal algorithms.
+
+Our motivation for applying compression is to acheive a speed up by reducing the number of memory
+accesses required in the execution of an algorithm. We will demonstrate in section
+\ref{ss:compressionexploitation} how we exploit compression.
+
+\subsection{Opportunities}
+
+When applying a run-length encoding to either the $src$ or $dst$ columns, we can gather compression
+information with varying eagerness in the course of a cracking scan.
+
+We could potentially build up small run-length encoded sub-fragments in the course of the cracking
+scan. This would potentially build up a lot more information about each column fragment because it
+stores information about the fragments contents and not just its bounds.
+
+If we wanted to be slightly lazier than that, we could also check for fragment uniformity after
+scanning and then compress. After performing a scan, the cracker index is updated with the boundary
+values within any created fragment(s), therefore if two values are stored which are minimally
+different, we can then compress the fragment stored between the indices corresponding to the two
+boundary values.
+
+\subsection{To compact or not to compact}
+
+After identifying a column fragment containing edges only to/from a single vertex, we have a choice 
+in how we proceed in compressing it.
+
+We could note that the column is uniform and proceed to exploit this fact by not performing the extra 
+reads for the compressed, duplicated values.
+
+Alternatively, we could compact the fragment by actually deleting the duplicated values stored in 
+memory.
+
+\subsection{Exploitation}
+\label{ss:compressionexploitation}
