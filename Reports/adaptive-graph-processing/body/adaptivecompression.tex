@@ -17,28 +17,52 @@ accesses required in the execution of an algorithm. We will demonstrate in secti
 \subsection{Opportunities}
 
 When applying a run-length encoding to either the $src$ or $dst$ columns, we can gather compression
-information with varying eagerness in the course of a cracking scan.
+information with varying eagerness in the course of a cracking scan. We could reserve a decision on
+compression until we know that an entire column fragment can be compressed, or we can make
+intra-fragment compressions, which would require us to store that information in the cracker index
+at the appropriate entry.
 
-We could potentially build up small run-length encoded sub-fragments in the course of the cracking
-scan. This would potentially build up a lot more information about each column fragment because it
-stores information about the fragments contents and not just its bounds.
+\subsubsection{Intra-fragment}
 
-If we wanted to be slightly lazier than that, we could also check for fragment uniformity after
-scanning and then compress. After performing a scan, the cracker index is updated with the boundary
-values within any created fragment(s), therefore if two values are stored which are minimally
-different, we can then compress the fragment stored between the indices corresponding to the two
-boundary values.
+The more eager case, in which we perform intra-fragment compressions, enables us to store more information about each column fragment by holding information about the fragment's contents and not
+only its bounds.
+
+\subsubsection{Per-fragment}
+
+A lazier, per-fragment compression polic works as follows: After performing a scan, the cracker
+index is updated with the boundary values for any created fragment(s), therefore if two values are
+stored which are minimally different, we can then compress the fragment stored between the indices
+corresponding to the two boundary values.
 
 \subsection{To compact or not to compact}
 
 After identifying a column fragment containing edges only to/from a single vertex, we have a choice 
-in how we proceed in compressing it.
+in how we proceed in compressing it. We can simply apply the knowledge that a fragment is uniform,
+without making any structural changes to the data, or we can actually compact the run-length
+encoded fragment, deleting the duplicated elements.
 
-We could note that the column is uniform and proceed to exploit this fact by not performing the extra 
-reads for the compressed, duplicated values.
+\subsubsection{Cost of compaction}
 
-Alternatively, we could compact the fragment by actually deleting the duplicated values stored in 
-memory.
+It is important to note that the columns are implemented as arrays, and as such all reside in
+contigious memory, therefore when a range of contigiuos elements are deleted, the elements after
+that range must be shifted back towards the front of the array. This memory shift is expensive,
+and the cost increases with the amount of data that must be copied over.
+
+It can be said that compaction saves memory, however if it was crucial to save memory, then cracking
+would not be an appropriate technique anyway, so we do not consider it an important benefit.
+
+\subsubsection{Without compaction}
+
+By identifying a uniform fragment, we can know that there is no need to read more than one element
+of a given run for a cracked column. Therefore we do not need to send the repeated values from
+memory over to the application, instead sending the single value and the corresponding rows of the
+table. In that case that we have selected multiple compressed vertices, we need to store offsets
+into the vector of tuples we return in order to let the application know which tuples correspond to
+which compressed value.
+
+The main advantage of this method is that it avoids the deletion overhead incurred by compcating,
+which saves time during queries in which a compression opportunity first arises.
 
 \subsection{Exploitation}
+
 \label{ss:compressionexploitation}
