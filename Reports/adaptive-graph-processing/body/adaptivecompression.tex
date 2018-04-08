@@ -4,6 +4,12 @@
 
 \section{Cracking}
 
+We model a graph using an adjacency list and depending on the algorithm we crack on either the $src$
+or $dst$ columns, for example, in pagerank we must iterate over the in-neighbours of vertices,
+whereas for an algorithm like BFS we iterate over the out-neighbours.
+
+We have used a decomposed storage format as is used in the original cracking paper.
+
 \section{Compression}
 
 In this section we demonstrate that online restructuring of an adjacency list into a CSR formatted 

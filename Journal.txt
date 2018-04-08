@@ -396,3 +396,17 @@ After that I'll be looking at implementing adaptive frequency based clustering a
 benchmarking that. Once I've done that I'll be happy to do a write up, but if I am very
 fast, I'd also like to try implementing CSR segmentation and perhaps and adaptive spin
 on it would be cool. Seeing Holger tomorrow (I think), can discuss then.
+
+========================================================================
+## Sunday 8 April, 2018, Made some progress on an initial write-up draft
+========================================================================
+
+Encountered issues during draft:
+
+- Ought to test decomposed vs N-ary storage formats
+
+- Ought to implement and test the intra-fragment most-eager compression method
+
+- Ought to implement non-compacting compressive cracking using offsets
+
+- Need to do more research into CSR exploitation.
