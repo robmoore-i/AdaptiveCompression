@@ -1,0 +1,17 @@
+[package]
+name = "proj"
+version = "0.1.0"
+authors = ["Rob <robmoore121@gmail.com>"]
+
+[dependencies]
+rand = "0.3"
+time = "*"
+bit-vec = "0.4.4"
+
+[lib]
+name = "lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bm"
+path = "src/bm.rs"
