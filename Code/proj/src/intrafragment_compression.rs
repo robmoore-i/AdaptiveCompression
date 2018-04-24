@@ -28,6 +28,8 @@ impl IntraCoTable {
 
     pub fn print_cols(&self) {
         println!("crk: {:?}", self.crk_col.crk);
+        println!("ofs: {:?}", self.crk_col.ofs);
+        println!("rls: {:?}", self.crk_col.run_lengths);
         for (name, col) in self.columns.clone() {
             println!("{}: {:?}", name, col.v);
         }
@@ -134,11 +136,29 @@ impl IntraCoTable {
         let mut p_low = self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
         let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
 
-        // while p_low is pointing at an element satisfying c_low,  move it forwards
+        // while p_low is pointing at an element satisfying c_low,  move it forwards, performing
+        // run-length encoding on values as you go, also filling in run-length markers for backwards
+        // moving pointers.
+        let mut run_value = self.crk_col.crk[p_low];
+        let mut run_ptr = p_low;
+        let mut run_length = 1;
         while c_low(self.crk_col.crk[p_low]) {
-            p_low += self.crk_col.run_lengths[p_low];
-            if p_low >= self.count as usize {
+            let run_inc = self.crk_col.run_lengths[p_low];
+            p_low += run_inc;
+            if p_low == self.count as usize {
+                self.crk_col.run_lengths[run_ptr] = run_length;
+                self.crk_col.run_lengths[p_low - 1] = run_length;
                 return self.get_indices(self.crk_col.base_idx[0..0].iter());
+            }
+            let next_value = self.crk_col.crk[p_low];
+            if next_value == run_value {
+                run_length += run_inc;
+            } else {
+                self.crk_col.run_lengths[run_ptr] = run_length;
+                self.crk_col.run_lengths[p_low - 1] = run_length;
+                run_ptr = p_low;
+                run_length = 1;
+                run_value = next_value;
             }
         }
 
@@ -148,10 +168,6 @@ impl IntraCoTable {
             if p_high == 0 {
                 if c_high(self.crk_col.crk[p_high]) {
                     return self.get_indices(self.crk_col.base_idx[0..0].iter());
-                } else if c_low(self.crk_col.crk[p_high]) {
-                    return self.get_indices(self.crk_col.base_idx[0..0].iter());
-                } else {
-                    return self.get_indices(self.crk_col.base_idx[0..1].iter());
                 }
             }
             p_high -= 1;
@@ -168,7 +184,7 @@ impl IntraCoTable {
                 self.crk_col.crk.swap(p_low, p_itr);
                 self.crk_col.base_idx.swap(p_low, p_itr);
                 while c_low(self.crk_col.crk[p_low]) {
-                    p_low += 1;
+                    p_low += self.crk_col.run_lengths[p_low];
                 }
                 if p_itr < p_low {
                     p_itr = p_low.clone();
@@ -177,10 +193,13 @@ impl IntraCoTable {
                 self.crk_col.crk.swap(p_itr, p_high);
                 self.crk_col.base_idx.swap(p_itr, p_high);
                 while c_high(self.crk_col.crk[p_high]) {
-                    p_high -= 1;
+                    p_high -= (self.crk_col.run_lengths[p_high] - 1);
+                    if p_high > 0 {
+                        p_high -= 1;
+                    }
                 }
             } else {
-                p_itr += 1;
+                p_itr += self.crk_col.run_lengths[p_itr];
             }
         }
 

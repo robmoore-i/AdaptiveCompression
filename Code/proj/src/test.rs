@@ -229,11 +229,13 @@ fn can_crack_in_three_for_single_value_out_of_lower_bound() {
 
 #[test]
 fn can_crack_in_three_for_single_value_out_of_upper_bound() {
-    let mut adjacency_list = adjacency_list_table(vec![2, 2, 4, 3, 2, 2], vec![3, 2, 1, 5, 4, 4]);
+    let mut adjacency_list = adjacency_list_table(vec![2, 2, 2, 4, 3, 2, 2], vec![3, 1, 2, 1, 5, 4, 4]);
     let selection = adjacency_list.cracker_select_in_three(5, 5, true, true);
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
-    assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 4, 3, 2, 2]);
+    adjacency_list.print_cols();
+    assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 2, 4, 3, 2, 2]);
+    assert_eq!(adjacency_list.crk_col.run_lengths, vec![3, 1, 3, 1, 1, 2, 2]);
 }
 
 #[test]
@@ -360,4 +362,13 @@ fn can_do_pagerank_iteration() {
     pageranks = new_pageranks.clone();
     assert_eq!(l, vec![-1, -1, 1, 1, 2, 3, 2, 2, 2, 2, 1, 1]);
     assert_eq!(in_degree, vec![0, 1, 7, 1, 1, 6, 1, 0, 0, 0, 0, 0]);
+}
+
+#[test]
+fn can_crack_in_three_for_single_low_value() {
+    let mut adjacency_list = adjacency_list_table(vec![1, 2, 4, 4, 3, 3, 4, 4], vec![2, 3, 4, 2, 1, 4, 3, 5]);
+    let selection = adjacency_list.cracker_select_specific(2);
+    assert_base_column_equals(selection.clone(), "src", vec![2]);
+    assert_base_column_equals(selection.clone(), "dst", vec![3]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 4, 4, 3, 3, 4, 4]);
 }
