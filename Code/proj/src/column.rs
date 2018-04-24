@@ -27,8 +27,11 @@ pub struct IntCol {
     // during tuple reconstruction.
     pub base_idx: Vec<usize>,
 
-    // Compressed base_idx for reducing scan time. Only used by compactive compression.
+    // Offset - compressed base_idx for reducing scan time in compactive compression.
     pub ofs: Vec<usize>,
+
+    // Run lengths - stores the run lengths gathered during intra-fragment compression.
+    pub run_lengths: Vec<usize>,
 }
 
 impl Column for IntCol {
@@ -41,6 +44,7 @@ impl Column for IntCol {
             crk_idx: ArrayCrackerIndex::new(),
             base_idx: Vec::new(),
             ofs: Vec::new(),
+            run_lengths: Vec::new(),
         }
     }
 
@@ -56,6 +60,7 @@ impl Column for IntCol {
         self.crk_idx = ArrayCrackerIndex::new();
         self.base_idx = Vec::new();
         self.ofs = Vec::new();
+        self.run_lengths = Vec::new();
     }
 
     fn at(self, idx: usize) -> i64 {
