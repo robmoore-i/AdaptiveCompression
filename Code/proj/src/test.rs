@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use utils;
-
-use cracker_index::ArrayCrackerIndex;
 use intrafragment_compression::IntraCoTable;
-use intrafragment_compression;
 
 fn one_col_test_table() -> IntraCoTable {
     let mut table = IntraCoTable::new();
@@ -238,6 +234,10 @@ fn can_crack_in_three_for_single_value_out_of_upper_bound() {
     assert_eq!(adjacency_list.crk_col.run_lengths, vec![3, 1, 3, 1, 1, 2, 2]);
 }
 
+fn assert_run_lengths_equals(t: IntraCoTable, expected: Vec<usize>) {
+    assert_eq!(t.crk_col.run_lengths, expected);
+}
+
 #[test]
 fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
     let mut adjacency_list
@@ -359,7 +359,7 @@ fn can_do_pagerank_iteration() {
 
         new_pageranks[v] = m + d * inherited_rank;
     }
-    pageranks = new_pageranks.clone();
+    let _pageranks = new_pageranks.clone();
     assert_eq!(l, vec![-1, -1, 1, 1, 2, 3, 2, 2, 2, 2, 1, 1]);
     assert_eq!(in_degree, vec![0, 1, 7, 1, 1, 6, 1, 0, 0, 0, 0, 0]);
 }

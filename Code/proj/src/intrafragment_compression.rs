@@ -35,6 +35,11 @@ impl IntraCoTable {
         }
     }
 
+    pub fn print_rl_crk(&self) {
+        println!("crk: {:?}", self.crk_col.crk);
+        println!("rls: {:?}", self.crk_col.run_lengths);
+    }
+
     pub fn new_columns(&mut self, col_names: Vec<&str>) {
         for col in col_names {
             self.columns.insert(col.to_string(), IntCol::empty());
