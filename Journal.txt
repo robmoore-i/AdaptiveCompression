@@ -410,3 +410,22 @@ Encountered issues during draft:
 - Ought to implement non-compacting compressive cracking using offsets
 
 - Need to do more research into CSR exploitation.
+
+===============================================================================
+## Sunday 28 April, 2018, Implemented intrafragmentary, recognitive compression
+===============================================================================
+
+There were many pitfalls in implementing this and many ways of optimising it to be
+slightly better.
+
+The main pain-points regarded performing the actual compression safely but completely
+and also in swapping compressed ranges inside the loop, while also exploiting any
+existing compression recorded in the run_lengths array. The resulting cracker
+selection function is very complex and contains a lot of branching and control flow
+manipulation, so it will be necessary to take a look at it's performance using vtune
+to detect any poorly predicted branches and then alter them to improve speed.
+
+It seems I haven't recorded it here, but I have implemented fragmentary recognitive
+compression, as I noted that I ought to have done. That was really easy, it was
+simply a case of discovering as early as possible if a fragment was homogenous and
+then returning early - literally caching.
