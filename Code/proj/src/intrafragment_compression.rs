@@ -3,13 +3,12 @@
 
 // uses map! macro.
 
-use cracker_index::ArrayCrackerIndex;
 use column::Column;
 use column::IntCol;
-
+use cracker_index::ArrayCrackerIndex;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::slice::Iter;
-use std::cmp::max;
 
 #[derive(Clone)]
 pub struct IntraCoTable {
@@ -288,8 +287,8 @@ impl IntraCoTable {
                 }
                 println!("p_high={}", p_high);
             } else {
-                p_itr += 1;
-                println!("Advanced p_itr from {} to {}", p_itr - 1, p_itr);
+                println!("Advancing p_itr");
+                p_itr += self.crk_col.run_lengths[p_itr];
             }
         }
 
