@@ -40,6 +40,10 @@ impl IntraCoTable {
         println!("rls: {:?}", self.crk_col.run_lengths);
     }
 
+    pub fn print_crk(&self) {
+        println!("crk: {:?}", self.crk_col.crk);
+    }
+
     pub fn new_columns(&mut self, col_names: Vec<&str>) {
         for col in col_names {
             self.columns.insert(col.to_string(), IntCol::empty());
@@ -117,101 +121,100 @@ impl IntraCoTable {
 
     // Returns the elements of T where the cracker columns's value equals X
     pub fn cracker_select_specific(&mut self, x: i64) -> IntraCoTable {
-        self.cracker_select_in_three(x, x, true, true)
-    }
+        println!();
+        println!("Selecting {}", x);
 
-    // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
-    pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> IntraCoTable {
-        // If column hasn't been cracked before, copy it, and copy a reference to the current
-        // indices of the base table.
+        // Init
+
         if self.crk_col.crk.len() == 0 {
             self.crk_col.crk = self.crk_col.v.clone();
             self.crk_col.base_idx = (0..self.count).collect();
             self.crk_col.run_lengths = vec![1;self.count];
         }
 
-        let adjusted_low = low + !inc_l as i64;
-        let adjusted_high = high - !inc_h as i64;
-        // c_low(x)  <=> x outside catchment at low  end
-        // c_high(x) <=> x outside catchment at high end
-        #[inline] let c_low = |x| x < adjusted_low;
-        #[inline] let c_high = |x| x > adjusted_high;
+        // Setup
 
-        // Start with a pointer at both ends of the array: p_low, p_high
-        let mut p_low = self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
-        let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((self.count - 1) as usize);
-
-        // while p_low is pointing at an element satisfying c_low,  move it forwards, performing
-        // run-length encoding on values as you go, also filling in run-length markers for backwards
-        // moving pointers.
-        let mut run_value = self.crk_col.crk[p_low];
-        let mut run_ptr = p_low;
-        let mut run_length = 1;
-        while c_low(self.crk_col.crk[p_low]) {
-            let run_inc = self.crk_col.run_lengths[p_low];
-            p_low += run_inc;
-            if p_low == self.count as usize {
-                self.crk_col.run_lengths[run_ptr] = run_length;
-                self.crk_col.run_lengths[p_low - 1] = run_length;
-                return self.get_indices(self.crk_col.base_idx[0..0].iter());
-            }
-            let next_value = self.crk_col.crk[p_low];
-            if next_value == run_value {
-                run_length += run_inc;
-            } else {
-                self.crk_col.run_lengths[run_ptr] = run_length;
-                self.crk_col.run_lengths[p_low - 1] = run_length;
-                run_ptr = p_low;
-                run_length = 1;
-                run_value = next_value;
-            }
+        let mut p_low  = self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
+        if p_low == self.count {
+            return self.get_indices(self.crk_col.base_idx[0..0].iter());
         }
 
-        // while p_high is pointing at an element satisfying c_high, move it backwards
-        while c_high(self.crk_col.crk[p_high]) {
-            p_high -= (self.crk_col.run_lengths[p_high] - 1);
-            if p_high == 0 {
-                if c_high(self.crk_col.crk[p_high]) {
-                    return self.get_indices(self.crk_col.base_idx[0..0].iter());
+        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
+
+        // Tighten
+
+        println!("Pre-low-tighten: p_low={}, p_high={}", p_low, p_high);
+        self.print_crk();
+
+        while self.crk_col.crk[p_low] < x && p_low < p_high {
+            let mut rl = self.crk_col.run_lengths[p_low];
+            if self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
+                while self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
+                    let inc = self.crk_col.run_lengths[p_low + rl];
+                    if p_low + rl + inc >= p_high {
+                        break;
+                    }
+                    rl += inc;
                 }
+                self.crk_col.run_lengths[p_low]          = rl;
+                self.crk_col.run_lengths[p_low + rl - 1] = rl;
             }
+            p_low += rl;
+        }
+
+        println!("Pre-high-tighten: p_low={}, p_high={}", p_low, p_high);
+        self.print_crk();
+
+        while self.crk_col.crk[p_high] > x && p_high > p_low {
             p_high -= 1;
         }
 
         if p_low == p_high {
-            return self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
+            if self.crk_col.crk[p_low] == x {
+                return self.get_indices(self.crk_col.base_idx[p_low..(p_low + 1)].iter())
+            } else {
+                return self.get_indices(self.crk_col.base_idx[0..0].iter())
+            }
         }
+
+        println!("Pre-scan: p_low={}, p_high={}", p_low, p_high);
+        self.print_crk();
+
+        // Scan
 
         let mut p_itr = p_low.clone();
 
         while p_itr <= p_high {
-            if c_low(self.crk_col.crk[p_itr]) {
-                self.crk_col.crk.swap(p_low, p_itr);
-                self.crk_col.base_idx.swap(p_low, p_itr);
-                while c_low(self.crk_col.crk[p_low]) {
-                    p_low += self.crk_col.run_lengths[p_low];
+            println!("Mid-scan: p_low={}, p_itr={}, p_high={}", p_low, p_itr, p_high);
+            self.print_crk();
+            if self.crk_col.crk[p_itr] < x {
+                self.crk_col.crk.swap(p_itr, p_low);
+                self.crk_col.base_idx.swap(p_itr, p_low);
+                while self.crk_col.crk[p_low] < x && p_low < p_high {
+                    p_low += 1;
                 }
                 if p_itr < p_low {
                     p_itr = p_low.clone();
                 }
-            } else if c_high(self.crk_col.crk[p_itr]) {
+            } else if self.crk_col.crk[p_itr] > x {
                 self.crk_col.crk.swap(p_itr, p_high);
                 self.crk_col.base_idx.swap(p_itr, p_high);
-                while c_high(self.crk_col.crk[p_high]) {
-                    p_high -= (self.crk_col.run_lengths[p_high] - 1);
-                    if p_high > 0 {
-                        p_high -= 1;
-                    }
+                while self.crk_col.crk[p_high] > x && p_high > p_low {
+                    p_high -= 1;
                 }
             } else {
-                p_itr += self.crk_col.run_lengths[p_itr];
+                p_itr += 1;
             }
         }
 
-        let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
-        self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
-        self.crk_col.crk_idx.insert(high + inc_h as i64, high_ptr);
-        self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
+        println!("Post-scan: p_low={}, p_high={}", p_low, p_high);
+        self.print_crk();
+
+        // Memo
+
+        self.crk_col.crk_idx.insert(x, p_low);
+        self.crk_col.crk_idx.insert(x + 1, p_high + 1);
+        self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter())
     }
 
     // Counts the places where a given column equals a given value

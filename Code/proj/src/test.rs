@@ -2,14 +2,6 @@ use std::collections::HashMap;
 
 use intrafragment_compression::IntraCoTable;
 
-fn one_col_test_table() -> IntraCoTable {
-    let mut table = IntraCoTable::new();
-    table.new_columns(vec!["a"]);
-    table.insert(&mut map!{"a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]});
-    table.set_crk_col("a");
-    table
-}
-
 #[test]
 fn single_column_table_initialised_empty() {
     let table = IntraCoTable::new();
@@ -20,106 +12,6 @@ fn single_column_table_initialised_empty() {
 fn cracker_column_initialised_empty() {
     let table = IntraCoTable::new();
     assert_eq!(table.crk_col.crk.len(), 0);
-}
-
-#[test]
-fn cracker_select_in_three_from_single_column_table() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(10, 14, false, false);
-        assert_eq!(selection.crk_col.v, vec![13, 12, 11]);
-    }
-    assert_eq!(table.crk_col.crk, vec![6, 4, 9, 2, 7, 1, 8, 3, 13, 12, 11, 14, 19, 16]);
-}
-
-#[test]
-fn cracker_select_in_three_can_utilise_previous_queries() {
-    let mut table = one_col_test_table();
-    {
-        table.cracker_select_in_three(10, 14, false, false);
-        assert!(table.crk_col.crk_idx.contains(11));
-        assert!(table.crk_col.crk_idx.contains(14));
-        let selection = table.cracker_select_in_three(5, 10, false, false);
-        assert!(table.crk_col.crk_idx.contains(6));
-        assert!(table.crk_col.crk_idx.contains(10));
-        assert_eq!(selection.crk_col.v, vec![7, 9, 8, 6]);
-    }
-    assert_eq!(table.crk_col.crk, vec![4, 2, 1, 3, 7, 9, 8, 6, 13, 12, 11, 14, 19, 16]);
-}
-
-#[test]
-fn cracker_select_in_three_from_single_column_table_inc_low() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(3, 7, true, false);
-        assert_eq!(selection.crk_col.v, vec![4, 6, 3]);
-    }
-    assert_eq!(table.crk_col.crk, vec![1, 2, 4, 6, 3, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
-}
-
-#[test]
-fn cracker_select_in_three_from_single_column_table_inc_high() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(13, 19, false, true);
-        assert_eq!(selection.crk_col.v, vec![19, 16, 14]);
-    }
-    assert_eq!(table.crk_col.crk, vec![13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
-}
-
-#[test]
-fn cracker_select_in_three_from_single_column_table_inc_both() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(1, 6, true, true);
-        assert_eq!(selection.crk_col.v, vec![6, 3, 4, 1, 2]);
-    }
-    assert_eq!(table.crk_col.crk, vec![6, 3, 4, 1, 2, 12, 7, 9, 19, 16, 14, 11, 8, 13]);
-}
-
-#[test]
-fn crack_in_three_between_value_within_column_and_above_upper_limit() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(14, 25, true, false);
-        assert_eq!(selection.crk_col.v, vec![19, 16, 14]);
-    }
-    assert_eq!(table.crk_col.crk, [13, 4, 9, 2, 12, 7, 1, 3, 11, 8, 6, 19, 16, 14]);
-}
-
-#[test]
-fn crack_in_three_between_value_within_column_and_below_lower_limit() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(-5, 4, true, false);
-        assert_eq!(selection.crk_col.v, vec![3, 1, 2]);
-    }
-    assert_eq!(table.crk_col.crk, [3, 1, 2, 9, 4, 12, 7, 16, 19, 13, 14, 11, 8, 6]);
-}
-
-#[test]
-fn crack_in_three_select_entire_column() {
-    let mut table = one_col_test_table();
-    {
-        let selection = table.cracker_select_in_three(-50, 200, false, false);
-        assert_eq!(selection.crk_col.v, vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-    }
-    assert_eq!(table.crk_col.crk, [13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6]);
-}
-
-#[test]
-fn can_crack_in_three_over_three_queries() {
-    let mut table = one_col_test_table();
-    {
-        table.cracker_select_in_three(10, 14, false, false);
-        let s1 = table.cracker_select_in_three(3, 11, false, true);
-        assert_eq!(s1.crk_col.v, vec![6, 7, 4, 8, 9, 11]);
-    }
-    {
-        let s2 = table.cracker_select_in_three(7, 17, true, false);
-        assert_eq!(s2.crk_col.v, vec![7, 8, 9, 11, 12, 13, 14, 16]);
-    }
-    assert_eq!(table.crk_col.crk, [2, 1, 3, 6, 4, 7, 8, 9, 11, 12, 13, 14, 16, 19]);
 }
 
 #[test]
@@ -179,14 +71,6 @@ fn can_set_cracked_column() {
 }
 
 #[test]
-fn crack_returns_indices_into_base_columns() {
-    let mut table = two_col_test_table();
-    let selection = table.cracker_select_in_three(10, 14, false, false);
-    assert_base_column_equals(selection.clone(), "a", vec![13, 12, 11]);
-    assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1]);
-}
-
-#[test]
 fn can_rearrange_tuples() {
     let mut table = two_col_test_table();
     table.rearrange(vec![3, 5, 12, 6, 8, 13, 10, 9, 4, 11, 0, 1, 2, 7].iter());
@@ -207,7 +91,7 @@ fn can_crack_in_three_for_single_value() {
     let mut adjacency_list
     = adjacency_list_table(vec![5, 2, 4, 1, 1, 4, 4, 3, 3, 1, 5, 2, 1, 2, 3, 3, 4, 5, 2, 5],
                            vec![3, 5, 5, 3, 4, 1, 2, 5, 2, 5, 2, 1, 2, 4, 1, 4, 3, 1, 3, 4]);
-    let selection = adjacency_list.cracker_select_in_three(3, 3, true, true);
+    let selection = adjacency_list.cracker_select_specific(3);
     assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
     assert_base_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
     assert_eq!(selection.count, 4);
@@ -217,7 +101,7 @@ fn can_crack_in_three_for_single_value() {
 #[test]
 fn can_crack_in_three_for_single_value_out_of_lower_bound() {
     let mut adjacency_list = adjacency_list_table(vec![4, 4, 3, 3, 4, 4], vec![4, 2, 1, 4, 3, 5]);
-    let selection = adjacency_list.cracker_select_in_three(1, 1, true, true);
+    let selection = adjacency_list.cracker_select_specific(1);
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
     assert_eq!(adjacency_list.crk_col.crk, vec![4, 4, 3, 3, 4, 4]);
@@ -226,12 +110,10 @@ fn can_crack_in_three_for_single_value_out_of_lower_bound() {
 #[test]
 fn can_crack_in_three_for_single_value_out_of_upper_bound() {
     let mut adjacency_list = adjacency_list_table(vec![2, 2, 2, 4, 3, 2, 2], vec![3, 1, 2, 1, 5, 4, 4]);
-    let selection = adjacency_list.cracker_select_in_three(5, 5, true, true);
+    let selection = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
-    adjacency_list.print_cols();
     assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 2, 4, 3, 2, 2]);
-    assert_eq!(adjacency_list.crk_col.run_lengths, vec![3, 1, 3, 1, 1, 2, 2]);
 }
 
 fn assert_run_lengths_equals(t: IntraCoTable, expected: Vec<usize>) {
@@ -244,19 +126,19 @@ fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
     = adjacency_list_table(vec![3, 1, 5, 5, 1, 5, 2, 3, 1, 5, 5, 3],
                            vec![5, 3, 2, 1, 5, 1, 1, 4, 3, 1, 2, 5]);
 
-    let selection_1 = adjacency_list.cracker_select_in_three(5, 5, true, true);
+    let selection_1 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
     assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
 
-    let selection_2 = adjacency_list.cracker_select_in_three(2, 2, true, true);
+    let selection_2 = adjacency_list.cracker_select_specific(2);
     assert_base_column_equals(selection_2.clone(), "src", vec![2]);
     assert_base_column_equals(selection_2.clone(), "dst", vec![1]);
 
-    let selection_3 = adjacency_list.cracker_select_in_three(1, 1, true, true);
+    let selection_3 = adjacency_list.cracker_select_specific(1);
     assert_base_column_equals(selection_3.clone(), "src", vec![1, 1, 1]);
     assert_base_column_equals(selection_3.clone(), "dst", vec![3, 3, 5]);
 
-    let selection_4 = adjacency_list.cracker_select_in_three(3, 3, true, true);
+    let selection_4 = adjacency_list.cracker_select_specific(3);
     assert_base_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
     assert_base_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
     // After the BFS the cracker column should be fully clustered
@@ -268,19 +150,19 @@ fn can_exploit_cracker_index_for_selecting_single_value_small_table() {
     let mut adjacency_list = adjacency_list_table(vec![4, 4, 4, 2, 4, 3],
                                                   vec![3, 3, 2, 1, 5, 4]);
 
-    let selection_1 = adjacency_list.cracker_select_in_three(3, 3, true, true);
+    let selection_1 = adjacency_list.cracker_select_specific(3);
     assert_base_column_equals(selection_1.clone(), "src", vec![3]);
     assert_base_column_equals(selection_1.clone(), "dst", vec![4]);
 
-    let selection_2 = adjacency_list.cracker_select_in_three(4, 4, true, true);
+    let selection_2 = adjacency_list.cracker_select_specific(4);
     assert_base_column_equals(selection_2.clone(), "src", vec![4, 4, 4, 4]);
     assert_base_column_equals(selection_2.clone(), "dst", vec![2, 3, 5, 3]);
 
-    let selection_3 = adjacency_list.cracker_select_in_three(2, 2, true, true);
+    let selection_3 = adjacency_list.cracker_select_specific(2);
     assert_base_column_equals(selection_3.clone(), "src", vec![2]);
     assert_base_column_equals(selection_3.clone(), "dst", vec![1]);
 
-    let selection_4 = adjacency_list.cracker_select_in_three(5, 5, true, true);
+    let selection_4 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_4.clone(), "src", vec![]);
     assert_base_column_equals(selection_4.clone(), "dst", vec![]);
     // After the BFS the cracker column should be fully clustered
@@ -326,7 +208,7 @@ fn can_do_pagerank_iteration() {
     for v in 1..n {
         let mut inherited_rank = 0.0;
 
-        for w in table.cracker_select_specific(v as i64).get_col    ("src").v.iter().map(|&x|x as usize) {
+        for w in table.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
             let lw = if l[w] == -1 { l[w] = (&table).count_col_eq("src", w as i64); l[w] } else { l[w] };
             in_degree[v] += 1;
             inherited_rank += pageranks[w] / (lw as f64);
@@ -371,4 +253,32 @@ fn can_crack_in_three_for_single_low_value() {
     assert_base_column_equals(selection.clone(), "src", vec![2]);
     assert_base_column_equals(selection.clone(), "dst", vec![3]);
     assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 4, 4, 3, 3, 4, 4]);
+}
+
+#[test]
+fn can_recognize_crk_idx_single_value_below_lower_bound() {
+    let mut adjacency_list = adjacency_list_table(vec![1, 2, 4, 4, 3, 3, 4, 4], vec![2, 3, 4, 2, 1, 4, 3, 5]);
+    let selection = adjacency_list.cracker_select_specific(3);
+    assert_base_column_equals(selection.clone(), "src", vec![3, 3]);
+    assert_base_column_equals(selection.clone(), "dst", vec![4, 1]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+
+    let selection = adjacency_list.cracker_select_specific(0);
+    assert_base_column_equals(selection.clone(), "src", vec![]);
+    assert_base_column_equals(selection.clone(), "dst", vec![]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+}
+
+#[test]
+fn can_recognize_crk_idx_single_value_above_upper_bound() {
+    let mut adjacency_list = adjacency_list_table(vec![1, 2, 4, 4, 3, 3, 4, 4], vec![2, 3, 4, 2, 1, 4, 3, 5]);
+    let selection = adjacency_list.cracker_select_specific(4);
+    assert_base_column_equals(selection.clone(), "src", vec![4, 4, 4, 4]);
+    assert_base_column_equals(selection.clone(), "dst", vec![4, 2, 3, 5]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+
+    let selection = adjacency_list.cracker_select_specific(10);
+    assert_base_column_equals(selection.clone(), "src", vec![]);
+    assert_base_column_equals(selection.clone(), "dst", vec![]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
 }
