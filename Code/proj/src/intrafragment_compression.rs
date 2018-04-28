@@ -9,6 +9,7 @@ use column::IntCol;
 
 use std::collections::HashMap;
 use std::slice::Iter;
+use std::cmp::max;
 
 #[derive(Clone)]
 pub struct IntraCoTable {
@@ -144,10 +145,19 @@ impl IntraCoTable {
         // Tighten
 
         println!("Pre-low-tighten: p_low={}, p_high={}", p_low, p_high);
-        self.print_crk();
+        self.print_rl_crk();
 
         while self.crk_col.crk[p_low] < x && p_low < p_high {
             let mut rl = self.crk_col.run_lengths[p_low];
+
+            while p_low + rl >= self.count && p_low + 1 < self.count { // Evade overflow.
+                p_low += 1;
+                rl = self.crk_col.run_lengths[p_low];
+            }
+            if p_low + rl >= self.count {
+                break;
+            }
+
             if self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
                 while self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
                     let inc = self.crk_col.run_lengths[p_low + rl];
@@ -163,10 +173,24 @@ impl IntraCoTable {
         }
 
         println!("Pre-high-tighten: p_low={}, p_high={}", p_low, p_high);
-        self.print_crk();
+        self.print_rl_crk();
 
         while self.crk_col.crk[p_high] > x && p_high > p_low {
-            p_high -= 1;
+            let mut rl = self.crk_col.run_lengths[p_high];
+            if self.crk_col.crk[p_high - rl] == self.crk_col.crk[p_high] {
+                while self.crk_col.crk[p_high - rl] == self.crk_col.crk[p_high] {
+                    let inc = self.crk_col.run_lengths[p_high - rl];
+                    if p_high < rl + inc {
+                        break;
+                    } else if p_high - (rl + inc) < p_low {
+                        break;
+                    }
+                    rl += inc;
+                }
+                self.crk_col.run_lengths[p_high]            = rl;
+                self.crk_col.run_lengths[(p_high - rl) + 1] = rl;
+            }
+            p_high -= rl;
         }
 
         if p_low == p_high {
@@ -186,24 +210,51 @@ impl IntraCoTable {
 
         while p_itr <= p_high {
             println!("Mid-scan: p_low={}, p_itr={}, p_high={}", p_low, p_itr, p_high);
-            self.print_crk();
             if self.crk_col.crk[p_itr] < x {
-                self.crk_col.crk.swap(p_itr, p_low);
-                self.crk_col.base_idx.swap(p_itr, p_low);
+                println!("crk[p_itr] < x");
+                self.print_rl_crk();
+                let rl_itr = self.crk_col.run_lengths[p_itr];
+                let rl = max(rl_itr, self.crk_col.run_lengths[p_low]);
+                for i in 0..rl {
+                    self.crk_col.crk.swap(p_itr + i, p_low + i);
+                    self.crk_col.base_idx.swap(p_itr + i, p_low + i);
+                    self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
+                }
+                println!("Done swaps");
+                self.print_rl_crk();
+                p_low += rl_itr;
+
+                println!("Tightening p_low, currently pointing at {}", self.crk_col.crk[p_low]);
                 while self.crk_col.crk[p_low] < x && p_low < p_high {
                     p_low += 1;
                 }
+                println!("p_low={}", p_low);
+
                 if p_itr < p_low {
                     p_itr = p_low.clone();
                 }
             } else if self.crk_col.crk[p_itr] > x {
-                self.crk_col.crk.swap(p_itr, p_high);
-                self.crk_col.base_idx.swap(p_itr, p_high);
+                println!("crk[p_itr] > x");
+                self.print_rl_crk();
+                let rl_itr = self.crk_col.run_lengths[p_itr];
+                let rl = max(rl_itr, self.crk_col.run_lengths[p_high]);
+                for i in 0..rl {
+                    self.crk_col.crk.swap(p_itr + i, p_high - i);
+                    self.crk_col.base_idx.swap(p_itr + i, p_high - i);
+                    self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
+                }
+                println!("Done swaps");
+                self.print_rl_crk();
+                p_high -= rl_itr;
+
+                println!("Tightening p_high, currently pointing at {}", self.crk_col.crk[p_high]);
                 while self.crk_col.crk[p_high] > x && p_high > p_low {
                     p_high -= 1;
                 }
+                println!("p_high={}", p_high);
             } else {
                 p_itr += 1;
+                println!("Advanced p_itr from {} to {}", p_itr - 1, p_itr);
             }
         }
 
@@ -214,7 +265,10 @@ impl IntraCoTable {
 
         self.crk_col.crk_idx.insert(x, p_low);
         self.crk_col.crk_idx.insert(x + 1, p_high + 1);
-        self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter())
+        let result = self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
+        println!("Result:");
+        result.print_cols();
+        result
     }
 
     // Counts the places where a given column equals a given value

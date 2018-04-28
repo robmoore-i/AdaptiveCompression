@@ -116,10 +116,6 @@ fn can_crack_in_three_for_single_value_out_of_upper_bound() {
     assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 2, 4, 3, 2, 2]);
 }
 
-fn assert_run_lengths_equals(t: IntraCoTable, expected: Vec<usize>) {
-    assert_eq!(t.crk_col.run_lengths, expected);
-}
-
 #[test]
 fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
     let mut adjacency_list
