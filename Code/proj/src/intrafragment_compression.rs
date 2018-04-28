@@ -226,7 +226,28 @@ impl IntraCoTable {
 
                 println!("Tightening p_low, currently pointing at {}", self.crk_col.crk[p_low]);
                 while self.crk_col.crk[p_low] < x && p_low < p_high {
-                    p_low += 1;
+                    let mut rl = self.crk_col.run_lengths[p_low];
+
+                    while p_low + rl >= self.count && p_low + 1 < self.count { // Evade overflow.
+                        p_low += 1;
+                        rl = self.crk_col.run_lengths[p_low];
+                    }
+                    if p_low + rl >= self.count {
+                        break;
+                    }
+
+                    if self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
+                        while self.crk_col.crk[p_low + rl] == self.crk_col.crk[p_low] {
+                            let inc = self.crk_col.run_lengths[p_low + rl];
+                            if p_low + rl + inc >= p_high {
+                                break;
+                            }
+                            rl += inc;
+                        }
+                        self.crk_col.run_lengths[p_low]          = rl;
+                        self.crk_col.run_lengths[p_low + rl - 1] = rl;
+                    }
+                    p_low += rl;
                 }
                 println!("p_low={}", p_low);
 
@@ -249,7 +270,21 @@ impl IntraCoTable {
 
                 println!("Tightening p_high, currently pointing at {}", self.crk_col.crk[p_high]);
                 while self.crk_col.crk[p_high] > x && p_high > p_low {
-                    p_high -= 1;
+                    let mut rl = self.crk_col.run_lengths[p_high];
+                    if self.crk_col.crk[p_high - rl] == self.crk_col.crk[p_high] {
+                        while self.crk_col.crk[p_high - rl] == self.crk_col.crk[p_high] {
+                            let inc = self.crk_col.run_lengths[p_high - rl];
+                            if p_high < rl + inc {
+                                break;
+                            } else if p_high - (rl + inc) < p_low {
+                                break;
+                            }
+                            rl += inc;
+                        }
+                        self.crk_col.run_lengths[p_high]            = rl;
+                        self.crk_col.run_lengths[(p_high - rl) + 1] = rl;
+                    }
+                    p_high -= rl;
                 }
                 println!("p_high={}", p_high);
             } else {
