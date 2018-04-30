@@ -4,11 +4,13 @@
 
 \section{Cracking}
 
-We model a graph using an adjacency list and depending on the algorithm we crack on either the $src$
-or $dst$ columns, for example, in pagerank we must iterate over the in-neighbours of vertices,
-whereas for an algorithm like BFS we iterate over the out-neighbours.
+In this chapter we examine ways of performing online compression of the adjacency list representing
+the graph by modifying the existing cracking algorithms presented by Ideos' et al.. This subsection
+contains terms we used in our modification of the cracking algorithm which will be used throughout the
+remainder of this chapter to make it easier to follow.
 
-We have used a decomposed storage format as is used in the original cracking paper.
+We will speak generally of cracking applied to arrays.
+
 
 \section{Compression}
 
@@ -24,8 +26,8 @@ accesses required in the execution of an algorithm. We will demonstrate in secti
 
 When applying a run-length encoding to either the $src$ or $dst$ columns, we can gather compression
 information with varying eagerness in the course of a cracking scan. We could reserve a decision on
-compression until we know that an entire column fragment can be compressed, or we can make
-many small compressions in the course of scans of a column, which would require us to store all that
+compression until we know that an entire column fragment can be compressed, or we can make many small
+compressions in the course of scans of a column, which would require us to store all that
 information.
 
 \subsubsection{Run-length encoding}
@@ -41,18 +43,33 @@ consecutive run. Therefore, when a pointer is moving from front to back, it can 
 a given value, and a pointer moving in the opposite direction can see it also.
 
 We also need to maintain the $run\_lengths$ array under the restructuring that takes place during
-cracking, which requires that we swap the built runs around in memory, while maintaining the
+cracking to make it worthwhile, which requires that we be be careful in maintaining all of the
 necessary invariants regarding the position of the two tightening edge pointers used during cracking.
 This must also take account of the fact that the number of elements being swapped to an edge
 pointer during an iteration may be different to the number of elements being swapped from the edge
 pointer back onto the iteration pointer.
 
+Todo: Make some pictures in that program on the macs in labs
+
 \subsubsection{Per-fragment}
 
-A lazier, per-fragment compression policy works as follows: After performing a scan, the cracker
-index is updated with the boundary values for any created fragment(s), therefore if two values are
-stored which are minimally different, we can then compress the fragment stored between the indices
-corresponding to the two boundary values.
+A lazier, per-fragment compression policy is to compress only when entire column fragments are
+known to be homogenous. After performing a scan, the cracker index is updated with the boundary
+values for any created fragment(s). If two values are stored which are \texttt{minimally different},
+then we can compress the column between the indices corresponding to the boundary values of the
+homogenous fragment.
+
+We use the phrase \texttt{minimally different} to describe two values for which there exists no value
+between them in the range of values that can be taken for their common type. For example, if we
+consider the integers, the values 2 and 3 are minimally different, because there exists no integer
+between these values. For a datatype such as a floating point number, this value will vary depending
+on the accuracy with which the user wishes to cluster - it may be acceptable to the application that
+the values 2.33334 and 2.33279 both be considered 2.33, however, unlike in the integer case, there is
+information being lost during compression, which may not be acceptable to the user, which would prompt
+them to use a greater granularity for the compression, or to not compress at all.
+
+Compared to the RLE method, this is very easy to implement. One must simply check the boundaries of
+newly created fragments and determine if any fragments can now be known to be homogenous.
 
 \subsection{To compact or not to compact}
 
