@@ -1,6 +1,15 @@
 #![macro_use]
 
 #[macro_export]
+macro_rules! dbg {
+        ($s:ident, $fmt:expr, $($arg:tt)*) => {
+            if $s {
+                (print!(concat!($fmt, "\n"), $($arg)*));
+            }
+        }
+    }
+
+#[macro_export]
 macro_rules! t_block {
     ($work:block, $tvar:ident) => {
             let start = PreciseTime::now();

@@ -6,7 +6,6 @@
 use column::Column;
 use column::IntCol;
 use cracker_index::ArrayCrackerIndex;
-use std::cmp::max;
 use std::collections::HashMap;
 use std::slice::Iter;
 
@@ -15,6 +14,7 @@ pub struct IntraCoTable {
     pub count: usize,
     pub crk_col: IntCol,
     pub columns: HashMap<String, IntCol>,
+    pub dbg_switch: bool,
 }
 
 impl IntraCoTable {
@@ -22,7 +22,8 @@ impl IntraCoTable {
         IntraCoTable {
             count: 0,
             crk_col: IntCol::empty(),
-            columns: HashMap::new()
+            columns: HashMap::new(),
+            dbg_switch: false,
         }
     }
 
@@ -192,13 +193,30 @@ impl IntraCoTable {
         while p_itr <= p_high {
             if self.crk_col.crk[p_itr] < x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
-                let rl = max(rl_itr, self.crk_col.run_lengths[p_low]);
-                for i in 0..rl {
+                let rl_low = self.crk_col.run_lengths[p_low];
+
+                let n_swaps = if rl_itr == rl_low {
+                    rl_itr
+                } else {
+                    let cmp = (rl_itr < rl_low) as usize;
+                    let s_ptr = (p_itr * cmp)       + (p_low * (1 - cmp));
+                    let g_ptr = (p_itr * (1 - cmp)) + (p_low * cmp);
+                    let g_rl = self.crk_col.run_lengths[g_ptr];
+                    let s_rl = self.crk_col.run_lengths[s_ptr];
+                    self.crk_col.run_lengths[g_ptr + g_rl - 1] -= s_rl;
+                    self.crk_col.run_lengths[g_ptr + s_rl]      = self.crk_col.run_lengths[g_ptr + g_rl - 1];
+                    self.crk_col.run_lengths[g_ptr]             = s_rl;
+                    self.crk_col.run_lengths[g_ptr + s_rl - 1]  = s_rl;
+                    s_rl
+                };
+
+                for i in 0..n_swaps {
                     self.crk_col.crk.swap(p_itr + i, p_low + i);
                     self.crk_col.base_idx.swap(p_itr + i, p_low + i);
                     self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
                 }
-                p_low += rl_itr;
+
+                p_low += n_swaps;
 
                 while self.crk_col.crk[p_low] < x && p_low < p_high {
                     let mut rl = self.crk_col.run_lengths[p_low];
@@ -230,13 +248,31 @@ impl IntraCoTable {
                 }
             } else if self.crk_col.crk[p_itr] > x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
-                let rl = max(rl_itr, self.crk_col.run_lengths[p_high]);
-                for i in 0..rl {
+                let rl_high = self.crk_col.run_lengths[p_high];
+
+                let n_swaps = if rl_itr == rl_high {
+                    rl_itr
+                } else if rl_itr < rl_high {
+                        self.crk_col.run_lengths[p_high - rl_high + 1] -= rl_itr;
+                        self.crk_col.run_lengths[p_high - rl_itr]       = self.crk_col.run_lengths[p_high - rl_high + 1];
+                        self.crk_col.run_lengths[p_high]                = rl_itr;
+                        self.crk_col.run_lengths[p_high - rl_itr + 1]   = rl_itr;
+                        rl_itr
+                 } else {
+                        self.crk_col.run_lengths[p_itr + rl_itr - 1] -= rl_high;
+                        self.crk_col.run_lengths[p_itr + rl_high]     = self.crk_col.run_lengths[p_itr + rl_itr - 1];
+                        self.crk_col.run_lengths[p_itr]               = rl_high;
+                        self.crk_col.run_lengths[p_itr + rl_high - 1] = rl_high;
+                        rl_high
+                };
+
+                for i in 0..n_swaps {
                     self.crk_col.crk.swap(p_itr + i, p_high - i);
                     self.crk_col.base_idx.swap(p_itr + i, p_high - i);
                     self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
                 }
-                p_high -= rl_itr;
+
+                p_high -= n_swaps;
 
                 while self.crk_col.crk[p_high] > x && p_high > p_low {
                     let mut rl = self.crk_col.run_lengths[p_high];

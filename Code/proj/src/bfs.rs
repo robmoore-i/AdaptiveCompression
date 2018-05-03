@@ -65,19 +65,28 @@ pub fn test_bfs_methods() {
 }
 
 // Example modified from https://en.wikipedia.org/wiki/PageRank to make the graph strongly connected
-fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
-    let src = vec![2, 3, 4, 4, 5, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11,   5,  5,  10, 9, 9, 7];
-    let dst = vec![3, 2, 1, 2, 2, 4, 6, 2, 5, 2, 5, 2, 5, 2, 5, 5,  5,    10, 11, 9,  7, 8, 4];
-    let start_node = 6;
+pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
+    let n = 30;
+    let src = vec![23, 16, 29, 27, 14, 25, 8, 23, 30, 27, 27, 20, 6, 20, 9, 6, 28, 10, 22, 14, 29, 6, 21, 1, 19, 13, 1, 11, 29, 7, 3, 27, 22, 2, 14, 3, 25, 12, 11, 29, 26, 27, 17, 15, 14, 27, 1, 24, 18, 6, 24, 27, 9, 6, 14, 5, 4, 23];
+    let dst = vec![30, 23, 14, 22, 29, 20, 1, 22, 23, 25, 2, 25, 5, 21, 14, 15, 6, 14, 23, 6, 13, 14, 20, 27, 3, 29, 12, 24, 24, 9, 19, 17, 27, 27, 27, 6, 27, 1, 18, 26, 29, 1, 27, 6, 9, 14, 8, 29, 11, 3, 11, 4, 7, 28, 10, 6, 27, 16];
+    let start_node = 16;
+
     let visited = bfs(src, dst, start_node);
 
-    for i in 1..12 {
+    let mut failed = false;
+
+    for i in 1..(n + 1) {
         if !visited.contains(&i) {
             println!("FAILED: Result {:?} does not contain {}", visited, i);
+            failed = true;
         }
     }
 
-    println!("Passed!");
+    if failed {
+        println!("Failed!");
+    } else {
+        println!("Passed!")
+    }
 }
 
 fn discover(dst: i64, visited: &mut BitVec, frontier: &mut Vec<i64>) {
@@ -313,6 +322,7 @@ fn intraco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
+            if src == 27 { adjacency_list.dbg_switch = true };
             let selection = adjacency_list.cracker_select_specific(src);
             let neighbours = (*(selection.get_col("dst"))).v.clone();
             for dst in neighbours {
