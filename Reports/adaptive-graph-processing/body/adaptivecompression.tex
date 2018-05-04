@@ -27,25 +27,6 @@ compression until we know that an entire column fragment can be compressed, or w
 compressions in the course of scans of a column, which would require us to store all that
 information.
 
-\subsubsection{Run-length encoding}
-
-In the most eager case, we build and maintain information about all runs of consecutive nodes in the
-cracker column of the adjacency list. This is done inside an array, $run\_lengths$.
-
-The cracker column is scanned both front to back and back to front, therefore it would be preferable
-that information be stored such that it can be applied in both scanning directions. For a given run of
-consecutive values in the cracker column from index $i$ to index $j$ inclusive, the $run\_lengths$
-array stores the value $1 + j - i$ at both indices $i$ and $j$, that is, the number of values in the
-consecutive run. Therefore, when a pointer is moving from front to back, it can see the run length for
-a given value, and a pointer moving in the opposite direction can see it also.
-
-We also need to maintain the $run\_lengths$ array under the restructuring that takes place during
-cracking to make it worthwhile, which requires that we be be careful in maintaining all of the
-necessary invariants regarding the position of the two tightening edge pointers used during cracking.
-This must also take account of the fact that the number of elements being swapped to an edge
-pointer during an iteration may be different to the number of elements being swapped from the edge
-pointer back onto the iteration pointer.
-
 Todo: Make some pictures in that program on the macs in labs
 
 \subsubsection{Per-fragment}
@@ -67,6 +48,27 @@ them to use a greater granularity for the compression, or to not compress at all
 
 Compared to the RLE method, this is very easy to implement. One must simply check the boundaries of
 newly created fragments and determine if any fragments can now be known to be homogenous.
+
+\subsubsection{Run-length encoding}
+
+In the most eager case, we build and maintain information about all runs of consecutive nodes in the
+cracker column of the adjacency list. This is done inside an array, $run\_lengths$.
+
+The cracker column is scanned both front to back and back to front, therefore it would be preferable
+that information be stored such that it can be applied in both scanning directions. For a given run of
+consecutive values in the cracker column from index $i$ to index $j$ inclusive, the $run\_lengths$
+array stores the value $1 + j - i$ at both indices $i$ and $j$, that is, the number of values in the
+consecutive run. Therefore, when a pointer is moving from front to back, it can see the run length for
+a given value, and a pointer moving in the opposite direction can see it also.
+
+We also need to maintain the $run\_lengths$ array under the restructuring that takes place during
+cracking to make it worthwhile, which requires that we be be careful in maintaining all of the
+necessary invariants regarding the position of the two tightening edge pointers used during cracking.
+This must also take account of the fact that the number of elements being swapped to an edge
+pointer during an iteration may be different to the number of elements being swapped from the edge
+pointer back onto the iteration pointer. Additionally, when making these swaps of runs, the
+$run\_lengths$ array may have need to have its entries modified in order to retain consistency.
+
 
 \subsection{To compact or not to compact}
 
