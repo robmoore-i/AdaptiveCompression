@@ -429,3 +429,18 @@ It seems I haven't recorded it here, but I have implemented fragmentary recognit
 compression, as I noted that I ought to have done. That was really easy, it was
 simply a case of discovering as early as possible if a fragment was homogenous and
 then returning early - literally caching.
+
+=======================================================
+## Thursday 4 May, 2018, Fixed a bug in rle-compression
+=======================================================
+
+The bug was caused by my ignorance. When swapping runs around the column, such as
+from p_itr to p_low, I had not appropriately considered the effects on the
+run-lengths array of these swaps. In fact, precautions must be taken in order to
+ensure that the integrity of the array is maintained under all combinations of
+pointer swapping and run lengths at the respective pointers within the scanning
+phase of cracking.
+
+To do this, I ensured that every time a range was being swapped, the shorter of the
+two runs would be entirely swapped, and the elements of the run-lengths array at
+the side of the longer run would be adjusted in order to maintain its properties.
