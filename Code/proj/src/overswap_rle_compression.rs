@@ -1,5 +1,5 @@
 // Decomposed cracking
-// Underswap RLE, recognitive compression
+// Overswap RLE, recognitive compression
 
 // uses map! macro.
 
@@ -10,16 +10,16 @@ use std::collections::HashMap;
 use std::slice::Iter;
 
 #[derive(Clone)]
-pub struct UnderswapRLETable {
+pub struct OverswapRLETable {
     pub count: usize,
     pub crk_col: IntCol,
     pub columns: HashMap<String, IntCol>,
     pub dbg_switch: bool,
 }
 
-impl UnderswapRLETable {
-    pub fn new() -> UnderswapRLETable {
-        UnderswapRLETable {
+impl OverswapRLETable {
+    pub fn new() -> OverswapRLETable {
+        OverswapRLETable {
             count: 0,
             crk_col: IntCol::empty(),
             columns: HashMap::new(),
@@ -79,7 +79,7 @@ impl UnderswapRLETable {
         self.columns.get(&(col.to_string())).unwrap()
     }
 
-    pub fn get_indices(&self, indices: Iter<usize>) -> UnderswapRLETable {
+    pub fn get_indices(&self, indices: Iter<usize>) -> OverswapRLETable {
         let mut selection: HashMap<String, IntCol> = HashMap::new();
         for (name, col) in &self.columns {
             let mut v_buffer = Vec::with_capacity(indices.len());
@@ -91,7 +91,7 @@ impl UnderswapRLETable {
             selection.insert(name.clone(), c_buffer);
         }
 
-        let mut t = UnderswapRLETable::new();
+        let mut t = OverswapRLETable::new();
         t.columns = selection;
         t.count = indices.len();
 
@@ -121,7 +121,7 @@ impl UnderswapRLETable {
     }
 
     // Returns the elements of T where the cracker columns's value equals X
-    pub fn cracker_select_specific(&mut self, x: i64) -> UnderswapRLETable {
+    pub fn cracker_select_specific(&mut self, x: i64) -> OverswapRLETable {
         // Init
         if self.crk_col.crk.len() == 0 {
             self.crk_col.crk = self.crk_col.v.clone();
@@ -309,8 +309,8 @@ impl UnderswapRLETable {
 }
 
 // Returns an adjacency list built from the two vectors of adjacent nodes.
-pub fn from_adjacency_vectors(src_node: Vec<i64>, dst_node: Vec<i64>, crk: &str) -> UnderswapRLETable {
-    let mut adjacency_list = UnderswapRLETable::new();
+pub fn from_adjacency_vectors(src_node: Vec<i64>, dst_node: Vec<i64>, crk: &str) -> OverswapRLETable {
+    let mut adjacency_list = OverswapRLETable::new();
     adjacency_list.new_columns(vec!["src", "dst"]);
     adjacency_list.insert(&mut map!{"src" => src_node, "dst" => dst_node});
     adjacency_list.set_crk_col(crk);
