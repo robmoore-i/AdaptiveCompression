@@ -30,11 +30,12 @@ information.
 Todo: Make some pictures in that program on the macs in labs
 
 \subsubsection{Per-fragment}
+\label{sss:perfragment}
 
-A lazier, per-fragment compression policy is to compress only when entire column fragments are
+A per-fragment compression policy would be to compress only when entire column fragments are
 known to be homogenous. After performing a scan, the cracker index is updated with the boundary
 values for any created fragment(s). If two values are stored which are \texttt{minimally different},
-then we can compress the column between the indices corresponding to the boundary values of the
+then we can compress the column between those indices, which correspond to the boundary values of the
 homogenous fragment.
 
 We use the phrase \texttt{minimally different} to describe two values for which there exists no value
@@ -100,5 +101,4 @@ The main advantage of this method is that it avoids the deletion overhead incurr
 which saves time during queries in which a compression opportunity first arises.
 
 \subsection{Exploitation}
-
 \label{ss:compressionexploitation}

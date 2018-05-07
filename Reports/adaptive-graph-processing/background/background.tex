@@ -30,9 +30,61 @@ in the cracker index.
 
 \subsubsection{Algorithm}
 
+We will lay out in this subsection our description of the 'cracker selection in three' algorithm
+in words, so that the adaptive compression chapter, which draws heavily on this work, it is easier
+for readers to follow the action.
+
 In the first stage of the algorithm, a contiguous section of the column is selected for scanning by
 selecting two pointers from the cracker index, between which all of the result tuples are known to
-lie.
+lie. If the cracker index is empty, then the entire column is selected as the sole fragment of the
+column. We will commonly refer to a section of the column which can be specified by values inside the cracker index as column fragments, or just fragments.
+
+If \texttt{(value, index)} is stored in the cracker index, then at all indices preceeding
+\texttt{index}, the corresponding value in the cracker column is strictly less than \texttt{value}.
+
+In order to map back from the cracker column to the original columns of the table, we use an array
+which is initialised to store successive integers from 0, of the same length as the table. We apply
+all swapping operations to this array as well as the cracker column, which means that any range of
+values in the cracker column have indices which map to those same values in the original column of
+the original table. We refer to this array as the \texttt{base\_idx} array
+
+We define two predicates with respect to the selected range of values. The first returns true when
+its input is outside of the selection on the lower end, the second returns true if the input is
+outside the selection on the higher end. We will refer to these predicates as lowp and highp
+respectively.
+
+The selected fragment is defined by two edge pointers which we have looked up. One pointing at the
+lower side of the fragment, \texttt{low\_ptr}, and one pointing at the upper side, \texttt{high\_ptr}.
+At all times during the algorithm, we will maintain the invariant that all indices before
+\texttt{low\_ptr} will point to a value in the cracker column which satisfies lowp. Similarly, all
+pointers after \texttt{high\_ptr} point to a value in the cracker column satisfying highp. By "all pointers", I mean all valid pointers across the entire of the cracker column.
+
+We then tighten the two edge pointes inwards while the associated invariant holds. We will refer to
+this procedure as tightening.
+
+The next part involves scanning the fragment between the edge pointers. An iteration pointer,
+\texttt{itr\_ptr}, begins at the same point as \texttt{low\_ptr}, scanning upwards. For each value that it encounters in the cracker column, it is determined using the predicates, in which region of
+the column the value belongs - the low side out-of-bounds region, the selected region, or the upper
+side out-of-bounds region. If the value is not selected, that is, if it's out-of-bounds, it is swapped
+with the value at the respective edge pointer. The edge pointer is then tightened - resulting in it
+moving inwards by at least one, since the swapped-in value was determined to be out-of-bounds on that
+side. During the scan, we maintain the loop invariant that all indices before \texttt{itr\_ptr} point
+to a value in the cracker column which satisfies either lowp, or is within the selected range, which
+is equivalent to saying that all the indices from \texttt{low\_ptr} inclusive to \texttt{itr\_ptr}
+exclusive are within the selected range. At the end of the algorithm therefore, we will find that
+this corresponds with the inclusive range from \texttt{low\_ptr} to \texttt{high\_ptr}, which is
+defined by lowp values earlier in the column and highp values later in the column.
+
+After the scan is concluded, we have access to some information about the column we wish to store
+within the cracker index. The value at \texttt{low\_ptr} in the cracker column exceeds the values in all preceeding indices, therefore we store the key-value pair (cracker-column[\texttt{low\_ptr}],
+\texttt{low\_ptr}) to indicate this fact. Similarly, we know that all values at indices strictly greater than \texttt{high\_ptr} are strictly greater than the value stored at \texttt{high\_ptr}, so
+we store (cracker-column[\texttt{high\_ptr}] + 1, \texttt{high\_ptr} + 1)\footnote{For integers, the
+minimum difference between elements is 1, however, for other datatypes, this may be different. See
+\ref{sss:perfragment} for a brief discussion on this point.}.
+
+Having acquired the range of indices in which our desired range of values lies in the cracker column,
+we map this back to indices of the original columns using the \texttt{base\_idx} array, collect the
+values from the required columns, and return them.
 
 \subsection{Group-by-Query}
 
