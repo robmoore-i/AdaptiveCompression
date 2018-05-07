@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-use intrafragment_compression::IntraCoTable;
+use underswap_rle_compression::UnderswapRLETable;
 
 #[test]
 fn single_column_table_initialised_empty() {
-    let table = IntraCoTable::new();
+    let table = UnderswapRLETable::new();
     assert_eq!(table.count, 0);
 }
 
 #[test]
 fn cracker_column_initialised_empty() {
-    let table = IntraCoTable::new();
+    let table = UnderswapRLETable::new();
     assert_eq!(table.crk_col.crk.len(), 0);
 }
 
 #[test]
 fn can_create_table_with_three_columns() {
-    let mut table = IntraCoTable::new();
+    let mut table = UnderswapRLETable::new();
     table.new_columns(vec!["a", "b", "c"]);
     let mut keys = Vec::new();
     for key in table.columns.keys() {
@@ -30,7 +30,7 @@ fn can_create_table_with_three_columns() {
 #[test]
 #[should_panic]
 fn can_insert_into_multi_column_table() {
-    let mut table = IntraCoTable::new();
+    let mut table = UnderswapRLETable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{"a" => vec![1, 2, 3], "b" => vec![4, 5, 6]});
     assert_eq!(table.get_col("a").v, vec![1, 2, 3]);
@@ -38,8 +38,8 @@ fn can_insert_into_multi_column_table() {
     table.get_col("c");
 }
 
-fn two_col_test_table() -> IntraCoTable {
-    let mut table = IntraCoTable::new();
+fn two_col_test_table() -> UnderswapRLETable {
+    let mut table = UnderswapRLETable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{
             "a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6],
@@ -48,7 +48,7 @@ fn two_col_test_table() -> IntraCoTable {
     table
 }
 
-fn assert_base_column_equals(t: IntraCoTable, column_name: &str, expected: Vec<i64>) {
+fn assert_base_column_equals(t: UnderswapRLETable, column_name: &str, expected: Vec<i64>) {
     match t.get_col(column_name) {
         ref col => assert_eq!(col.v, expected),
     }
@@ -78,8 +78,8 @@ fn can_rearrange_tuples() {
     assert_base_column_equals(table.clone(), "b", vec![0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
 }
 
-fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> IntraCoTable {
-    let mut adjacency_list = IntraCoTable::new();
+fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> UnderswapRLETable {
+    let mut adjacency_list = UnderswapRLETable::new();
     adjacency_list.new_columns(vec!["src", "dst"]);
     adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
     adjacency_list.set_crk_col("src");
@@ -187,7 +187,7 @@ fn can_do_pagerank_iteration() {
     let m = 0.01363636; // = (1 - d) / n
 
     // Edge data
-    let mut table = IntraCoTable::new();
+    let mut table = UnderswapRLETable::new();
     table.new_columns(vec!["src", "dst"]);
     table.insert(&mut map!{"src" => vec![7, 4, 2, 3, 5, 9, 6, 5, 11, 4, 10, 8, 5, 6, 8, 7, 9],
                            "dst" => vec![2, 2, 3, 2, 4, 5, 5, 6, 5,  1, 5,  5, 2, 2, 2, 5, 2]});

@@ -9,7 +9,7 @@ mod column;
 mod decomposed_cracking;
 mod recognitive_compression;
 mod compactive_compression;
-mod intrafragment_compression;
+mod underswap_rle_compression;
 
 mod datagen;
 mod bfs;

@@ -8,7 +8,7 @@ use datagen;
 use decomposed_cracking;
 use recognitive_compression;
 use compactive_compression;
-use intrafragment_compression;
+use underswap_rle_compression;
 
 /* BFS:
     Given an adjacency list of two i64 vectors, SRC_NODE and DST_NODE, this function visits every
@@ -60,8 +60,8 @@ pub fn test_bfs_methods() {
     bfs_example_test(reco_bfs);
     println!("Coco");
     bfs_example_test(coco_bfs);
-    println!("Intraco");
-    bfs_example_test(intraco_bfs);
+    println!("Underswap RLE");
+    bfs_example_test(underswap_rle_bfs);
 }
 
 // Example modified from https://en.wikipedia.org/wiki/PageRank to make the graph strongly connected
@@ -306,9 +306,9 @@ fn coco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64>
     bv_where(visited)
 }
 
-// Intra-fragment compression
-fn intraco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
-    let mut adjacency_list = intrafragment_compression::from_adjacency_vectors(src_node, dst_node, "src");
+// Underswap-RLE compression
+fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+    let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
 
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);

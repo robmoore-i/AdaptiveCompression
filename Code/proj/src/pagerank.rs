@@ -2,7 +2,7 @@ use utils;
 
 use recognitive_compression;
 use compactive_compression;
-use intrafragment_compression;
+use underswap_rle_compression;
 
 /* PAGERANK
     Given an adjacency list of two i64 vecs, SRC_NODE and DST_NODE and a vector of PAGERANKS, where
@@ -45,7 +45,7 @@ pub fn test_pagerank_methods() {
     pagerank_example_test(reco_pagerank);
     println!("Coco");
     pagerank_example_test(coco_pagerank);
-    println!("Intraco");
+    println!("Underswap RLE");
     pagerank_example_test(intraco_pagerank);
 }
 
@@ -360,7 +360,7 @@ fn coco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: 
 
 // Intra-fragment compression
 fn intraco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
-    let mut adjacency_list = intrafragment_compression::from_adjacency_vectors(src_node, dst_node, "dst");
+    let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "dst");
 
     let n = prs.len();
     let m = (1.0 - d) / (n as f64);

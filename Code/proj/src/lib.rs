@@ -6,7 +6,7 @@ mod utils;
 
 mod cracker_index;
 mod column;
-mod intrafragment_compression;
+mod underswap_rle_compression;
 
 #[cfg(test)]
 mod test;
