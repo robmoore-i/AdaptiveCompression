@@ -78,9 +78,9 @@ defined by lowp values earlier in the column and highp values later in the colum
 After the scan is concluded, we have access to some information about the column we wish to store
 within the cracker index. The value at \texttt{low\_ptr} in the cracker column exceeds the values in all preceeding indices, therefore we store the key-value pair (cracker-column[\texttt{low\_ptr}],
 \texttt{low\_ptr}) to indicate this fact. Similarly, we know that all values at indices strictly greater than \texttt{high\_ptr} are strictly greater than the value stored at \texttt{high\_ptr}, so
-we store (cracker-column[\texttt{high\_ptr}] + 1, \texttt{high\_ptr} + 1)\footnote{For integers, the
+we store (cracker-column[\texttt{high\_ptr}] + 1, \texttt{high\_ptr} + 1).\footnote{For integers, the
 minimum difference between elements is 1, however, for other datatypes, this may be different. See
-\ref{sss:perfragment} for a brief discussion on this point.}.
+the subsection on per-fragment compression within the adaptive compression chapter for a brief discussion on this point.}
 
 Having acquired the range of indices in which our desired range of values lies in the cracker column,
 we map this back to indices of the original columns using the \texttt{base\_idx} array, collect the
