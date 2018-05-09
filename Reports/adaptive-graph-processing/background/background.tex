@@ -134,6 +134,12 @@ BFS.
 
 Ligra is a lightweight graph processing framework for shared-memory multi-core machines for graph
 traversal algorithms, such as pagerank and BFS. They were in part inspired by Beamer et al.'s work
-with shared-memory machines, acheiving speed-up by dynamically switching between push and pull implementations of BFS based on the graph's density. Ligra takes the form of a simple API of two
-routines.
+with shared-memory machines, acheiving speed-up by dynamically switching between push and pull implementations of BFS based on the graph's density. Ligra takes the form of a simple API of three
+routines: size, edgeMap and vertexMap.
+
+size takes a set of vertices and returns the number of them.
+
+edgeMap applies a function F to all out-neighbours of a vertex U which satisfy the condition C.
+
+vertexMap applies a function F to every element in a set of vertices.
 
