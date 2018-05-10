@@ -78,6 +78,21 @@ the duplicated elements. We will refer to this different modes as compactive, fo
 decision to compact, and recignitive, for when we make the decision merely to recognise the
 homogenity of the section.
 
+\subsubsection{Recognitive}
+
+After recognising a section of column which is uniform, if we intend to exploit this information, then
+we need it stored somewhere.
+
+If we are doing per-fragment compression, then it is sufficient to use the information already stored
+in the cracker index, which we used in order to recognise the opportunity in the first place.
+
+Otherwise, if we are applying a run-length encoding across the column, we need a separate structure to
+hold the information about each of the runs.
+
+The main advantage of this over compaction is that it avoids the overhead of deleting arbitrary ranges
+from an array, thus avoiding unnecessary memcpy calls. However, this comes at the cost of potential
+locality improvements and any associated exploitation.
+
 \subsubsection{Cost of compaction}
 
 It is important to note that the columns are implemented as arrays, and as such all reside in
@@ -87,18 +102,6 @@ and the cost increases with the amount of data that must be copied over.
 
 It can be said that compaction saves memory, however if it was crucial to save memory, then cracking
 would not be an appropriate technique anyway, so we do not consider it an important benefit.
-
-\subsubsection{Without compaction}
-
-By identifying a uniform fragment, we can know that there is no need to read more than one element
-of a given run for a cracked column. Therefore we do not need to send the repeated values from
-memory over to the application, instead sending the single value and the corresponding rows of the
-table. In that case that we have selected multiple compressed vertices, we need to store offsets
-into the vector of tuples we return in order to let the application know which tuples correspond to
-which compressed value.
-
-The main advantage of this method is that it avoids the deletion overhead incurred by compcating,
-which saves time during queries in which a compression opportunity first arises.
 
 \subsection{Exploitation}
 \label{ss:compressionexploitation}
