@@ -128,7 +128,7 @@ In pagerank, every iteration considers all of the vertices and edges in the grap
 an execution of many iterations, any clustering or compression will see further benefits compared to
 BFS.
 
-\section{Graph Processing Frameworks}
+\section{Graph Processing}
 
 \subsection{Ligra}
 
@@ -142,4 +142,13 @@ size takes a set of vertices and returns the number of them.
 edgeMap applies a function F to all out-neighbours of a vertex U which satisfy the condition C.
 
 vertexMap applies a function F to every element in a set of vertices.
+
+\subsection{Hilbert Curve Layout}
+
+The hilbert curve is a continuous mapping between a number and a point on a 2D square. Numbers which
+are closeby are mapped closely together - in this way the hilbert ordering of an index of an adjacency
+list is somewhat locality preserving.
+
+We can use a hilbert ordering in order to improve locality on edge accesses, which therefore leads to
+improved cache performance.
 
