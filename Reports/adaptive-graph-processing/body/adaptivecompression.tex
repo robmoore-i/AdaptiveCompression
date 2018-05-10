@@ -69,13 +69,14 @@ pointer during an iteration may be different to the number of elements being swa
 pointer back onto the iteration pointer. Additionally, when making these swaps of runs, the
 $run\_lengths$ array may have need to have its entries modified in order to retain consistency.
 
-
 \subsection{To compact or not to compact}
 
-After identifying a column fragment containing edges only to/from a single vertex, we have a choice 
-in how we proceed in compressing it. We can simply apply the knowledge that a fragment is uniform,
-without making any structural changes to the data, or we can actually compact the run-length
-encoded fragment, deleting the duplicated elements.
+After identifying a homogenous section of the column, we have a choice in how we proceed in
+compressing it. We can simply apply the knowledge that a fragment is uniform, without making any
+structural changes to the data, or we can actually compact the run-length encoded fragment, deleting
+the duplicated elements. We will refer to this different modes as compactive, for when we make the
+decision to compact, and recignitive, for when we make the decision merely to recognise the
+homogenity of the section.
 
 \subsubsection{Cost of compaction}
 
