@@ -17,6 +17,14 @@ use underswap_rle_compression;
     Returns the nodes visited in the order in which they were visited.
 */
 
+pub fn run() {
+    let n = 1000;
+    let (src, dst) = datagen::randomly_connected_tree(n);
+    let start_node = rand::thread_rng().gen_range(1, n);
+    let e = src.len();
+    let _visited = underswap_rle_bfs(src, dst, start_node);
+}
+
 // Prints to stdout valid csv lines containing the results of bfs benchmarks..
 pub fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
     println!("nodes,edges,density,unoptimised,preclustered,preclusteredRLE");

@@ -16,6 +16,10 @@ mod bfs;
 mod pagerank;
 
 fn main() {
+    bfs::run();
+}
+
+fn print_tests() {
     println!("=== BFS ===");
     bfs::test_bfs_methods();
     println!("\n=== PR ===");
