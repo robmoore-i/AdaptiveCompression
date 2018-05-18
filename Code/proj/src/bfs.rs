@@ -72,7 +72,6 @@ pub fn test_bfs_methods() {
     bfs_example_test(underswap_rle_bfs);
 }
 
-// Example modified from https://en.wikipedia.org/wiki/PageRank to make the graph strongly connected
 pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
     let n = 30;
     let src = vec![23, 16, 29, 27, 14, 25, 8, 23, 30, 27, 27, 20, 6, 20, 9, 6, 28, 10, 22, 14, 29, 6, 21, 1, 19, 13, 1, 11, 29, 7, 3, 27, 22, 2, 14, 3, 25, 12, 11, 29, 26, 27, 17, 15, 14, 27, 1, 24, 18, 6, 24, 27, 9, 6, 14, 5, 4, 23];

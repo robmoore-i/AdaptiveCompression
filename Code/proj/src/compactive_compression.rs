@@ -279,7 +279,7 @@ impl CoCoTable {
             }
         }
 
-        // If the vertex is compression/contains a single entry, return that.
+        // If the vertex is compressed/contains a single entry, return that.
         if p_low == p_high {
             let v = self.crk_col.crk[p_low];
             let w = self.crk_col.crk[p_low] + 1;
