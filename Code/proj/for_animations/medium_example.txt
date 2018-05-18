@@ -1,0 +1,125 @@
+selecting 6
+p_low read from crk_idx at 0
+p_high read from crk_idx at 22
+p_low -> 1
+p_low -> 2
+p_low -> 3
+p_low -> 4
+p_low -> 5
+p_low -> 6
+p_itr -> 7
+swapping 6 <-> 7
+p_low -> 7
+p_itr -> 8
+swapping 7 <-> 8
+p_low -> 8
+p_itr -> 9
+swapping 8 <-> 9
+p_low -> 9
+p_itr -> 10
+swapping 9 <-> 10
+p_low -> 10
+p_itr -> 11
+swapping 10 <-> 11
+p_low -> 11
+p_itr -> 12
+swapping 11 <-> 12
+p_low -> 12
+p_itr -> 13
+swapping 12 <-> 13
+p_low -> 13
+p_itr -> 14
+swapping 13 <-> 14
+p_low -> 14
+p_itr -> 15
+swapping 14 <-> 15
+p_low -> 15
+p_itr -> 16
+swapping 15 <-> 16
+p_low -> 16
+p_itr -> 17
+swapping 17 <-> 22
+p_high -> 21
+p_high -> 20
+p_high -> 19
+p_high -> 18
+p_high -> 17
+swapping 16 <-> 17
+p_low -> 17
+p_itr -> 18
+crk_idx[7] -> 18
+crk_idx[6] -> 17
+decompressing at 17 with value 6
+selecting 5
+p_low read from crk_idx at 0
+p_high read from crk_idx at 17
+p_low -> 1
+p_low -> 2
+p_low -> 3
+p_low -> 4
+p_low -> 5
+p_low -> 6
+p_low -> 7
+p_high -> 16
+p_itr -> 8
+swapping 7 <-> 8
+p_low -> 8
+p_itr -> 9
+p_itr -> 10
+swapping 8 <-> 10
+p_low -> 9
+p_itr -> 11
+p_itr -> 12
+swapping 9 <-> 12
+p_low -> 10
+p_itr -> 13
+p_itr -> 14
+p_itr -> 15
+p_itr -> 16
+swapping 10 <-> 16
+p_low -> 11
+p_itr -> 17
+crk_idx[6] -> 17
+crk_idx[5] -> 11
+compressing 5 in 11 <-> 16
+decompressing at 11 with value 5
+selecting 8
+p_low read from crk_idx at 13
+p_high read from crk_idx at 17
+p_high -> 16
+swapping 13 <-> 16
+p_high -> 15
+p_itr -> 14
+swapping 14 <-> 15
+p_high -> 14
+swapping 13 <-> 14
+p_low -> 14
+p_itr -> 15
+crk_idx[9] -> 15
+crk_idx[8] -> 14
+decompressing at 14 with value 8
+selecting 7
+p_low read from crk_idx at 13
+p_high read from crk_idx at 14
+p_high -> 13
+selection is compressed at 13
+selecting 9
+p_low read from crk_idx at 15
+p_high read from crk_idx at 17
+p_high -> 16
+p_high -> 15
+selection contains a single value at 15
+selecting 10
+p_low read from crk_idx at 15
+p_high read from crk_idx at 17
+p_low -> 16
+swapping 16 <-> 17
+p_high -> 16
+p_itr -> 17
+crk_idx[11] -> 17
+crk_idx[10] -> 16
+decompressing at 16 with value 10
+selecting 11
+p_low read from crk_idx at 17
+p_high read from crk_idx at 17
+selection contains a single value at 17
