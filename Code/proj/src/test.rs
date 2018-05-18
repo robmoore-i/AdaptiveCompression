@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use underswap_rle_compression::UnderswapRLETable;
+use cracker_index::AVLCrackerIndex;
 
 #[test]
 fn single_column_table_initialised_empty() {
@@ -277,4 +278,16 @@ fn can_recognize_crk_idx_single_value_above_upper_bound() {
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
     assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+}
+
+#[test]
+fn cracker_index_test() {
+    let mut crk_idx = AVLCrackerIndex::new();
+    crk_idx.insert(16, 28);
+    crk_idx.insert(17, 29);
+    crk_idx.insert(23, 37);
+    crk_idx.insert(24, 40);
+    crk_idx.subtract_where_greater_than(20, 5);
+    assert_eq!(crk_idx.get(23), Some(32));
+    assert_eq!(crk_idx.get(24), Some(35));
 }

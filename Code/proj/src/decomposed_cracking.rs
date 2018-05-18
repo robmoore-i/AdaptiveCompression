@@ -3,7 +3,7 @@
 
 // uses map! macro.
 
-use cracker_index::ArrayCrackerIndex;
+use cracker_index::AVLCrackerIndex;
 use column::Column;
 use column::IntCol;
 
@@ -84,7 +84,7 @@ impl DeCrackedTable {
                 indexed_crk_v.push(self.crk_col.v[i]);
             }
             t.crk_col.crk = indexed_crk_col;
-            t.crk_col.crk_idx = ArrayCrackerIndex::new();
+            t.crk_col.crk_idx = AVLCrackerIndex::new();
         } else {
             for &i in indices.clone() {
                 indexed_crk_v.push(self.crk_col.v[i]);

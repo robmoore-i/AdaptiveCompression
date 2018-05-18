@@ -1,4 +1,4 @@
-use cracker_index::ArrayCrackerIndex;
+use cracker_index::AVLCrackerIndex;
 
 use std::slice::Iter;
 
@@ -21,7 +21,7 @@ pub struct IntCol {
     // Cracker index - for a value v, stores the index p such that
     // for all i < p: c[i] < v. That is - Every value before p in the column
     // is less than v.
-    pub crk_idx: ArrayCrackerIndex,
+    pub crk_idx: AVLCrackerIndex,
 
     // Base index - maintains an index into the base columns of the table for alignment
     // during tuple reconstruction.
@@ -41,7 +41,7 @@ impl Column for IntCol {
         IntCol {
             v: Vec::new(),
             crk:Vec::new(),
-            crk_idx: ArrayCrackerIndex::new(),
+            crk_idx: AVLCrackerIndex::new(),
             base_idx: Vec::new(),
             ofs: Vec::new(),
             run_lengths: Vec::new(),
@@ -57,7 +57,7 @@ impl Column for IntCol {
 
         // Could be optimised for nested queries
         self.crk = Vec::new();
-        self.crk_idx = ArrayCrackerIndex::new();
+        self.crk_idx = AVLCrackerIndex::new();
         self.base_idx = Vec::new();
         self.ofs = Vec::new();
         self.run_lengths = Vec::new();

@@ -2,20 +2,20 @@ extern crate time;
 extern crate rand;
 extern crate bit_vec;
 
-mod utils;
+pub mod utils;
 
-mod cracker_index;
-mod column;
-mod decomposed_cracking;
-mod recognitive_compression;
-mod compactive_compression;
-mod underswap_rle_compression;
+pub mod cracker_index;
+pub mod column;
+pub mod decomposed_cracking;
+pub mod recognitive_compression;
+pub mod compactive_compression;
+pub mod underswap_rle_compression;
 
-mod datagen;
-mod bfs;
-mod pagerank;
+pub mod datagen;
+pub mod bfs;
+pub mod pagerank;
 
-mod load_person_csv;
+pub mod load_person_csv;
 
 fn main() {
     load_person_csv::print_sf10_dirs();
