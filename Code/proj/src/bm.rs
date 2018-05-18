@@ -15,8 +15,11 @@ mod datagen;
 mod bfs;
 mod pagerank;
 
+mod load_person_csv;
+
 fn main() {
-    bfs::run();
+    load_person_csv::print_sf10_dirs();
+    print_tests();
 }
 
 fn print_tests() {
