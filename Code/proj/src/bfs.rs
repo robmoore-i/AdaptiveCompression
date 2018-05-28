@@ -75,7 +75,7 @@ pub fn test_bfs_methods() {
 }
 
 pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
-    let n = 30;
+    let n = 30 as i64;
     let src = vec![23, 16, 29, 27, 14, 25, 8, 23, 30, 27, 27, 20, 6, 20, 9, 6, 28, 10, 22, 14, 29, 6, 21, 1, 19, 13, 1, 11, 29, 7, 3, 27, 22, 2, 14, 3, 25, 12, 11, 29, 26, 27, 17, 15, 14, 27, 1, 24, 18, 6, 24, 27, 9, 6, 14, 5, 4, 23];
     let dst = vec![30, 23, 14, 22, 29, 20, 1, 22, 23, 25, 2, 25, 5, 21, 14, 15, 6, 14, 23, 6, 13, 14, 20, 27, 3, 29, 12, 24, 24, 9, 19, 17, 27, 27, 27, 6, 27, 1, 18, 26, 29, 1, 27, 6, 9, 14, 8, 29, 11, 3, 11, 4, 7, 28, 10, 6, 27, 16];
     let start_node = 16;
@@ -83,6 +83,11 @@ pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -
     let visited = bfs(src, dst, start_node);
 
     let mut failed = false;
+
+    if (visited.len() != (n as usize)) {
+        println!("Incorrect visitations: {:?}", visited);
+        failed = true;
+    }
 
     for i in 1..(n + 1) {
         if !visited.contains(&i) {

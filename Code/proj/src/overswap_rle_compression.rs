@@ -203,23 +203,25 @@ impl OverswapRLETable {
                         p_pad += self.crk_col.run_lengths[p_pad];
                     }
                     let rl_pad = self.crk_col.run_lengths[p_pad];
+                    // Remainder: The section of padding between P and the end of the padding
+                    let rem_size = (p_low + rl_itr - 1) - p_pad;
                     // If the fit isn't exact, amend the runs
                     if p_pad + rl_pad != p_low + rl_itr {
-                        // Fix P         to P + |pad| - 1 (inside padding)
-                        self.crk_col.run_lengths[p_pad] = pad_size;
-                        self.crk_col.run_lengths[p_pad + pad_size - 1] = pad_size;
-                        // Fix P + |pad| to P + rl[P] - 1 (beyond padding)
-                        self.crk_col.run_lengths[p_pad + rl_pad - 1] -= pad_size;
-                        self.crk_col.run_lengths[p_pad + pad_size] = self.crk_col.run_lengths[p_pad + rl_pad - 1];
+                        // Fix L + rl[I] to P + rl[P] - 1 (beyond padding)
+                        self.crk_col.run_lengths[p_pad + rl_pad - 1] -= rem_size + 1;
+                        self.crk_col.run_lengths[p_low + rl_itr] = self.crk_col.run_lengths[p_pad + rl_pad - 1];
+                        // Fix P         to P + |rem| (inside padding)
+                        self.crk_col.run_lengths[p_pad] = rem_size + 1;
+                        self.crk_col.run_lengths[p_pad + rem_size - 1] = rem_size + 1;
                     }
                     // Do the swaps
-                    // Remainder: Swap L + rl[L] to L + rl[I] - 1 with I         to I + |pad| - 1
+                    // Ordered Padding: Swap L + rl[L] to L + rl[I] - 1 with I         to I + |pad| - 1
                     for i in 0..pad_size {
                         self.crk_col.crk.swap(p_low + rl_low + i, p_itr + i);
                         self.crk_col.base_idx.swap(p_low + rl_low + i, p_itr + i);
                         self.crk_col.run_lengths.swap(p_low + rl_low + i, p_itr + i);
                     }
-                    // Main:      Swap L         to L + rl[L] - 1 with I + |pad| to I + rl[I] - 1
+                    // Main:            Swap L         to L + rl[L] - 1 with I + |pad| to I + rl[I] - 1
                     for i in 0..rl_low {
                         self.crk_col.crk.swap(p_low + i, p_itr + pad_size + i);
                         self.crk_col.base_idx.swap(p_low + i, p_itr + pad_size + i);
@@ -231,36 +233,52 @@ impl OverswapRLETable {
 
                     // Advance I by |pad|
                     p_itr += pad_size;
-//                    else if rl_itr < rl_low {
-//                    let mut p_pad = p_itr - 1;
-//                    // Critically tighten the padding pointer
-//                    while p_pad
-//                    // If the fit isn't exact, amend the runs
-//                    // Do the swaps
-//                    // Advance L by rl[I]
-//                    // Recede I by |pad|
+                } else if rl_itr < rl_low {
+                    let mut p_pad = p_itr - 1;
+                    // Critically tighten the padding pointer
+                    while p_pad - self.crk_col.run_lengths[p_pad] >= p_itr - pad_size {
+                        p_pad -= self.crk_col.run_lengths[p_pad];
+                    }
+                    let rl_pad = self.crk_col.run_lengths[p_pad];
+                    let rem_size = pad_size - (p_itr - p_pad);
+                    // If the fit isn't exact, amend the runs
+                    if p_pad - rl_pad != p_itr - pad_size - 1 {
+                        // Fix I - |pad| - 1 to P - rl[P] + 1 (beyond padding)
+                        self.crk_col.run_lengths[p_pad - rl_pad + 1] -= rem_size + 1;
+                        self.crk_col.run_lengths[p_itr - pad_size - 1] = self.crk_col.run_lengths[p_pad - rl_pad + 1];
+                        // Fix P             to P - |rem| (inside padding)
+                        self.crk_col.run_lengths[p_pad] = rem_size + 1;
+                        self.crk_col.run_lengths[p_pad - rem_size] = rem_size + 1;
+                    }
+                    // Move the rl marker for the main section of the low-side run to the end of the section.
+                    self.crk_col.run_lengths[p_low + rl_itr - 1] = self.crk_col.run_lengths[p_low];
+                    // Do the swaps
+                    // Main: Swap L to L + rl[I] - 1                    with I to I + rl[I] - 1
+                    for i in 0..rl_itr {
+                        self.crk_col.crk.swap(p_low + i, p_itr + i);
+                        self.crk_col.base_idx.swap(p_low + i, p_itr + i);
+                        self.crk_col.run_lengths.swap(p_low + i, p_itr + i);
+                    }
+                    // Ordered Padding: Swap L + rl[I] to L + rl[L] - 1 with I - |pad| to I - 1
+                    for i in 0..pad_size {
+                        self.crk_col.crk.swap(p_low + rl_itr + i, p_itr - 1 - i);
+                        self.crk_col.base_idx.swap(p_low + rl_itr + i, p_itr - 1 - i);
+                        self.crk_col.run_lengths.swap(p_low + rl_itr + i, p_itr - 1 - i);
+                    }
+                    // Advance L by rl[I]
+                    p_low += rl_itr;
+                    // Recede I by |pad|
+                    p_itr -= pad_size;
                 } else {
-                    // Underswap:
-
-                    let n_swaps = if rl_itr == rl_low {
-                        rl_itr
-                    } else if rl_itr < rl_low {
-                        self.crk_col.run_lengths[p_low + rl_low - 1] -= rl_itr;
-                        self.crk_col.run_lengths[p_low + rl_itr]      = self.crk_col.run_lengths[p_low + rl_low - 1];
-                        self.crk_col.run_lengths[p_low]               = rl_itr;
-                        self.crk_col.run_lengths[p_low + rl_itr - 1]  = rl_itr;
-                        rl_itr
-                    } else {
-                        panic!("Should have entered other branch!")
-                    };
-
-                    for i in 0..n_swaps {
-                        self.crk_col.crk.swap(p_itr + i, p_low + i);
-                        self.crk_col.base_idx.swap(p_itr + i, p_low + i);
-                        self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
+                    // Full, immediate swap
+                    for i in 0..rl_itr {
+                        self.crk_col.crk.swap(p_low + i, p_itr + i);
+                        self.crk_col.base_idx.swap(p_low + i, p_itr + i);
+                        self.crk_col.run_lengths.swap(p_low + i, p_itr + i);
                     }
 
-                    p_low += n_swaps;
+                    // Advance L by rl[I]
+                    p_low += rl_itr;
                 }
 
                 // Tighten low
@@ -295,30 +313,63 @@ impl OverswapRLETable {
             } else if self.crk_col.crk[p_itr] > x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
                 let rl_high = self.crk_col.run_lengths[p_high];
+                let pad_size = ((rl_itr as i8)- (rl_high as i8)).abs() as usize;
 
-                let n_swaps = if rl_itr == rl_high {
-                    rl_itr
-                } else if rl_itr < rl_high {
+                if rl_itr > rl_high {
+                    let mut p_pad = p_high - rl_high;
+                    // Critically tighten the padding pointer
+                    while p_high - (p_pad - self.crk_col.run_lengths[p_pad]) < rl_itr {
+                        p_pad -= self.crk_col.run_lengths[p_pad];
+                    }
+                    let rl_pad = self.crk_col.run_lengths[p_pad];
+                    let rem_size = p_pad - (p_high - rl_itr + 1);
+                    // If the fit isn't exact, amend the runs
+                    if p_pad - rl_pad != p_high - rl_itr {
+                        // Fix H - rl[I] to P - rl[p] + 1
+                        self.crk_col.run_lengths[p_pad - rl_pad + 1] -= rem_size + 1;
+                        self.crk_col.run_lengths[p_high - rl_itr] = self.crk_col.run_lengths[p_pad - rl_pad + 1];
+                        // Fix P to P - |rem| (inside padding)
+                        self.crk_col.run_lengths[p_pad] = rem_size + 1;
+                        self.crk_col.run_lengths[p_pad - rem_size] = rem_size + 1;
+                    }
+                    // Move the rl marker for the main section of the low-side run to the end of the section.
+                    self.crk_col.run_lengths[p_itr + rl_high - 1] = self.crk_col.run_lengths[p_itr];
+                    // Do the swaps
+                    // Main: Swap I to I + rl[H] - 1 with H to H - rl[H] + 1
+                    for i in 0..rl_high {
+                        self.crk_col.crk.swap(p_itr + i, p_high - i);
+                        self.crk_col.base_idx.swap(p_itr + i, p_high - i);
+                        self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
+                    }
+                    // Ordered Padding: Swap I + rl[H] to I + rl[I] - 1 with H - rl[H] to H - rl[I] + 1
+                    for i in 0..pad_size {
+                        self.crk_col.crk.swap(p_itr + rl_high + i, p_high - rl_high - i);
+                        self.crk_col.base_idx.swap(p_itr + rl_high + i, p_high - rl_high -  i);
+                        self.crk_col.run_lengths.swap(p_itr + rl_high + i, p_high - rl_high -  i);
+                    }
+                    // Tighten H by rl[I]
+                    p_high -= rl_itr;
+                } else {
+                    let n_swaps = if rl_itr == rl_high {
+                        rl_itr
+                    } else if rl_itr < rl_high {
                         self.crk_col.run_lengths[p_high - rl_high + 1] -= rl_itr;
                         self.crk_col.run_lengths[p_high - rl_itr]       = self.crk_col.run_lengths[p_high - rl_high + 1];
                         self.crk_col.run_lengths[p_high]                = rl_itr;
                         self.crk_col.run_lengths[p_high - rl_itr + 1]   = rl_itr;
                         rl_itr
-                 } else {
-                        self.crk_col.run_lengths[p_itr + rl_itr - 1] -= rl_high;
-                        self.crk_col.run_lengths[p_itr + rl_high]     = self.crk_col.run_lengths[p_itr + rl_itr - 1];
-                        self.crk_col.run_lengths[p_itr]               = rl_high;
-                        self.crk_col.run_lengths[p_itr + rl_high - 1] = rl_high;
-                        rl_high
-                };
+                    } else {
+                        panic!("Should have entered other branch");
+                    };
 
-                for i in 0..n_swaps {
-                    self.crk_col.crk.swap(p_itr + i, p_high - i);
-                    self.crk_col.base_idx.swap(p_itr + i, p_high - i);
-                    self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
+                    for i in 0..n_swaps {
+                        self.crk_col.crk.swap(p_itr + i, p_high - i);
+                        self.crk_col.base_idx.swap(p_itr + i, p_high - i);
+                        self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
+                    }
+
+                    p_high -= n_swaps;
                 }
-
-                p_high -= n_swaps;
 
                 while self.crk_col.crk[p_high] > x && p_high > p_low {
                     let mut rl = self.crk_col.run_lengths[p_high];
