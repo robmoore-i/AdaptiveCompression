@@ -9,6 +9,7 @@ use decomposed_cracking;
 use recognitive_compression;
 use compactive_compression;
 use underswap_rle_compression;
+use overswap_rle_compression;
 
 /* BFS:
     Given an adjacency list of two i64 vectors, SRC_NODE and DST_NODE, this function visits every
@@ -21,7 +22,6 @@ pub fn run() {
     let n = 1000;
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
-    let e = src.len();
     let _visited = underswap_rle_bfs(src, dst, start_node);
 }
 
@@ -70,6 +70,8 @@ pub fn test_bfs_methods() {
     bfs_example_test(coco_bfs);
     println!("Underswap RLE");
     bfs_example_test(underswap_rle_bfs);
+    println!("Overswap RLE");
+    bfs_example_test(overswap_rle_bfs);
 }
 
 pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
@@ -316,6 +318,33 @@ fn coco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64>
 // Underswap-RLE compression
 fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
+
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    while !frontier.is_empty() {
+        // Add visited nodes
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        // For each src in the previous frontier, find the dsts which haven't been visited yet,
+        // and add them to a new, empty frontier.
+        for src in prev_frontier {
+            if src == 27 { adjacency_list.dbg_switch = true };
+            let selection = adjacency_list.cracker_select_specific(src);
+            let neighbours = (*(selection.get_col("dst"))).v.clone();
+            for dst in neighbours {
+                discover(dst, &mut visited, &mut frontier);
+            }
+        }
+    }
+    bv_where(visited)
+}
+
+// Overswap-RLE compression
+fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+    let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
 
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);

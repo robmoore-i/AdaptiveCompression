@@ -5,7 +5,7 @@
 
 use column::Column;
 use column::IntCol;
-use cracker_index::ArrayCrackerIndex;
+use cracker_index::AVLCrackerIndex;
 use std::collections::HashMap;
 use std::slice::Iter;
 
@@ -103,7 +103,7 @@ impl OverswapRLETable {
                 indexed_crk_v.push(self.crk_col.v[i]);
             }
             t.crk_col.crk = indexed_crk_col;
-            t.crk_col.crk_idx = ArrayCrackerIndex::new();
+            t.crk_col.crk_idx = AVLCrackerIndex::new();
         } else {
             for &i in indices.clone() {
                 indexed_crk_v.push(self.crk_col.v[i]);
@@ -194,30 +194,76 @@ impl OverswapRLETable {
             if self.crk_col.crk[p_itr] < x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
                 let rl_low = self.crk_col.run_lengths[p_low];
+                let pad_size = ((rl_itr as i8)- (rl_low as i8)).abs() as usize;
 
-                let n_swaps = if rl_itr == rl_low {
-                    rl_itr
+                if rl_itr > rl_low {
+                    let mut p_pad = p_low + rl_low;
+                    // Critically tighten the padding pointer
+                    while p_pad + self.crk_col.run_lengths[p_pad] < rl_itr + p_low {
+                        p_pad += self.crk_col.run_lengths[p_pad];
+                    }
+                    let rl_pad = self.crk_col.run_lengths[p_pad];
+                    // If the fit isn't exact, amend the runs
+                    if p_pad + rl_pad != p_low + rl_itr {
+                        // Fix P         to P + |pad| - 1 (inside padding)
+                        self.crk_col.run_lengths[p_pad] = pad_size;
+                        self.crk_col.run_lengths[p_pad + pad_size - 1] = pad_size;
+                        // Fix P + |pad| to P + rl[P] - 1 (beyond padding)
+                        self.crk_col.run_lengths[p_pad + rl_pad - 1] -= pad_size;
+                        self.crk_col.run_lengths[p_pad + pad_size] = self.crk_col.run_lengths[p_pad + rl_pad - 1];
+                    }
+                    // Do the swaps
+                    // Remainder: Swap L + rl[L] to L + rl[I] - 1 with I         to I + |pad| - 1
+                    for i in 0..pad_size {
+                        self.crk_col.crk.swap(p_low + rl_low + i, p_itr + i);
+                        self.crk_col.base_idx.swap(p_low + rl_low + i, p_itr + i);
+                        self.crk_col.run_lengths.swap(p_low + rl_low + i, p_itr + i);
+                    }
+                    // Main:      Swap L         to L + rl[L] - 1 with I + |pad| to I + rl[I] - 1
+                    for i in 0..rl_low {
+                        self.crk_col.crk.swap(p_low + i, p_itr + pad_size + i);
+                        self.crk_col.base_idx.swap(p_low + i, p_itr + pad_size + i);
+                        self.crk_col.run_lengths.swap(p_low + i, p_itr + pad_size + i);
+                    }
+
+                    // Advance L by rl[I]
+                    p_low += rl_itr;
+
+                    // Advance I by |pad|
+                    p_itr += pad_size;
+//                    else if rl_itr < rl_low {
+//                    let mut p_pad = p_itr - 1;
+//                    // Critically tighten the padding pointer
+//                    while p_pad
+//                    // If the fit isn't exact, amend the runs
+//                    // Do the swaps
+//                    // Advance L by rl[I]
+//                    // Recede I by |pad|
                 } else {
-                    let cmp = (rl_itr < rl_low) as usize;
-                    let s_ptr = (p_itr * cmp)       + (p_low * (1 - cmp));
-                    let g_ptr = (p_itr * (1 - cmp)) + (p_low * cmp);
-                    let g_rl = self.crk_col.run_lengths[g_ptr];
-                    let s_rl = self.crk_col.run_lengths[s_ptr];
-                    self.crk_col.run_lengths[g_ptr + g_rl - 1] -= s_rl;
-                    self.crk_col.run_lengths[g_ptr + s_rl]      = self.crk_col.run_lengths[g_ptr + g_rl - 1];
-                    self.crk_col.run_lengths[g_ptr]             = s_rl;
-                    self.crk_col.run_lengths[g_ptr + s_rl - 1]  = s_rl;
-                    s_rl
-                };
+                    // Underswap:
 
-                for i in 0..n_swaps {
-                    self.crk_col.crk.swap(p_itr + i, p_low + i);
-                    self.crk_col.base_idx.swap(p_itr + i, p_low + i);
-                    self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
+                    let n_swaps = if rl_itr == rl_low {
+                        rl_itr
+                    } else if rl_itr < rl_low {
+                        self.crk_col.run_lengths[p_low + rl_low - 1] -= rl_itr;
+                        self.crk_col.run_lengths[p_low + rl_itr]      = self.crk_col.run_lengths[p_low + rl_low - 1];
+                        self.crk_col.run_lengths[p_low]               = rl_itr;
+                        self.crk_col.run_lengths[p_low + rl_itr - 1]  = rl_itr;
+                        rl_itr
+                    } else {
+                        panic!("Should have entered other branch!")
+                    };
+
+                    for i in 0..n_swaps {
+                        self.crk_col.crk.swap(p_itr + i, p_low + i);
+                        self.crk_col.base_idx.swap(p_itr + i, p_low + i);
+                        self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
+                    }
+
+                    p_low += n_swaps;
                 }
 
-                p_low += n_swaps;
-
+                // Tighten low
                 while self.crk_col.crk[p_low] < x && p_low < p_high {
                     let mut rl = self.crk_col.run_lengths[p_low];
 

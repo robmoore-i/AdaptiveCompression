@@ -3,6 +3,7 @@ use utils;
 use recognitive_compression;
 use compactive_compression;
 use underswap_rle_compression;
+use overswap_rle_compression;
 
 /* PAGERANK
     Given an adjacency list of two i64 vecs, SRC_NODE and DST_NODE and a vector of PAGERANKS, where
@@ -46,7 +47,9 @@ pub fn test_pagerank_methods() {
     println!("Coco");
     pagerank_example_test(coco_pagerank);
     println!("Underswap RLE");
-    pagerank_example_test(intraco_pagerank);
+    pagerank_example_test(underswap_rle_pagerank);
+    println!("Overswap RLE");
+    pagerank_example_test(overswap_rle_pagerank);
 }
 
 // Example from https://en.wikipedia.org/wiki/PageRank
@@ -358,9 +361,47 @@ fn coco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: 
     new_pageranks
 }
 
-// Intra-fragment compression
-fn intraco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+// Underswapping rle
+fn underswap_rle_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "dst");
+
+    let n = prs.len();
+    let m = (1.0 - d) / (n as f64);
+
+    let mut l = Vec::with_capacity(1 + n);
+    for _ in 0..(n+1) { l.push(-1); }
+
+    let mut pageranks     = prs.clone();
+    let mut new_pageranks = prs.clone();
+
+    let mut iterations = 0;
+    loop {
+        for v in 1..n {
+            let mut inherited_rank = 0.0;
+
+            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
+                let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
+                inherit(&mut inherited_rank, pageranks[w], lw);
+            }
+
+            new_pageranks[v] = m + d * inherited_rank;
+        }
+
+        if terminate(&pageranks, &new_pageranks, n, epsilon) {
+            break;
+        }
+        pageranks = new_pageranks.clone();
+        iterations += 1;
+        if iterations > max_iterations {
+            break;
+        }
+    }
+    new_pageranks
+}
+
+// Overswapping
+fn overswap_rle_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
+    let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "dst");
 
     let n = prs.len();
     let m = (1.0 - d) / (n as f64);
