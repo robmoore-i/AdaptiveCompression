@@ -67,7 +67,33 @@ necessary invariants regarding the position of the two tightening edge pointers 
 This must also take account of the fact that the number of elements being swapped to an edge
 pointer during an iteration may be different to the number of elements being swapped from the edge
 pointer back onto the iteration pointer. Additionally, when making these swaps of runs, the
-$run\_lengths$ array may have need to have its entries modified in order to retain consistency.
+$run\_lengths$ array may have need to have its entries modified in order to retain consistency. There
+are two potential approaches to swapping around runs of different lengths within the
+$run\_lengths$ array.
+
+The first is to swap the entire of the shorter run and modify entries of the $run\_lengths$ array
+corresponding to the longer run to maintain consistency after the swap. This means that the longer
+run is not fully swapped, so we have called it "underswapping". Underswapping causes the longer run
+to get broken up.
+
+The second approach is to swap the entire of the longer run, and pad the shorter run with more
+elements. This requires the padded elements to have their runs checked and potentially modified, due
+to the possibility that they are constituents of another run. Due to the fact that the shorter run is
+swapped with more elements than are actually in that run (by padding), we call this "overswapping".
+Overswapping Does not necessarily cause the break-up of runs, however it is more complex.
+
+In this chapter we will detail underswapping and overswapping, along with an evaluation of their
+relative performance and a discussion thereof.
+
+\subsubsubsection{Underswapping RLE}
+
+\subsubsubsection{Overswapping RLE}
+
+When overswapping, the entire of the shorter run we call the main section of the swapped range of
+values. The padding, we call the remainder.
+
+The idea is that we update entries in $run\_lengths$ such that after doing the swap, the runs will
+still be consistent.
 
 \subsection{To compact or not to compact}
 
@@ -104,4 +130,5 @@ It can be said that compaction saves memory, however if it was crucial to save m
 would not be an appropriate technique anyway, so we do not consider it an important benefit.
 
 \subsection{Exploitation}
+
 \label{ss:compressionexploitation}
