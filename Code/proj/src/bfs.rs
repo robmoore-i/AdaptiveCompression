@@ -55,7 +55,7 @@ fn time_bfs<F>(mut bfs: F, src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i
     print!(",{}", start.to(end));
 }
 
-pub fn test_bfs_methods() {
+pub fn example_test_bfs_methods() {
     println!("Unoptimised");
     bfs_example_test(unoptimised_bfs);
     println!("Preclustered");
@@ -76,15 +76,15 @@ pub fn test_bfs_methods() {
 
 pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
     let n = 30 as i64;
-    let src = vec![23, 16, 29, 27, 14, 25, 8, 23, 30, 27, 27, 20, 6, 20, 9, 6, 28, 10, 22, 14, 29, 6, 21, 1, 19, 13, 1, 11, 29, 7, 3, 27, 22, 2, 14, 3, 25, 12, 11, 29, 26, 27, 17, 15, 14, 27, 1, 24, 18, 6, 24, 27, 9, 6, 14, 5, 4, 23];
-    let dst = vec![30, 23, 14, 22, 29, 20, 1, 22, 23, 25, 2, 25, 5, 21, 14, 15, 6, 14, 23, 6, 13, 14, 20, 27, 3, 29, 12, 24, 24, 9, 19, 17, 27, 27, 27, 6, 27, 1, 18, 26, 29, 1, 27, 6, 9, 14, 8, 29, 11, 3, 11, 4, 7, 28, 10, 6, 27, 16];
-    let start_node = 16;
+    let src = vec![21, 27, 25, 16, 7, 18, 13, 17, 14, 5, 28, 17, 22, 10, 11, 17, 28, 28, 3, 15, 9, 21, 23, 28, 12, 22, 28, 8, 10, 19, 4, 28, 1, 22, 21, 25, 25, 13, 21, 24, 16, 21, 28, 1, 5, 25, 25, 30, 22, 26, 24, 29, 25, 6, 20, 25, 28, 2];
+    let dst = vec![3, 25, 22, 10, 25, 1, 28, 14, 17, 29, 11, 1, 23, 16, 28, 24, 8, 30, 21, 10, 25, 25, 22, 19, 28, 28, 12, 28, 15, 28, 21, 16, 18, 24, 4, 27, 26, 20, 2, 17, 28, 5, 22, 17, 21, 7, 6, 28, 25, 25, 22, 5, 9, 25, 13, 21, 13, 21];
+    let start_node = 10;
 
     let visited = bfs(src, dst, start_node);
 
     let mut failed = false;
 
-    if (visited.len() != (n as usize)) {
+    if visited.len() != n as usize {
         println!("Incorrect visitations: {:?}", visited);
         failed = true;
     }
@@ -96,6 +96,77 @@ pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -
         }
     }
 
+    if failed {
+        println!("Failed!");
+    } else {
+        println!("Passed!")
+    }
+}
+
+pub fn bait() {
+    let n = 30 as i64;
+    let (src, dst) = datagen::randomly_connected_tree(n);
+    let start_node = rand::thread_rng().gen_range(1, n);
+    println!("src: {:?}", src);
+    println!("dst: {:?}", dst);
+
+    let visited = overswap_rle_bfs(src, dst, start_node);
+    let mut failed = false;
+    if visited.len() != n as usize {
+        println!("Incorrect visitations: {:?}", visited);
+        failed = true;
+    }
+    for i in 1..(n + 1) {
+        if !visited.contains(&i) {
+            println!("FAILED: Result {:?} does not contain {}", visited, i);
+            failed = true;
+        }
+    }
+    if failed {
+        println!("Failed!");
+    } else {
+        println!("Passed!")
+    }
+}
+
+pub fn random_test_bfs_methods() {
+    let n = 50 as i64;
+    let (src, dst) = datagen::randomly_connected_tree(n);
+    let start_node = rand::thread_rng().gen_range(1, n);
+    println!("src: {:?}", src);
+    println!("dst: {:?}", dst);
+
+    println!("Unoptimised");
+    bfs_random_test(unoptimised_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Preclustered");
+    bfs_random_test(preclustered_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Preclustered RLE");
+    bfs_random_test(preclustered_rle_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Decracked");
+    bfs_random_test(decracked_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Reco");
+    bfs_random_test(reco_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Coco");
+    bfs_random_test(coco_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Underswap RLE");
+    bfs_random_test(underswap_rle_bfs, n, src.clone(), dst.clone(), start_node);
+    println!("Overswap RLE");
+    bfs_random_test(overswap_rle_bfs, n, src.clone(), dst.clone(), start_node);
+}
+
+pub fn bfs_random_test<F>(mut bfs: F, n: i64, src: Vec<i64>, dst: Vec<i64>, start_node: i64) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
+    let visited = bfs(src, dst, start_node);
+    let mut failed = false;
+    if visited.len() != n as usize {
+        println!("Incorrect visitations: {:?}", visited);
+        failed = true;
+    }
+    for i in 1..(n + 1) {
+        if !visited.contains(&i) {
+            println!("FAILED: Result {:?} does not contain {}", visited, i);
+            failed = true;
+        }
+    }
     if failed {
         println!("Failed!");
     } else {

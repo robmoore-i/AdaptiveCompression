@@ -23,8 +23,5 @@ fn main() {
 }
 
 fn print_tests() {
-    println!("=== BFS ===");
-    bfs::test_bfs_methods();
-    println!("\n=== PR ===");
-    pagerank::test_pagerank_methods();
+    bfs::example_test_bfs_methods();
 }

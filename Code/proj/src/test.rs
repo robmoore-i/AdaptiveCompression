@@ -291,3 +291,54 @@ fn cracker_index_test() {
     assert_eq!(crk_idx.get(23), Some(32));
     assert_eq!(crk_idx.get(24), Some(35));
 }
+
+// Low side, equal
+#[test]
+fn l_side_eq_len_swap() {
+}
+
+// High side, equal
+#[test]
+fn h_side_eq_len_swap() {
+}
+
+// Low side, low longer
+#[test]
+fn l_side_l_longer_swap() {
+}
+
+// Low side, itr longer
+#[test]
+fn l_side_i_longer_swap() {
+}
+
+// High side, itr longer
+#[test]
+fn h_side_i_longer_swap() {
+}
+
+// High side, high longer
+#[test]
+fn h_side_h_longer_swap() {
+}
+
+// Low side, low longer, overlap
+#[test]
+fn l_side_l_longer_overlap_swap() {
+}
+
+
+// Low side, itr longer, overlap
+#[test]
+fn l_side_i_longer_overlap_swap() {
+}
+
+// High side, itr longer, overlap
+#[test]
+fn h_side_i_longer_overlap_swap() {
+}
+
+// High side, high longer, overlap
+#[test]
+fn h_side_h_longer_overlap_swap() {
+}
