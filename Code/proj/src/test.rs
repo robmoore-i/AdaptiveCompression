@@ -1,6 +1,8 @@
+use bit_vec::BitVec;
+
 use std::collections::HashMap;
 
-use overswap_rle_compression::OverswapRLETable;
+use overswap_rle_compression::*;
 use cracker_index::AVLCrackerIndex;
 
 #[test]
@@ -125,7 +127,7 @@ fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
 
     let selection_1 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+    assert_base_column_equals(selection_1.clone(), "dst", vec![1, 2, 1, 2, 1]);
 
     let selection_2 = adjacency_list.cracker_select_specific(2);
     assert_base_column_equals(selection_2.clone(), "src", vec![2]);
@@ -174,11 +176,11 @@ fn repeat_queries_return_same_results() {
 
     let selection_1 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
+    assert_base_column_equals(selection_1.clone(), "dst", vec![1, 2, 1, 2, 1]);
 
     let selection_2 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
+    assert_base_column_equals(selection_2.clone(), "dst", vec![1, 2, 1, 2, 1]);
 }
 
 #[test]
@@ -292,53 +294,100 @@ fn cracker_index_test() {
     assert_eq!(crk_idx.get(24), Some(35));
 }
 
-// Low side, equal
-#[test]
-fn l_side_eq_len_swap() {
+fn discover(dst: i64, visited: &mut BitVec, frontier: &mut Vec<i64>) {
+    if !visited.get((dst as usize) - 1).unwrap_or(false) && !frontier.contains(&dst) {
+        frontier.push(dst);
+    }
 }
 
-// High side, equal
-#[test]
-fn h_side_eq_len_swap() {
+fn set_indices(bv: &mut BitVec, indices: Vec<i64>) {
+    let l = bv.len();
+    for i in indices {
+        let i_usize = i as usize;
+        if i_usize >= l {
+            bv.grow(1 + i_usize - l, false);
+        }
+        bv.set(i_usize, true);
+    }
 }
 
-// Low side, low longer
-#[test]
-fn l_side_l_longer_swap() {
+fn bv_where(bv: BitVec) -> Vec<i64> {
+    let mut v = Vec::with_capacity(bv.len());
+    for i in 0..bv.len() {
+        if bv.get(i).unwrap() {
+            v.push(1 + i as i64);
+        }
+    }
+    v
+}
+
+fn indicise(v: Vec<i64>) -> Vec<i64> {
+    v.iter().map(|x|x-1).collect()
+}
+
+pub fn bfs_test(src_nodes: Vec<i64>, dst_nodes: Vec<i64>, start_node: i64) -> bool {
+    let n = 30 as i64;
+
+    let mut adjacency_list = from_adjacency_vectors(src_nodes, dst_nodes, "src");
+
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    while !frontier.is_empty() {
+        // Add visited nodes
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        // For each src in the previous frontier, find the dsts which haven't been visited yet,
+        // and add them to a new, empty frontier.
+        for src in prev_frontier {
+            let selection = adjacency_list.cracker_select_specific(src);
+            let neighbours = (*(selection.get_col("dst"))).v.clone();
+            for dst in neighbours {
+                discover(dst, &mut visited, &mut frontier);
+            }
+        }
+    }
+    let visited = bv_where(visited);
+
+    let mut failed = false;
+
+    if visited.len() != n as usize {
+        println!("Incorrect visitations: {:?}", visited);
+        failed = true;
+    }
+
+    for i in 1..(n + 1) {
+        if !visited.contains(&i) {
+            println!("Result does not contain {}", i);
+            failed = true;
+        }
+    }
+
+    if failed {
+        println!("Failed!");
+        false
+    } else {
+        println!("Passed!");
+        true
+    }
 }
 
 // Low side, itr longer
 #[test]
 fn l_side_i_longer_swap() {
+    let src = vec![4, 16, 22, 8, 26, 13, 22, 4, 18, 12, 13, 22, 10, 14, 22, 8, 19, 29, 8, 8, 17, 18, 22, 5, 2, 28, 8, 12, 24, 13, 15, 21, 30, 6, 18, 25, 7, 9, 19, 19, 4, 3, 11, 17, 28, 10, 8, 28, 22, 11, 29, 1, 20, 30, 8, 23, 4, 27];
+    let dst = vec![20, 18, 19, 6, 12, 22, 2, 11, 16, 26, 27, 25, 9, 4, 13, 30, 18, 30, 28, 13, 24, 19, 7, 19, 22, 8, 17, 29, 17, 8, 18, 4, 29, 8, 15, 22, 22, 10, 5, 22, 14, 8, 28, 8, 11, 22, 23, 1, 10, 4, 12, 28, 4, 8, 3, 8, 21, 13];
+    let start_node = 7;
+    assert!(bfs_test(src, dst, start_node));
 }
 
-// High side, itr longer
+// Low side, equal
 #[test]
-fn h_side_i_longer_swap() {
-}
-
-// High side, high longer
-#[test]
-fn h_side_h_longer_swap() {
-}
-
-// Low side, low longer, overlap
-#[test]
-fn l_side_l_longer_overlap_swap() {
-}
-
-
-// Low side, itr longer, overlap
-#[test]
-fn l_side_i_longer_overlap_swap() {
-}
-
-// High side, itr longer, overlap
-#[test]
-fn h_side_i_longer_overlap_swap() {
-}
-
-// High side, high longer, overlap
-#[test]
-fn h_side_h_longer_overlap_swap() {
+fn h_side_i_longer_overlap() {
+    let src = vec![19, 19, 13, 28, 19, 21, 29, 18, 22, 28, 29, 12, 24, 1, 20, 19, 23, 5, 19, 3, 28, 30, 23, 16, 27, 18, 15, 17, 15, 18, 12, 18, 2, 11, 19, 12, 12, 18, 6, 13, 13, 15, 29, 28, 4, 13, 10, 7, 3, 22, 25, 28, 9, 22, 23, 8, 26, 14];
+    let dst = vec![24, 15, 12, 27, 23, 18, 4, 12, 28, 20, 18, 30, 19, 13, 28, 5, 19, 19, 16, 13, 22, 12, 14, 19, 28, 6, 2, 13, 25, 21, 18, 7, 15, 29, 3, 13, 28, 29, 18, 3, 1, 19, 11, 12, 29, 17, 22, 18, 19, 9, 15, 26, 22, 10, 8, 23, 28, 23];
+    let start_node = 9;
+    assert!(bfs_test(src, dst, start_node));
 }

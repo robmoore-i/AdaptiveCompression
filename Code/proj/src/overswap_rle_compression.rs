@@ -241,6 +241,7 @@ impl OverswapRLETable {
                             self.crk_col.base_idx.swap(p_low + i, p_itr + i);
                             self.crk_col.run_lengths.swap(p_low + i, p_itr + i);
                         }
+                        p_itr += rl_itr;
                     }
                     // Advance L by rl[I]
                     // p_low += rl_itr;
@@ -353,8 +354,8 @@ impl OverswapRLETable {
                         // Overlap
                         let overlap_size = (p_itr + rl_itr) - (p_high - pad_size);
                         // Amend rl marker for out-of-order swap
-                        self.crk_col.run_lengths[p_itr + (rl_itr - pad_size) - 1] = rl_itr;
-                        self.crk_col.run_lengths[p_itr + (rl_itr - pad_size)]     = rl_itr;
+                        self.crk_col.run_lengths[p_itr + (rl_itr - overlap_size) - 1] = rl_itr;
+                        self.crk_col.run_lengths[p_itr + (rl_itr - overlap_size)]     = rl_itr;
                         for i in 0..(rl_itr - overlap_size) {
                             self.crk_col.crk.swap(p_itr + i, p_high - rl_itr + 1 + overlap_size + i);
                             self.crk_col.base_idx.swap(p_itr + i, p_high - rl_itr + 1 + overlap_size + i);
