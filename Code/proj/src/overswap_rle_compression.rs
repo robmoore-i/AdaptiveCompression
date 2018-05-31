@@ -467,9 +467,10 @@ impl OverswapRLETable {
                             self.crk_col.base_idx.swap(p_itr + rl_itr +  i, p_high - rl_high + 1 + i);
                             self.crk_col.run_lengths.swap(p_itr + rl_itr +  i, p_high - rl_high + 1 + i);
                         }
+
+                        // Tighten H by rl[I]
+                        p_high -= rl_itr;
                     }
-                    // Tighten H by rl[I]
-                    // p_high -= rl_itr;
                 } else {
                     // Do full, immediate swap
                     for i in 0..rl_itr {
