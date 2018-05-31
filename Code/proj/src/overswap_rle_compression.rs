@@ -207,7 +207,7 @@ impl OverswapRLETable {
         let mut p_itr = p_low.clone();
         while p_itr <= p_high {
 
-            println!("L:{}, I:{}, H:{}", p_low, p_itr, p_high);
+            println!("x:{}, L:{}, I:{}, H:{}", x, p_low, p_itr, p_high);
             self.print_rl_crk();
             println!();
 
@@ -230,17 +230,7 @@ impl OverswapRLETable {
                             self.crk_col.base_idx.swap(p_low + i, p_itr + overlap_size + i);
                             self.crk_col.run_lengths.swap(p_low + i, p_itr + overlap_size + i);
                         }
-                    } else if p_itr == p_low + rl_itr {
-                        // Tessellating
-                        self.crk_col.run_lengths[p_low]              = rl_itr;
-                        self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_itr;
-                        for i in 0..rl_itr {
-                            self.crk_col.crk.swap(p_low + i, p_itr + i);
-                            self.crk_col.base_idx.swap(p_low + i, p_itr + i);
-                            self.crk_col.run_lengths.swap(p_low + i, p_itr + i);
-                        }
                     } else {
-                        // Distant
                         // Combine all the runs between L and I
                         self.crk_col.run_lengths[p_low + rl_itr]     = p_itr - p_low;
                         self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;
@@ -472,7 +462,7 @@ impl OverswapRLETable {
                     }
 
                     // Tighten H by rl[I]
-                    // p_high -= rl_itr;
+                    p_high -= rl_itr;
                 }
 
                 // Tighten high
@@ -494,6 +484,21 @@ impl OverswapRLETable {
                     p_high -= rl;
                 }
             } else {
+                // Advance itr
+                let mut rl = self.crk_col.run_lengths[p_itr];
+                while p_itr + rl < self.count {
+                    if self.crk_col.crk[p_itr + rl] == x {
+                        if p_itr + rl + self.crk_col.run_lengths[p_itr + rl] < self.count {
+                            rl += self.crk_col.run_lengths[p_itr + rl];
+                            self.crk_col.run_lengths[p_itr] = rl;
+                            self.crk_col.run_lengths[p_itr + rl - 1] = rl;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
                 p_itr += self.crk_col.run_lengths[p_itr];
             }
         }
