@@ -136,6 +136,7 @@ impl OverswapRLETable {
     // Returns the elements of T where the cracker columns's value equals X
     pub fn cracker_select_specific(&mut self, x: i64) -> OverswapRLETable {
         println!("Selecting {}", x);
+
         // Init
         if self.crk_col.crk.len() == 0 {
             self.crk_col.crk = self.crk_col.v.clone();
@@ -194,7 +195,7 @@ impl OverswapRLETable {
             p_high -= rl;
         }
 
-        if p_low == p_high {
+        if p_low >= p_high {
             if self.crk_col.crk[p_low] == x {
                 return self.get_indices(self.crk_col.base_idx[p_low..(p_low + 1)].iter())
             } else {
@@ -218,6 +219,7 @@ impl OverswapRLETable {
                 if rl_itr > rl_low {
                     // Check for overlap:
                     if p_itr < p_low + rl_itr {
+                        // Overlap
                         let overlap_size = (p_low + rl_itr) - p_itr;
 
                         self.crk_col.run_lengths[p_itr + overlap_size - 1] = self.crk_col.run_lengths[p_itr];
@@ -228,7 +230,17 @@ impl OverswapRLETable {
                             self.crk_col.base_idx.swap(p_low + i, p_itr + overlap_size + i);
                             self.crk_col.run_lengths.swap(p_low + i, p_itr + overlap_size + i);
                         }
+                    } else if p_itr == p_low + rl_itr {
+                        // Tessellating
+                        self.crk_col.run_lengths[p_low]              = rl_itr;
+                        self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_itr;
+                        for i in 0..rl_itr {
+                            self.crk_col.crk.swap(p_low + i, p_itr + i);
+                            self.crk_col.base_idx.swap(p_low + i, p_itr + i);
+                            self.crk_col.run_lengths.swap(p_low + i, p_itr + i);
+                        }
                     } else {
+                        // Distant
                         // Combine all the runs between L and I
                         self.crk_col.run_lengths[p_low + rl_itr]     = p_itr - p_low;
                         self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;

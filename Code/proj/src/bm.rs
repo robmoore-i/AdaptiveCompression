@@ -23,5 +23,5 @@ fn main() {
 }
 
 fn print_tests() {
-    bfs::example_test_bfs_methods();
+    bfs::bait();
 }
