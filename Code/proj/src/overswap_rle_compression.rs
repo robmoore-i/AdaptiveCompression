@@ -135,7 +135,7 @@ impl OverswapRLETable {
 
     // Returns the elements of T where the cracker columns's value equals X
     pub fn cracker_select_specific(&mut self, x: i64) -> OverswapRLETable {
-        println!("Selecting {}", x);
+//        println!("Selecting {}", x);
 
         // Init
         if self.crk_col.crk.len() == 0 {
@@ -207,9 +207,9 @@ impl OverswapRLETable {
         let mut p_itr = p_low.clone();
         while p_itr <= p_high {
 
-            println!("x:{}, L:{}, I:{}, H:{}", x, p_low, p_itr, p_high);
-            self.print_rl_crk();
-            println!();
+//            println!("x:{}, L:{}, I:{}, H:{}", x, p_low, p_itr, p_high);
+//            self.print_rl_crk();
+//            println!();
 
             if self.crk_col.crk[p_itr] < x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
