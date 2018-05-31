@@ -105,10 +105,11 @@ pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -
 
 pub fn bait() {
     let n = 30 as i64;
+
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
-    println!("let src = vec![{:?}];", src);
-    println!("let dst = vec![{:?}];", dst);
+    println!("let src = vec!{:?};", src);
+    println!("let dst = vec!{:?};", dst);
     println!("let start_node = {};", start_node);
 
     let visited = overswap_rle_bfs(src, dst, start_node);
@@ -119,7 +120,7 @@ pub fn bait() {
     }
     for i in 1..(n + 1) {
         if !visited.contains(&i) {
-            println!("FAILED: Result {:?} does not contain {}", visited, i);
+            println!("FAILED: Result does not contain {}", i);
             failed = true;
         }
     }
@@ -131,7 +132,7 @@ pub fn bait() {
 }
 
 pub fn random_test_bfs_methods() {
-    let n = 50 as i64;
+    let n = 100 as i64;
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
     println!("src: {:?}", src);

@@ -281,11 +281,13 @@ impl OverswapRLETable {
                             self.crk_col.run_lengths[p_pad] = rem_size;
                             self.crk_col.run_lengths[p_pad - rem_size + 1] = rem_size;
                         }
-                        // Move the rl marker for the main section of the low-side run to the end of the section.
-                        self.crk_col.run_lengths[p_low + rl_itr] = rl_low;
+
+                        // Move the rl markers for the main section of the low-side run to the end of the section.
+                        self.crk_col.run_lengths[p_low + rl_itr]     = rl_low;
+                        self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_low;
 
                         // Do the swaps
-                        // Main: Swap L to L + rl[I] - 1                    with I to I + rl[I] - 1
+                        // Main: Swap L to L + rl[I] - 1 with I to I + rl[I] - 1
                         for i in 0..rl_itr {
                             self.crk_col.crk.swap(p_low + i, p_itr + i);
                             self.crk_col.base_idx.swap(p_low + i, p_itr + i);
@@ -383,8 +385,12 @@ impl OverswapRLETable {
                             self.crk_col.run_lengths[p_pad] = rem_size;
                             self.crk_col.run_lengths[p_pad - rem_size + 1] = rem_size;
                         }
+
                         // Move the rl marker for the main section of the itr-side run to the end of the section.
                         self.crk_col.run_lengths[p_itr + rl_high] = self.crk_col.run_lengths[p_itr];
+                        self.crk_col.run_lengths[p_itr + rl_high - 1] = self.crk_col.run_lengths[p_itr];
+
+
                         // Do the swaps
                         // Main: Swap I to I + rl[H] - 1 with H to H - rl[H] + 1
                         for i in 0..rl_high {
@@ -438,10 +444,11 @@ impl OverswapRLETable {
                         }
 
                         // Move the rl marker for the main section of the high-side run to the end of the section.
-                        self.crk_col.run_lengths[p_high - rl_itr] = self.crk_col.run_lengths[p_high];
+                        self.crk_col.run_lengths[p_high - rl_itr]     = rl_high;
+                        self.crk_col.run_lengths[p_high - rl_itr + 1] = rl_high;
 
                         // Do the swaps
-                        // Main: Swap I to I + rl[I] - 1 with H to H - rl[I] + 1
+                        // Main: Swap I to I + rl[I] - 1 with H - rl[I] + 1 to H
                         for i in 0..rl_itr {
                             self.crk_col.crk.swap(p_itr + i, p_high - rl_itr + 1 + i);
                             self.crk_col.base_idx.swap(p_itr + i, p_high - rl_itr + 1 + i);
