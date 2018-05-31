@@ -250,7 +250,7 @@ impl OverswapRLETable {
                         p_itr += rl_itr;
                     }
                     // Advance L by rl[I]
-                    // p_low += rl_itr;
+                    p_low += rl_itr;
                 } else if rl_itr < rl_low {
                     // Check for overlap:
                     if p_itr - pad_size <= p_low + rl_low - 1 {
@@ -306,7 +306,7 @@ impl OverswapRLETable {
                             self.crk_col.run_lengths.swap(p_low + rl_itr + i, p_itr - pad_size + i);
                         }
                         // Advance L by rl[I]
-                        // p_low += rl_itr;
+                        p_low += rl_itr;
                         // Recede I by |pad|
                         p_itr -= pad_size;
                     }
@@ -319,7 +319,7 @@ impl OverswapRLETable {
                     }
 
                     // Advance L by rl[I]
-                    // p_low += rl_itr;
+                    p_low += rl_itr;
                 }
 
                 // Tighten low
@@ -413,7 +413,7 @@ impl OverswapRLETable {
                         }
                     }
                     // Tighten H by rl[I]
-                    // p_high -= rl_itr;
+                    p_high -= rl_itr;
                 } else if rl_high > rl_itr {
                     // Check for overlap:
                     if p_high - rl_high + 1 < p_itr + rl_high {
