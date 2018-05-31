@@ -444,5 +444,6 @@ fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
             }
         }
     }
+    println!();adjacency_list.print_rl_crk();
     bv_where(visited)
 }

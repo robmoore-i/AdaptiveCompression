@@ -214,7 +214,7 @@ impl OverswapRLETable {
             if self.crk_col.crk[p_itr] < x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
                 let rl_low = self.crk_col.run_lengths[p_low];
-                let pad_size = ((rl_itr as i8)- (rl_low as i8)).abs() as usize;
+                let pad_size = ((rl_itr as i16) - (rl_low as i16)).abs() as usize;
 
                 if rl_itr > rl_low {
                     // Check for overlap:
@@ -232,8 +232,14 @@ impl OverswapRLETable {
                         }
                     } else {
                         // Combine all the runs between L and I
-                        self.crk_col.run_lengths[p_low + rl_itr]     = p_itr - p_low;
-                        self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;
+                        if p_itr - p_low == rl_itr {
+                            // If the low run padding goes up to right next to I, then adjust slightly
+                            self.crk_col.run_lengths[p_low]              = rl_itr;
+                            self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_itr;
+                        } else {
+                            self.crk_col.run_lengths[p_low + rl_itr]     = p_itr - p_low;
+                            self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;
+                        }
 
                         // Now just swap the whole thing.
                         for i in 0..rl_itr {
