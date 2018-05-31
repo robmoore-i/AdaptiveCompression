@@ -436,8 +436,10 @@ impl OverswapRLETable {
                             self.crk_col.run_lengths[p_pad] = rem_size;
                             self.crk_col.run_lengths[p_pad + rem_size - 1] = rem_size;
                         }
+
                         // Move the rl marker for the main section of the high-side run to the end of the section.
-                        self.crk_col.run_lengths[p_high - rl_itr + 1] = self.crk_col.run_lengths[p_high];
+                        self.crk_col.run_lengths[p_high - rl_itr] = self.crk_col.run_lengths[p_high];
+
                         // Do the swaps
                         // Main: Swap I to I + rl[I] - 1 with H to H - rl[I] + 1
                         for i in 0..rl_itr {
@@ -509,6 +511,8 @@ impl OverswapRLETable {
             self.print_rl_crk();
             panic!();
         }
+
+//        self.print_rl_crk();
 
         // Memo
         self.crk_col.crk_idx.insert(x, p_low);

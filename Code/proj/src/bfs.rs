@@ -107,9 +107,9 @@ pub fn bait() {
     let n = 30 as i64;
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
-    println!("src: {:?}", src);
-    println!("dst: {:?}", dst);
-    println!("start_node: {}", start_node);
+    println!("let src = vec![{:?}];", src);
+    println!("let dst = vec![{:?}];", dst);
+    println!("let start_node = {};", start_node);
 
     let visited = overswap_rle_bfs(src, dst, start_node);
     let mut failed = false;
