@@ -270,11 +270,9 @@ impl OverswapRLETable {
                         // If the fit isn't exact, amend the runs
                         if p_pad - rl_pad != p_itr - pad_size - 1 {
                             let rem_size = p_pad - (p_itr - pad_size - 1);
-                            if rem_size == 0 { panic!(); }
 
                             // Fix I - |pad| - 1 to P - rl[P] + 1 (beyond padding)
                             self.crk_col.run_lengths[p_pad - rl_pad + 1] -= rem_size;
-                            if self.crk_col.run_lengths[p_pad - rl_pad - 1] == 0 { panic!(); }
 
                             self.crk_col.run_lengths[p_itr - pad_size - 1] = self.crk_col.run_lengths[p_pad - rl_pad + 1];
                             // Fix P             to P - |rem| + 1 (inside padding)
@@ -373,13 +371,11 @@ impl OverswapRLETable {
                         }
                         let rl_pad = self.crk_col.run_lengths[p_pad];
                         let rem_size = p_pad - (p_high - rl_itr);
-                        if rem_size == 0 { self.print_rl_crk_range(p_itr, p_high + 1);panic!(); }
 
                         // If the fit isn't exact, amend the runs
                         if p_pad - rl_pad != p_high - rl_itr {
                             // Fix H - rl[I] to P - rl[p] + 1
                             self.crk_col.run_lengths[p_pad - rl_pad + 1] -= rem_size;
-                            if self.crk_col.run_lengths[p_pad - rl_pad - 1] == 0 { self.print_rl_crk_range(p_itr, p_high + 1);panic!(); }
 
                             self.crk_col.run_lengths[p_high - rl_itr] = self.crk_col.run_lengths[p_pad - rl_pad + 1];
                             // Fix P to P - |rem| + 1 (inside padding)
@@ -430,17 +426,15 @@ impl OverswapRLETable {
                         }
                         let rl_pad = self.crk_col.run_lengths[p_pad];
                         let rem_size = (p_itr + rl_high) - p_pad;
-                        if rem_size == 0 { self.print_rl_crk_range(p_itr, p_high + 1);panic!(); }
 
                         // If the fit isn't exact, amend the runs
                         if p_pad + rl_pad != p_itr + rl_high {
                             // Fix I + rl[H] to P + rl[P] - 1 (beyond padding)
                             self.crk_col.run_lengths[p_pad + rl_pad - 1] -= rem_size;
-                            if self.crk_col.run_lengths[p_pad + rl_pad - 1] == 0 { self.print_rl_crk_range(p_itr, p_high + 1);panic!(); }
 
                             self.crk_col.run_lengths[p_itr + rl_high] = self.crk_col.run_lengths[p_pad + rl_pad - 1];
-                            // Fix P         to P + |rem| - 1 (inside padding)
-                            self.crk_col.run_lengths[p_pad] = rem_size;
+                            // Fix P to P + |rem| - 1 (inside padding)
+                            self.crk_col.run_lengths[p_pad]                = rem_size;
                             self.crk_col.run_lengths[p_pad + rem_size - 1] = rem_size;
                         }
 

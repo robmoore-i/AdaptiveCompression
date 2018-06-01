@@ -25,6 +25,8 @@ pub fn run() {
     let _visited = underswap_rle_bfs(src, dst, start_node);
 }
 
+// Benchmark for single BFS runs
+
 // Prints to stdout valid csv lines containing the results of bfs benchmarks..
 pub fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
     println!("nodes,edges,density,unoptimised,preclustered,preclusteredRLE,decomposed,recognitive,compactive,underswapRLE,overswapRLE");
@@ -44,11 +46,11 @@ fn benchmark_sparse_bfs(n: i64) {
     time_bfs(unoptimised_bfs,      src.clone(), dst.clone(), start_node);
     time_bfs(preclustered_bfs,     src.clone(), dst.clone(), start_node);
     time_bfs(preclustered_rle_bfs, src.clone(), dst.clone(), start_node);
-    time_bfs(decracked_bfs, src.clone(), dst.clone(), start_node);
-    time_bfs(reco_bfs, src.clone(), dst.clone(), start_node);
-    time_bfs(coco_bfs, src.clone(), dst.clone(), start_node);
-    time_bfs(underswap_rle_bfs, src.clone(), dst.clone(), start_node);
-    time_bfs(overswap_rle_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(decracked_bfs,        src.clone(), dst.clone(), start_node);
+    time_bfs(reco_bfs,             src.clone(), dst.clone(), start_node);
+    time_bfs(coco_bfs,             src.clone(), dst.clone(), start_node);
+    time_bfs(underswap_rle_bfs,    src.clone(), dst.clone(), start_node);
+    time_bfs(overswap_rle_bfs,     src.clone(), dst.clone(), start_node);
     println!();
 }
 
@@ -56,6 +58,42 @@ fn benchmark_sparse_bfs(n: i64) {
 fn time_bfs<F>(mut bfs: F, src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) where F: FnMut(Vec<i64>, Vec<i64>, i64) -> Vec<i64> {
     let start = PreciseTime::now();
     let _visited = bfs(src_node, dst_node, start_node);
+    let end = PreciseTime::now();
+    print!(",{}", start.to(end));
+}
+
+// Benchmark for a number BFS runs
+
+pub fn benchmark_sparse_bfs_csv_n_runs(runs: usize, graph_sizes: Vec<i64>) {
+    println!("nodes,edges,density,unoptimised,preclustered,preclusteredRLE,decomposed,recognitive,compactive,underswapRLE,overswapRLE");
+    for n in graph_sizes {
+        benchmark_sparse_bfs_i_runs(runs, n);
+    }
+}
+
+// For a random n node graph, runs bfs i times.
+fn benchmark_sparse_bfs_i_runs(i: usize, n: i64) {
+    let (src, dst) = datagen::randomly_connected_tree(n);
+    let mut start_nodes: Vec<i64> = Vec::new();
+    for _ in 0..i {
+        start_nodes.push(rand::thread_rng().gen_range(1, n));
+    }
+    let e = src.len();
+    print!("{},{},{}", n, e, datagen::graph_density(n, e));
+    time_bfs_n_runs(unoptimised_bfs_n,      i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(preclustered_bfs_n,     i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(preclustered_rle_bfs_n, i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(decracked_bfs_n,        i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(reco_bfs_n,             i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(coco_bfs_n,             i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(underswap_rle_bfs_n,    i, src.clone(), dst.clone(), start_nodes.clone());
+    time_bfs_n_runs(overswap_rle_bfs_n,     i, src.clone(), dst.clone(), start_nodes.clone());
+    println!();
+}
+
+fn time_bfs_n_runs<F>(mut bfs_n: F, n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) where F: FnMut(usize, Vec<i64>, Vec<i64>, Vec<i64>) {
+    let start = PreciseTime::now();
+    let _visited = bfs_n(n, src_node, dst_node, start_nodes);
     let end = PreciseTime::now();
     print!(",{}", start.to(end));
 }
@@ -212,7 +250,8 @@ fn indicise(v: Vec<i64>) -> Vec<i64> {
     v.iter().map(|x|x-1).collect()
 }
 
-fn unoptimised_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+// Naive/Unoptimised
+fn unoptimised_bfs_refs(src_node: &Vec<i64>, dst_node: &Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -231,8 +270,17 @@ fn unoptimised_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> V
     }
     bv_where(visited)
 }
+fn unoptimised_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+    unoptimised_bfs_refs(&src_node, &dst_node, start_node)
+}
+fn unoptimised_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    for i in 0..n {
+        unoptimised_bfs_refs(&src_node, &dst_node, start_nodes[i]);
+    }
+}
 
-fn preclustered_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+// Preclustered
+fn precluster(src_node: Vec<i64>, dst_node: Vec<i64>) -> (Vec<i64>, Vec<i64>) {
     let e = src_node.len();
     let mut src_col = src_node.clone();
     let mut dst_col = dst_node.clone();
@@ -247,6 +295,9 @@ fn preclustered_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
         dst_col[i] = row_store[i].1;
     }
 
+    (src_col, dst_col)
+}
+fn preclustered_bfs_from_ready(src_col: &Vec<i64>, dst_col: &Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -284,8 +335,19 @@ fn preclustered_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
     }
     bv_where(visited)
 }
+fn preclustered_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+    let (src_col, dst_col) = precluster(src_node, dst_node);
+    preclustered_bfs_from_ready(&src_col, &dst_col, start_node)
+}
+fn preclustered_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let (src_col, dst_col) = precluster(src_node, dst_node);
+    for i in 0..n {
+        preclustered_bfs_from_ready(&src_col, &dst_col, start_nodes[i]);
+    }
+}
 
-fn preclustered_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+// Preclustered RLE
+fn precluster_and_rle(src_node: Vec<i64>, dst_node: Vec<i64>) -> Vec<Vec<i64>> {
     let mut encoded_col: Vec<Vec<i64>> = Vec::new();
     let n = src_node.len();
     for i in 0..n {
@@ -302,7 +364,9 @@ fn preclustered_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64)
             encoded_col[src_as_usize].push(dst);
         }
     }
-
+    encoded_col
+}
+fn preclustered_rle_bfs_from_ready(encoded_col: &Vec<Vec<i64>>, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -319,11 +383,23 @@ fn preclustered_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64)
     }
     bv_where(visited)
 }
+fn preclustered_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
+    let encoded_col = precluster_and_rle(src_node, dst_node);
+    preclustered_rle_bfs_from_ready(&encoded_col, start_node)
+}
+fn preclustered_rle_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let encoded_col = precluster_and_rle(src_node, dst_node);
+    for i in 0..n {
+        preclustered_rle_bfs_from_ready(&encoded_col, start_nodes[i]);
+    }
+}
 
 // Decomposed cracking
 fn decracked_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src_node, dst_node, "src");
-
+    decracked_bfs_adjl(&mut adjacency_list, start_node)
+}
+fn decracked_bfs_adjl(adjacency_list: &mut decomposed_cracking::DeCrackedTable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -345,11 +421,19 @@ fn decracked_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec
     }
     bv_where(visited)
 }
+fn decracked_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src_node, dst_node, "src");
+    for i in 0..n {
+        decracked_bfs_adjl(&mut adjacency_list, start_nodes[i]);
+    }
+}
 
 // Recognitive compression
 fn reco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src_node, dst_node, "src");
-
+    reco_bfs_adjl(&mut adjacency_list, start_node)
+}
+fn reco_bfs_adjl(adjacency_list: &mut recognitive_compression::ReCoTable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -370,12 +454,20 @@ fn reco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64>
         }
     }
     bv_where(visited)
+}
+fn reco_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src_node, dst_node, "src");
+    for i in 0..n {
+        reco_bfs_adjl(&mut adjacency_list, start_nodes[i]);
+    }
 }
 
 // Compactive compression
 fn coco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = compactive_compression::from_adjacency_vectors(src_node, dst_node, "src");
-
+    coco_bfs_adjl(&mut adjacency_list, start_node)
+}
+fn coco_bfs_adjl(adjacency_list: &mut compactive_compression::CoCoTable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -397,11 +489,20 @@ fn coco_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64>
     }
     bv_where(visited)
 }
+fn coco_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let mut adjacency_list = compactive_compression::from_adjacency_vectors(src_node, dst_node, "src");
+    for i in 0..n {
+        coco_bfs_adjl(&mut adjacency_list, start_nodes[i]);
+    }
+}
+
 
 // Underswap-RLE compression
 fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
-
+    underswap_rle_bfs_adjl(&mut adjacency_list, start_node)
+}
+fn underswap_rle_bfs_adjl(adjacency_list: &mut underswap_rle_compression::UnderswapRLETable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -423,11 +524,19 @@ fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) ->
     }
     bv_where(visited)
 }
+fn underswap_rle_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
+    for i in 0..n {
+        underswap_rle_bfs_adjl(&mut adjacency_list, start_nodes[i]);
+    }
+}
 
 // Overswap-RLE compression
 fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
     let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
-
+    overswap_rle_bfs_adjl(&mut adjacency_list, start_node)
+}
+fn overswap_rle_bfs_adjl(adjacency_list: &mut overswap_rle_compression::OverswapRLETable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -448,4 +557,10 @@ fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
         }
     }
     bv_where(visited)
+}
+fn overswap_rle_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
+    let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
+    for i in 0..n {
+        overswap_rle_bfs_adjl(&mut adjacency_list, start_nodes[i]);
+    }
 }

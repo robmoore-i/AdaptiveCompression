@@ -23,7 +23,6 @@ fn main() {
 }
 
 fn print_tests() {
-//    let sizes = vec![100, 1000, 2000, 5000, 10000, 20000, 30000];
-//    bfs::benchmark_sparse_bfs_csv(sizes);
-    bfs::bait();
+    let sizes = vec![100, 1000, 2000, 5000, 10000, 20000, 30000];
+    bfs::benchmark_sparse_bfs_csv_n_runs(5, sizes);
 }
