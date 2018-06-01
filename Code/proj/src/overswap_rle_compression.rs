@@ -135,8 +135,6 @@ impl OverswapRLETable {
 
     // Returns the elements of T where the cracker columns's value equals X
     pub fn cracker_select_specific(&mut self, x: i64) -> OverswapRLETable {
-//        println!("Selecting {}", x);
-
         // Init
         if self.crk_col.crk.len() == 0 {
             self.crk_col.crk = self.crk_col.v.clone();
@@ -206,10 +204,6 @@ impl OverswapRLETable {
         // Scan
         let mut p_itr = p_low.clone();
         while p_itr <= p_high {
-
-//            println!("x:{}, L:{}, I:{}, H:{}", x, p_low, p_itr, p_high);
-//            self.print_rl_crk();
-//            println!();
 
             if self.crk_col.crk[p_itr] < x {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
@@ -521,15 +515,11 @@ impl OverswapRLETable {
             }
         }
 
-        if p_low > p_high {
-            println!("x:{}, L:{}, I:{}, H:{}", x, p_low, p_itr, p_high);
-            self.print_rl_crk();
-            panic!();
-        }
-
-//        self.print_rl_crk();
-
         // Memo
+        // Combine the fragment into a run
+        self.crk_col.run_lengths[p_low]  = p_high - p_low + 1;
+        self.crk_col.run_lengths[p_high] = p_high - p_low + 1;
+        // Store in cracker index
         self.crk_col.crk_idx.insert(x, p_low);
         self.crk_col.crk_idx.insert(x + 1, p_high + 1);
         self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter())

@@ -27,7 +27,7 @@ pub fn run() {
 
 // Prints to stdout valid csv lines containing the results of bfs benchmarks..
 pub fn benchmark_sparse_bfs_csv(graph_sizes: Vec<i64>) {
-    println!("nodes,edges,density,unoptimised,preclustered,preclusteredRLE");
+    println!("nodes,edges,density,unoptimised,preclustered,preclusteredRLE,decomposed,recognitive,compactive,underswapRLE,overswapRLE");
     for n in graph_sizes {
         benchmark_sparse_bfs(n);
     }
@@ -44,6 +44,11 @@ fn benchmark_sparse_bfs(n: i64) {
     time_bfs(unoptimised_bfs,      src.clone(), dst.clone(), start_node);
     time_bfs(preclustered_bfs,     src.clone(), dst.clone(), start_node);
     time_bfs(preclustered_rle_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(decracked_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(reco_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(coco_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(underswap_rle_bfs, src.clone(), dst.clone(), start_node);
+    time_bfs(overswap_rle_bfs, src.clone(), dst.clone(), start_node);
     println!();
 }
 
@@ -409,7 +414,6 @@ fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) ->
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            if src == 27 { adjacency_list.dbg_switch = true };
             let selection = adjacency_list.cracker_select_specific(src);
             let neighbours = (*(selection.get_col("dst"))).v.clone();
             for dst in neighbours {
@@ -436,7 +440,6 @@ fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            if src == 27 { adjacency_list.dbg_switch = true };
             let selection = adjacency_list.cracker_select_specific(src);
             let neighbours = (*(selection.get_col("dst"))).v.clone();
             for dst in neighbours {
@@ -444,6 +447,5 @@ fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
             }
         }
     }
-    println!();adjacency_list.print_rl_crk();
     bv_where(visited)
 }
