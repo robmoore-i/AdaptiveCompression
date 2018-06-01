@@ -289,6 +289,10 @@ impl UnderswapRLETable {
         }
 
         // Memo
+        // Combine the fragment into a run
+        self.crk_col.run_lengths[p_low]  = p_high - p_low + 1;
+        self.crk_col.run_lengths[p_high] = p_high - p_low + 1;
+        //Store in cracker index
         self.crk_col.crk_idx.insert(x, p_low);
         self.crk_col.crk_idx.insert(x + 1, p_high + 1);
         self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter())
