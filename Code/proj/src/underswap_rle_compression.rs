@@ -210,11 +210,7 @@ impl UnderswapRLETable {
                     s_rl
                 };
 
-                for i in 0..n_swaps {
-                    self.crk_col.crk.swap(p_itr + i, p_low + i);
-                    self.crk_col.base_idx.swap(p_itr + i, p_low + i);
-                    self.crk_col.run_lengths.swap(p_itr + i, p_low + i);
-                }
+                self.crk_col.swap_range(n_swaps, p_low, p_itr);
 
                 p_low += n_swaps;
 
@@ -266,11 +262,7 @@ impl UnderswapRLETable {
                         rl_high
                 };
 
-                for i in 0..n_swaps {
-                    self.crk_col.crk.swap(p_itr + i, p_high - i);
-                    self.crk_col.base_idx.swap(p_itr + i, p_high - i);
-                    self.crk_col.run_lengths.swap(p_itr + i, p_high - i);
-                }
+                self.crk_col.swap_range(n_swaps, p_itr, p_high - n_swaps + 1);
 
                 p_high -= n_swaps;
 
