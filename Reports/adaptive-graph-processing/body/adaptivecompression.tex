@@ -82,18 +82,24 @@ to the possibility that they are constituents of another run. Due to the fact th
 swapped with more elements than are actually in that run (by padding), we call this "overswapping".
 Overswapping Does not necessarily cause the break-up of runs, however it is more complex.
 
-In this chapter we will detail underswapping and overswapping, along with an evaluation of their
-relative performance and a discussion thereof.
+We now detail underswapping and overswapping, along with an evaluation of their relative performance
+and a discussion thereof.
 
 \subsubsubsection{Underswapping RLE}
 
+Underswapping is the simpler of the two approaches, because it has fewer edge cases to consider. We
+have only to amend the two pieces of the broken longer run before swapping all the values from the
+smaller run across to the equally sized run just created from a piece of the longer run. This method
+wastes the information we have acquired, but is fairly simple to implement.
+
 \subsubsubsection{Overswapping RLE}
 
-When overswapping, the entire of the shorter run we call the main section of the swapped range of
-values. The padding, we call the remainder.
-
-The idea is that we update entries in $run\_lengths$ such that after doing the swap, the runs will
-still be consistent.
+When overswapping, we swap the entire of the longer run, and pad the shorter run to length. The runs
+within the padding must be amended to remain consistent, and if the padding contains partial runs,
+then those runs must be amended outside the padding as well to remain consistent after the swap.
+Additionally, if the padding causes the two swapped runs to overlap, then we don't have to swap all of
+the values - a saving that requires us to also make updates into $run\_lengths$ to preserve
+correctness.
 
 \subsection{To compact or not to compact}
 
