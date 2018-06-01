@@ -21,15 +21,15 @@ accesses required in the execution of an algorithm. We will demonstrate in secti
 
 \subsection{Opportunities}
 
-When applying a run-length encoding to either the $src$ or $dst$ columns, we can gather compression
-information with varying eagerness in the course of a cracking scan. We could reserve a decision on
-compression until we know that an entire column fragment can be compressed, or we can make many small
-compressions in the course of scans of a column, which would require us to store all that
-information.
+When compressing either the $src$ or $dst$ columns, we can gather compression information with
+varying eagerness in the course of a cracking scan. We could reserve a decision on compression until
+we know that an entire column fragment can be compressed, or we can make many small compressions in
+the course of the scan of a column. When we compress only when identifying an entirely homogenous
+column fragment, we call this "per-fragment" compression. When applying compression during the course
+of the a scan of the column, this is "eager" compression. Within the space of possibilities for
+eager compression, we have only explored run-length encoding (RLE) in this project.
 
-Todo: Make some pictures in that program on the macs in labs
-
-\subsubsection{Per-fragment}
+\subsection{Per-fragment}
 
 A per-fragment compression policy would be to compress only when entire column fragments are
 known to be homogenous. After performing a scan, the cracker index is updated with the boundary
@@ -49,7 +49,7 @@ them to use a greater granularity for the compression, or to not compress at all
 Compared to the RLE method, this is very easy to implement. One must simply check the boundaries of
 newly created fragments and determine if any fragments can now be known to be homogenous.
 
-\subsubsection{Run-length encoding}
+\subsection{Run-length encoding (RLE)}
 
 In the most eager case, we build and maintain information about all runs of consecutive nodes in the
 cracker column of the adjacency list. This is done inside an array, $run\_lengths$.
@@ -85,14 +85,14 @@ Overswapping Does not necessarily cause the break-up of runs, however it is more
 We now detail underswapping and overswapping, along with an evaluation of their relative performance
 and a discussion thereof.
 
-\subsubsubsection{Underswapping RLE}
+\subsubsection{Underswapping RLE}
 
 Underswapping is the simpler of the two approaches, because it has fewer edge cases to consider. We
 have only to amend the two pieces of the broken longer run before swapping all the values from the
 smaller run across to the equally sized run just created from a piece of the longer run. This method
 wastes the information we have acquired, but is fairly simple to implement.
 
-\subsubsubsection{Overswapping RLE}
+\subsubsection{Overswapping RLE}
 
 When overswapping, we swap the entire of the longer run, and pad the shorter run to length. The runs
 within the padding must be amended to remain consistent, and if the padding contains partial runs,
@@ -104,11 +104,10 @@ correctness.
 \subsection{To compact or not to compact}
 
 After identifying a homogenous section of the column, we have a choice in how we proceed in
-compressing it. We can simply apply the knowledge that a fragment is uniform, without making any
-structural changes to the data, or we can actually compact the run-length encoded fragment, deleting
-the duplicated elements. We will refer to this different modes as compactive, for when we make the
-decision to compact, and recignitive, for when we make the decision merely to recognise the
-homogenity of the section.
+compressing it. We can simply apply the knowledge that a contigious section is uniform, without 
+making any physical changes to the data, or we can actually compact the uniform section, deleting
+the duplicated elements. We will refer to these different modes as recognitive, for when we make the decision merely to recognise the homogenity of the section, and compactive, for when we make the
+decision to compact.
 
 \subsubsection{Recognitive}
 
@@ -121,11 +120,10 @@ in the cracker index, which we used in order to recognise the opportunity in the
 Otherwise, if we are applying a run-length encoding across the column, we need a separate structure to
 hold the information about each of the runs.
 
-The main advantage of this over compaction is that it avoids the overhead of deleting arbitrary ranges
-from an array, thus avoiding unnecessary memcpy calls. However, this comes at the cost of potential
-locality improvements and any associated exploitation.
+The main advantage of this versus compaction is that it avoids the overhead of deleting arbitrary ranges from an array, thus avoiding unnecessary memcpy calls. However, this comes at the cost of
+potential locality improvements and any associated exploitation.
 
-\subsubsection{Cost of compaction}
+\subsubsection{Compactive}
 
 It is important to note that the columns are implemented as arrays, and as such all reside in
 contigious memory, therefore when a range of contigiuos elements are deleted, the elements after
@@ -135,6 +133,5 @@ and the cost increases with the amount of data that must be copied over.
 It can be said that compaction saves memory, however if it was crucial to save memory, then cracking
 would not be an appropriate technique anyway, so we do not consider it an important benefit.
 
-\subsection{Exploitation}
-
-\label{ss:compressionexploitation}
+Overall this method appears to be more expensive without strong benefits to make it worthwhile in
+using. We have implemented and evaluated it nonetheless to see if our prediction is correct.

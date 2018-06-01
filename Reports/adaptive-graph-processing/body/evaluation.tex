@@ -1,0 +1,38 @@
+\chapter{Evaluation}
+
+\label{ch:evaluation}
+
+\section{Experimental Setup}
+
+\section{Graph Algorithms}
+
+\subsection{Breadth First Search}
+
+Breadth first search, or BFS, when run on a graph, involves choosing a starting node as the sole
+member of a frontier, which then expands in iterations, wherein members of the frontier add their
+out-neighbours which have not yet been visited to the frontier, and remove themselves. This continues
+until all vertices have been visited.
+
+There are numerous optimisations which can be made to BFS to improve performance. Storing visited
+nodes in a bit-vector provides an effective speed-up, for example. More interestingly, it has been
+shown by Beamer et al. that dynamically switching between push and pull iterations can greatly
+improve performance on low-diameter, scale free graphs.
+
+The most important factor for us in considering BFS is that it queries the outgoing edges of each
+node just once, meaning that the performance gains to be made by an adaptive model are not realised
+in the course of a run-through of the algorithm. We use this algorithm to determine what cost there
+is to using our adaptive query system when the first query is run, versus a pre-processing system.
+
+\subsection{Pagerank}
+
+Pagerank is a famous algorithm which stores a rank for each vertex and iteratively updates the values
+across the entire graph. All nodes are initialised with a rank of $\frac{1}{|V|}$. During each
+iteration, each node inherits from all of its in-neighbours a contribution of their pagerank divided
+by their out-degree. This value is then multiplied by a damping factor and then added to a base value
+to give the updated rank. The base value is defined as $\frac{1 - d}{|V|}$.
+
+In pagerank, every iteration considers all of the vertices and edges in the graph, and so over
+an execution of many iterations, any clustering or compression will see further benefits compared to
+BFS.
+
+\section{Results}
