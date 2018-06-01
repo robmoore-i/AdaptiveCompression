@@ -34,6 +34,19 @@ pub struct IntCol {
     pub run_lengths: Vec<usize>,
 }
 
+use std::ptr;
+
+impl IntCol {
+    #[inline]
+    pub fn swap_range(&mut self, l: usize, a: usize, b: usize) {
+        unsafe {
+            ptr::swap_nonoverlapping(&mut self.crk[a], &mut self.crk[b], l);
+            ptr::swap_nonoverlapping(&mut self.base_idx[a], &mut self.base_idx[b], l);
+            ptr::swap_nonoverlapping(&mut self.run_lengths[a], &mut self.run_lengths[b], l);
+        }
+    }
+}
+
 impl Column for IntCol {
     type Item = i64;
 

@@ -72,7 +72,7 @@ impl ReCoTable {
         let mut l_old = None;
         let mut l_new = None;
 
-        #[inline] let check_inserted_column_lengths = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Int columns to be inserted do not have the same length") };
+        let check_inserted_column_lengths = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: Int columns to be inserted do not have the same length") };
 
         for (k, v) in new_values.iter() {
             if self.int_columns.contains_key(&(k.to_string())) {
@@ -180,8 +180,8 @@ impl ReCoTable {
         let adjusted_high = high - !inc_h as i64;
         // c_low(x)  <=> x outside catchment at low  end
         // c_high(x) <=> x outside catchment at high end
-        #[inline] let c_low = |x| x < adjusted_low;
-        #[inline] let c_high = |x| x > adjusted_high;
+        let c_low  = |x| x < adjusted_low;
+        let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the piece: p_low, p_high
         let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);

@@ -119,8 +119,8 @@ impl DeCrackedTable {
         let adjusted_high = high - !inc_h as i64;
         // c_low(x)  <=> x outside catchment at low  end
         // c_high(x) <=> x outside catchment at high end
-        #[inline] let c_low = |x| x < adjusted_low;
-        #[inline] let c_high = |x| x > adjusted_high;
+        let c_low  =  |x| x < adjusted_low;
+        let c_high = |x| x > adjusted_high;
 
         // Start with a pointer at both ends of the array: p_low, p_high
         let mut p_low = self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);

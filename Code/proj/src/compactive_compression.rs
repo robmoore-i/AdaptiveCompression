@@ -73,7 +73,7 @@ impl CoCoTable {
         let mut l_old = None;
         let mut l_new = None;
 
-        #[inline] let check_inserted_column_lengths = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: (i64) Columns to be inserted do not have the same length") };
+        let check_inserted_column_lengths = |v: &Vec<i64>, l: usize| if v.len() != l { panic!("insert: (i64) Columns to be inserted do not have the same length") };
 
         for (k, v) in new_values.iter() {
             if self.int_columns.contains_key(&(k.to_string())) {
@@ -249,8 +249,8 @@ impl CoCoTable {
         let adjusted_high = high - !inc_h as i64;
         // c_low(x)  <=> x outside catchment at low  end
         // c_high(x) <=> x outside catchment at high end
-        #[inline] let c_low = |x| x < adjusted_low;
-        #[inline] let c_high = |x| x > adjusted_high;
+        let c_low = |x| x < adjusted_low;
+        let c_high = |x| x > adjusted_high;
 
         let count = self.crk_col.crk.len();
 

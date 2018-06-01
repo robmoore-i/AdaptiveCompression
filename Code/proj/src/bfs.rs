@@ -98,6 +98,7 @@ fn time_bfs_n_runs<F>(mut bfs_n: F, n: usize, src_node: Vec<i64>, dst_node: Vec<
     print!(",{}", start.to(end));
 }
 
+
 pub fn example_test_bfs_methods() {
     println!("Unoptimised");
     bfs_example_test(unoptimised_bfs);
@@ -147,13 +148,13 @@ pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -
 }
 
 pub fn bait() {
-    let n = 30 as i64;
+    let n = 10000 as i64;
 
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
-    println!("let src = vec!{:?};", src);
-    println!("let dst = vec!{:?};", dst);
-    println!("let start_node = {};", start_node);
+//    println!("let src = vec!{:?};", src);
+//    println!("let dst = vec!{:?};", dst);
+//    println!("let start_node = {};", start_node);
 
     let visited = overswap_rle_bfs(src, dst, start_node);
     let mut failed = false;
@@ -169,8 +170,6 @@ pub fn bait() {
     }
     if failed {
         println!("Failed!");
-    } else {
-        println!("Passed!")
     }
 }
 
