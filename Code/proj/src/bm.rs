@@ -21,9 +21,28 @@ pub mod pagerank;
 
 pub mod load_person_csv;
 
-
+use std::collections::HashMap;
 
 fn main() {
     let people = load_person_csv::small_nodes();
     let (src, dst) = load_person_csv::small_edges_adjl();
+
+    let n = people.len();
+    let initial_rank = (n as f64).recip();
+    let mut vertices: HashMap<i64, (f64, i64)> = HashMap::new();
+    for p in &people {
+        vertices.insert(p.id, (initial_rank, 0));
+    }
+    for v in src {
+        match vertices.get_mut(&v) {
+            Some((rank, out_degree)) => *out_degree += 1,
+            None => {},
+        }
+    }
+
+    for i in 0..10 {
+        let id = people[i].id;
+        let data = vertices.get(&id);
+        println!("{} has data {:?}", id, data);
+    }
 }

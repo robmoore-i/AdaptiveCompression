@@ -42,9 +42,9 @@ struct RawPerson {
 
 #[derive(Debug)]
 pub struct Person {
-    id: i64,
-    first_name: String,
-    last_name: String,
+    pub id: i64,
+    pub first_name: String,
+    pub last_name: String,
 }
 
 fn read_people(file_path: String) -> Result<Vec<Person>, Box<Error>> {
@@ -80,8 +80,8 @@ struct RawFriendship {
 }
 
 pub struct Friendship {
-    p1id: i64,
-    p2id: i64,
+    pub p1id: i64,
+    pub p2id: i64,
 }
 
 fn read_friendships(file_path: String) -> Result<Vec<Friendship>, Box<Error>> {
