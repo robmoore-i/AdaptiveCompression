@@ -10,19 +10,19 @@ use std::fs::File;
 // Nodes @ social_network/person_0_0.csv
 // Edges @ social_network/person_knows_person_0_0.csv
 
-fn social_network_sf1() -> &'static str {
+pub fn social_network_sf1() -> &'static str {
     return "/home/rob/S3G2/ldbc_snb_datagen/social_network_sf1"
 }
 
-fn social_network_sf10() -> &'static str {
+pub fn social_network_sf10() -> &'static str {
     return "/home/rob/S3G2/ldbc_snb_datagen/social_network_sf10"
 }
 
-fn nodes(social_network: &str) -> String {
+pub fn nodes(social_network: &str) -> String {
     return social_network.to_string() + "/person_0_0.csv"
 }
 
-fn edges(social_network: &str) -> String {
+pub fn edges(social_network: &str) -> String {
     return social_network.to_string() + "/person_knows_person_0_0.csv"
 }
 
@@ -69,6 +69,14 @@ pub fn read_nodes(file_path: String) -> Vec<Person> {
     }
 }
 
+pub fn small_nodes() -> Vec<Person> {
+    read_nodes(nodes(social_network_sf1()))
+}
+
+pub fn big_nodes() -> Vec<Person> {
+    read_nodes(nodes(social_network_sf10()))
+}
+
 // EDGES/FRIENDSHIPS
 
 #[derive(Debug,Deserialize)]
@@ -108,10 +116,18 @@ pub fn read_edges(file_path: String) -> Vec<Friendship> {
     }
 }
 
+pub fn small_edges() -> Vec<Friendship> {
+    read_edges(edges(social_network_sf1()))
+}
+
+pub fn big_edges() -> Vec<Friendship> {
+    read_edges(edges(social_network_sf10()))
+}
+
 pub fn test() {
-    let people = read_nodes(nodes(social_network_sf1()));
+    let people = small_nodes();
     println!("Successfully read {} people", people.len());
 
-    let friendships = read_edges(edges(social_network_sf1()));
+    let friendships = small_edges();
     println!("Successfully read {} friendships", friendships.len());
 }
