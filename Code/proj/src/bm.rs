@@ -24,5 +24,6 @@ pub mod load_person_csv;
 
 
 fn main() {
-    load_person_csv::test();
+    let people = load_person_csv::small_nodes();
+    let (src, dst) = load_person_csv::small_edges_adjl();
 }

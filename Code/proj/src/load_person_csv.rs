@@ -175,6 +175,4 @@ pub fn test() {
     }
     println!("...");
     println!("Successfully read {} friendships", src.len());
-
-
 }
