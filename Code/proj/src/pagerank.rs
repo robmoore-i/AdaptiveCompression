@@ -1,5 +1,6 @@
 use utils;
 
+use decomposed_cracking;
 use recognitive_compression;
 use compactive_compression;
 use underswap_rle_compression;
@@ -248,7 +249,7 @@ fn preclustered_rle_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut V
 
 // Decomposed cracking
 fn decracked_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: f64, epsilon: f64, max_iterations: i64) -> Vec<f64> {
-    let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src_node, dst_node, "dst");
+    let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src_node, dst_node, "dst");
 
     let n = prs.len();
     let m = (1.0 - d) / (n as f64);
@@ -264,7 +265,7 @@ fn decracked_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src".to_string()).unwrap().v.iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }

@@ -137,39 +137,39 @@ pub fn read_edges_adjl(file_path: String) -> (Vec<i64>, Vec<i64>) {
 
 // Data Access
 
-pub fn small_nodes() -> Vec<Person> {
+pub fn sf1_nodes() -> Vec<Person> {
     read_nodes(nodes(social_network_sf1()))
 }
 
-pub fn small_edges() -> Vec<Friendship> {
+pub fn sf1_edges() -> Vec<Friendship> {
     read_edges(edges(social_network_sf1()))
 }
 
-pub fn small_edges_adjl() -> (Vec<i64>, Vec<i64>) {
+pub fn sf1_edges_adjl() -> (Vec<i64>, Vec<i64>) {
     read_edges_adjl(edges(social_network_sf1()))
 }
 
-pub fn big_nodes() -> Vec<Person> {
+pub fn sf10_nodes() -> Vec<Person> {
     read_nodes(nodes(social_network_sf10()))
 }
 
-pub fn big_edges() -> Vec<Friendship> {
+pub fn sf10_edges() -> Vec<Friendship> {
     read_edges(edges(social_network_sf10()))
 }
 
-pub fn big_edges_adjl() -> (Vec<i64>, Vec<i64>) {
+pub fn sf10_edges_adjl() -> (Vec<i64>, Vec<i64>) {
     read_edges_adjl(edges(social_network_sf10()))
 }
 
 pub fn test() {
-    let people = small_nodes();
+    let people = sf1_nodes();
     for i in 0..10 {
         println!("{:?}", people[i]);
     }
     println!("...");
     println!("Successfully read {} people", people.len());
 
-    let (src, dst) = small_edges_adjl();
+    let (src, dst) = sf1_edges_adjl();
     for i in 0..10 {
         println!("{} -> {}", src[i], dst[i]);
     }
