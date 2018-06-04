@@ -28,7 +28,7 @@ pub fn edges(social_network: &str) -> String {
 
 // NODES/PEOPLE
 
-#[derive(Debug,Deserialize)]
+#[derive(Deserialize)]
 struct RawPerson {
     id: i64,
     firstName: String,
@@ -40,6 +40,7 @@ struct RawPerson {
     browserUsed: String,
 }
 
+#[derive(Debug)]
 pub struct Person {
     id: i64,
     first_name: String,
@@ -67,14 +68,6 @@ pub fn read_nodes(file_path: String) -> Vec<Person> {
         Ok(people) => people,
         Err(err)   => panic!(),
     }
-}
-
-pub fn small_nodes() -> Vec<Person> {
-    read_nodes(nodes(social_network_sf1()))
-}
-
-pub fn big_nodes() -> Vec<Person> {
-    read_nodes(nodes(social_network_sf10()))
 }
 
 // EDGES/FRIENDSHIPS
@@ -109,6 +102,25 @@ fn read_friendships(file_path: String) -> Result<Vec<Friendship>, Box<Error>> {
     Ok(friendships)
 }
 
+fn read_friendships_adjl(file_path: String) -> Result<(Vec<i64>, Vec<i64>), Box<Error>> {
+    let file = File::open(file_path)?;
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(b'|')
+        .comment(Some(b'P')) // Ignore the header line because it has Person.id|Person.id which confuses this library.
+        .from_reader(file);
+    let mut src: Vec<i64> = Vec::new();
+    let mut dst: Vec<i64> = Vec::new();
+    for result in rdr.deserialize() {
+        // Notice that we need to provide a type hint for automatic
+        // deserialization.
+        let raw_friendship: RawFriendship = result?;
+        src.push(raw_friendship.p1id);
+        dst.push(raw_friendship.p2id);
+    }
+    Ok((src, dst))
+}
+
 pub fn read_edges(file_path: String) -> Vec<Friendship> {
     match read_friendships(file_path) {
         Ok(friendships) => friendships,
@@ -116,18 +128,53 @@ pub fn read_edges(file_path: String) -> Vec<Friendship> {
     }
 }
 
+pub fn read_edges_adjl(file_path: String) -> (Vec<i64>, Vec<i64>) {
+    match read_friendships_adjl(file_path) {
+        Ok((src, dst)) => (src, dst),
+        Err(err)        => panic!(),
+    }
+}
+
+// Data Access
+
+pub fn small_nodes() -> Vec<Person> {
+    read_nodes(nodes(social_network_sf1()))
+}
+
 pub fn small_edges() -> Vec<Friendship> {
     read_edges(edges(social_network_sf1()))
+}
+
+pub fn small_edges_adjl() -> (Vec<i64>, Vec<i64>) {
+    read_edges_adjl(edges(social_network_sf1()))
+}
+
+pub fn big_nodes() -> Vec<Person> {
+    read_nodes(nodes(social_network_sf10()))
 }
 
 pub fn big_edges() -> Vec<Friendship> {
     read_edges(edges(social_network_sf10()))
 }
 
+pub fn big_edges_adjl() -> (Vec<i64>, Vec<i64>) {
+    read_edges_adjl(edges(social_network_sf10()))
+}
+
 pub fn test() {
     let people = small_nodes();
+    for i in 0..10 {
+        println!("{:?}", people[i]);
+    }
+    println!("...");
     println!("Successfully read {} people", people.len());
 
-    let friendships = small_edges();
-    println!("Successfully read {} friendships", friendships.len());
+    let (src, dst) = small_edges_adjl();
+    for i in 0..10 {
+        println!("{} -> {}", src[i], dst[i]);
+    }
+    println!("...");
+    println!("Successfully read {} friendships", src.len());
+
+
 }
