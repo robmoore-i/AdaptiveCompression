@@ -1,6 +1,9 @@
 extern crate time;
 extern crate rand;
 extern crate bit_vec;
+extern crate csv;
+#[macro_use]
+extern crate serde_derive;
 
 pub mod utils;
 
@@ -19,6 +22,5 @@ pub mod pagerank;
 pub mod load_person_csv;
 
 fn main() {
-    let sizes = vec![100, 500, 1000, 2000, 3000, 4000, 5000, 10000, 15000, 20000, 25000, 30000];
-    bfs::benchmark_sparse_bfs_csv_n_runs(5, sizes);
+    load_person_csv::test();
 }

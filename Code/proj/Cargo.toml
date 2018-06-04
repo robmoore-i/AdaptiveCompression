@@ -7,6 +7,9 @@ authors = ["Rob <robmoore121@gmail.com>"]
 rand = "0.3"
 time = "*"
 bit-vec = "0.4.4"
+csv = "1"
+serde = "1.0"
+serde_derive = "1.0"
 
 [lib]
 name = "lib"
