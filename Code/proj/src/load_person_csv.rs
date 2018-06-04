@@ -26,10 +26,7 @@ fn edges(social_network: &str) -> String {
     return social_network.to_string() + "/person_knows_person_0_0.csv"
 }
 
-pub fn print_sf10_dirs() {
-    println!("nodes @ {}", nodes(social_network_sf1()).to_string());
-    println!("edges @ {}", edges(social_network_sf1()).to_string());
-}
+// NODES/PEOPLE
 
 #[derive(Debug,Deserialize)]
 struct RawPerson {
@@ -43,7 +40,7 @@ struct RawPerson {
     browserUsed: String,
 }
 
-struct Person {
+pub struct Person {
     id: i64,
     first_name: String,
     last_name: String,
@@ -65,12 +62,56 @@ fn read_people(file_path: String) -> Result<Vec<Person>, Box<Error>> {
     Ok(people)
 }
 
+pub fn read_nodes(file_path: String) -> Vec<Person> {
+    match read_people(file_path) {
+        Ok(people) => people,
+        Err(err)   => panic!(),
+    }
+}
+
+// EDGES/FRIENDSHIPS
+
+#[derive(Debug,Deserialize)]
+struct RawFriendship {
+    p1id: i64,
+    p2id: i64,
+    creationDate: String,
+}
+
+pub struct Friendship {
+    p1id: i64,
+    p2id: i64,
+}
+
+fn read_friendships(file_path: String) -> Result<Vec<Friendship>, Box<Error>> {
+    let file = File::open(file_path)?;
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(b'|')
+        .comment(Some(b'P')) // Ignore the header line because it has Person.id|Person.id which confuses this library.
+        .from_reader(file);
+    let mut friendships: Vec<Friendship> = Vec::new();
+    for result in rdr.deserialize() {
+        // Notice that we need to provide a type hint for automatic
+        // deserialization.
+        let raw_friendship: RawFriendship = result?;
+        let friendship = Friendship { p1id: raw_friendship.p1id, p2id: raw_friendship.p2id };
+        friendships.push(friendship);
+    }
+    Ok(friendships)
+}
+
+pub fn read_edges(file_path: String) -> Vec<Friendship> {
+    match read_friendships(file_path) {
+        Ok(friendships) => friendships,
+        Err(err)        => panic!(),
+    }
+}
+
 pub fn test() {
-    let file_path = nodes(social_network_sf1());
-    let read_result = read_people(file_path);
-    let people = match read_result {
-        Ok(records) => records,
-        Err(err)    => panic!(),
-    };
+    let people = read_nodes(nodes(social_network_sf1()));
     println!("Successfully read {} people", people.len());
+
+    let friendships = read_edges(edges(social_network_sf1()));
+    println!("Successfully read {} friendships", friendships.len());
 }
