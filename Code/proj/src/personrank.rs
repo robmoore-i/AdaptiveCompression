@@ -7,6 +7,7 @@ use overswap_rle_compression;
 use load_person_csv;
 
 use std::collections::HashMap;
+use time::PreciseTime;
 
 fn get_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
     let mut out_degree: HashMap<i64, i64> = HashMap::new();
@@ -23,6 +24,7 @@ fn get_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
 }
 
 pub fn sf1_decracked_personrank() {
+    let start = PreciseTime::now();
     let people     = load_person_csv::sf1_nodes();
     let (src, dst) = load_person_csv::sf1_edges_adjl();
     let vertices   = people.iter().map(|p|p.id).collect();
@@ -30,13 +32,9 @@ pub fn sf1_decracked_personrank() {
     let n = people.len();
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
     let d = 0.85;
-
+    let end = PreciseTime::now();
+    println!("setup time = {:?}", (start.to(end)).to_string());
     let personranks = decracked_personrank(&mut adjacency_list, &vertices, &out_degree, n, d, 10);
-
-    println!("id,rank");
-    for v in vertices {
-        println!("{},{}", v, personranks[&v]);
-    }
 }
 
 fn decracked_personrank(adjacency_list: &mut decomposed_cracking::DeCrackedTable, vertices: &Vec<i64>, out_degree: &HashMap<i64, i64>, n: usize, d: f64, max_iterations: i64) -> HashMap<i64, f64> {

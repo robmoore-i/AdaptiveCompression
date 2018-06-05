@@ -10,20 +10,34 @@ use std::fs::File;
 // Nodes @ social_network/person_0_0.csv
 // Edges @ social_network/person_knows_person_0_0.csv
 
-pub fn social_network_sf1() -> &'static str {
-    return "/home/rob/S3G2/ldbc_snb_datagen/social_network_sf1"
+// SET THIS WHEN DOING EXPERIMENTS
+pub fn cur_data_home() -> &'static str {
+    uni_data_home()
 }
 
-pub fn social_network_sf10() -> &'static str {
-    return "/home/rob/S3G2/ldbc_snb_datagen/social_network_sf10"
+pub fn uni_data_home() -> &'static str {
+    "/homes/rrm115/Data"
 }
 
-pub fn nodes(social_network: &str) -> String {
-    return social_network.to_string() + "/person_0_0.csv"
+pub fn home_data_home() -> &'static str {
+    "/home/rob/S3G2/ldbc_snb_datagen"
 }
 
-pub fn edges(social_network: &str) -> String {
-    return social_network.to_string() + "/person_knows_person_0_0.csv"
+pub fn social_network_sf1() -> String {
+    cur_data_home().to_string() + "/social_network_sf1"
+}
+
+pub fn social_network_sf10() -> String {
+    cur_data_home().to_string() + "/social_network_sf10"
+}
+
+
+pub fn nodes(social_network: String) -> String {
+    social_network + "/person_0_0.csv"
+}
+
+pub fn edges(social_network: String) -> String {
+    social_network + "/person_knows_person_0_0.csv"
 }
 
 // NODES/PEOPLE
