@@ -9,7 +9,7 @@ use load_person_csv;
 use std::collections::HashMap;
 use time::PreciseTime;
 
-fn get_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
+fn get_out_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
     let mut out_degree: HashMap<i64, i64> = HashMap::new();
     for v in vertices {
         out_degree.insert(*v, 0);
@@ -27,10 +27,10 @@ pub fn sf1_decracked_personrank() {
     // Setup
 
     let start = PreciseTime::now();
-    let people= load_person_csv::sf10_nodes();
-    let (src, dst) = load_person_csv::sf10_edges_adjl();
+    let people= load_person_csv::sf1_nodes();
+    let (src, dst) = load_person_csv::sf1_edges_adjl();
     let vertices= people.iter().map(|p|p.id).collect();
-    let out_degree = get_degree(&vertices, &src);
+    let out_degree = get_out_degree(&vertices, &src);
     let n = people.len();
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
     let d = 0.85;
