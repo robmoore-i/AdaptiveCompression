@@ -24,34 +24,37 @@ fn get_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
 }
 
 pub fn sf1_decracked_personrank() {
+    // Setup
+
     let start = PreciseTime::now();
-    let people     = load_person_csv::sf1_nodes();
-    let (src, dst) = load_person_csv::sf1_edges_adjl();
-    let vertices   = people.iter().map(|p|p.id).collect();
+    let people= load_person_csv::sf10_nodes();
+    let (src, dst) = load_person_csv::sf10_edges_adjl();
+    let vertices= people.iter().map(|p|p.id).collect();
     let out_degree = get_degree(&vertices, &src);
     let n = people.len();
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
     let d = 0.85;
+    let max_iterations = 10;
     let end = PreciseTime::now();
-    println!("setup time = {:?}", (start.to(end)).to_string());
-    let personranks = decracked_personrank(&mut adjacency_list, &vertices, &out_degree, n, d, 10);
-}
 
-fn decracked_personrank(adjacency_list: &mut decomposed_cracking::DeCrackedTable, vertices: &Vec<i64>, out_degree: &HashMap<i64, i64>, n: usize, d: f64, max_iterations: i64) -> HashMap<i64, f64> {
+    println!("setup time = {:?}", (start.to(end)).to_string());
+
+    // Personrank
+
     let m = (1.0 - d) / ((n as i64) as f64);
 
     let mut rank: HashMap<i64, f64> = HashMap::new();
     let mut new_rank: HashMap<i64, f64> = HashMap::new();
 
     let initial_rank = (n as f64).recip();
-    for v in vertices {
+    for v in &vertices {
         rank.insert(*v, initial_rank);
         new_rank.insert(*v, initial_rank);
     }
 
     let mut iterations = 0;
     loop {
-        for v in vertices {
+        for v in &vertices {
             let mut inherited_rank = 0.0;
 
             for w in adjacency_list.cracker_select_specific(*v).get_col("src".to_string()).unwrap().v.iter() {
@@ -68,5 +71,4 @@ fn decracked_personrank(adjacency_list: &mut decomposed_cracking::DeCrackedTable
             break;
         }
     }
-    new_rank
 }
