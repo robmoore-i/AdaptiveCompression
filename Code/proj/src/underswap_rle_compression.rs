@@ -8,6 +8,7 @@ use column::IntCol;
 use cracker_index::AVLCrackerIndex;
 use std::collections::HashMap;
 use std::slice::Iter;
+use lib::cracker_index::max;
 
 #[derive(Clone)]
 pub struct UnderswapRLETable {
@@ -39,6 +40,19 @@ impl UnderswapRLETable {
     pub fn print_rl_crk(&self) {
         println!("crk: {:?}", self.crk_col.crk);
         println!("rls: {:?}", self.crk_col.run_lengths);
+    }
+
+    pub fn print_rl_crk_range(&self, lower: usize, upper: usize) {
+        print!("crk: [{}", self.crk_col.crk[lower]);
+        for i in (lower + 1)..upper {
+            print!(", {}", self.crk_col.crk[i])
+        }
+        print!("]\n");
+        print!("rls: [{}", self.crk_col.run_lengths[lower]);
+        for i in (lower + 1)..upper {
+            print!(", {}", self.crk_col.run_lengths[i])
+        }
+        print!("]\n");
     }
 
     pub fn print_crk(&self) {
@@ -286,6 +300,11 @@ impl UnderswapRLETable {
             } else {
                 p_itr += self.crk_col.run_lengths[p_itr];
             }
+        }
+
+        // If nothing is selected, then return nothing
+        if p_high < p_low {
+            return self.get_indices(self.crk_col.base_idx[0..0].iter())
         }
 
         // Memo

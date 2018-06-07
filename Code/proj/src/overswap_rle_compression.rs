@@ -459,6 +459,11 @@ impl OverswapRLETable {
             }
         }
 
+        // If nothing is selected, then return nothing
+        if p_high < p_low {
+            return self.get_indices(self.crk_col.base_idx[0..0].iter())
+        }
+
         // Memo
         // Combine the fragment into a run
         self.crk_col.run_lengths[p_low]  = p_high - p_low + 1;
