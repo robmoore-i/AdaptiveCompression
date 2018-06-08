@@ -82,18 +82,19 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Vec<i64>, Vec<i64>, 
 
 pub fn bait() {
     let n: usize = 20;
+    let d: f64 = 5.0;
 
-    let (src, dst) = datagen::randomly_connected_graph(n as i64, 5.0);
-//    println!("let src = vec!{:?};", src);
-//    println!("let dst = vec!{:?};", dst);
+    let (src, dst) = datagen::randomly_connected_graph(n as i64, d);
+    println!("let src = vec!{:?};", src);
+    println!("let dst = vec!{:?};", dst);
 
-    let true_prs = unoptimised_pagerank(src.clone(), dst.clone(), &mut initialise_pageranks(n), 0.85, 0.005, 20);
-    let test_prs =        coco_pagerank(src, dst, &mut initialise_pageranks(n), 0.85, 0.005, 20);
+    let true_prs = unoptimised_pagerank(src.clone(), dst.clone(), &mut initialise_pageranks(n), 0.85, 0.05, 20);
+    let test_prs =        coco_pagerank(src.clone(), dst.clone(), &mut initialise_pageranks(n), 0.85, 0.05, 20);
 
     let mut failed = false;
 
     for i in 0..n {
-        if (true_prs[i] - test_prs[i]).abs() > 0.005 {
+        if (true_prs[i] - test_prs[i]).abs() > 0.05 {
             println!("Expected pr[{}] = {}, actually got {}", i, true_prs[i], test_prs[i]);
             failed = true;
         }
@@ -370,7 +371,7 @@ fn coco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: 
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }

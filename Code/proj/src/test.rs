@@ -8,23 +8,23 @@ use cracker_index::AVLCrackerIndex;
 
 #[test]
 fn single_column_table_initialised_empty() {
-    let table = overswap_rle_compression::OverswapRLETable::new();
+    let table = compactive_compression::CoCoTable::new();
     assert_eq!(table.count, 0);
 
 }
 
 #[test]
 fn cracker_column_initialised_empty() {
-    let table = overswap_rle_compression::OverswapRLETable::new();
+    let table = compactive_compression::CoCoTable::new();
     assert_eq!(table.crk_col.crk.len(), 0);
 }
 
 #[test]
 fn can_create_table_with_three_columns() {
-    let mut table = overswap_rle_compression::OverswapRLETable::new();
+    let mut table = compactive_compression::CoCoTable::new();
     table.new_columns(vec!["a", "b", "c"]);
     let mut keys = Vec::new();
-    for key in table.columns.keys() {
+    for key in table.int_columns.keys() {
         keys.push(key);
     }
     assert!(keys.contains(&&"a".to_string()));
@@ -35,7 +35,7 @@ fn can_create_table_with_three_columns() {
 #[test]
 #[should_panic]
 fn can_insert_into_multi_column_table() {
-    let mut table = overswap_rle_compression::OverswapRLETable::new();
+    let mut table = compactive_compression::CoCoTable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{"a" => vec![1, 2, 3], "b" => vec![4, 5, 6]});
     assert_eq!(table.get_col("a").v, vec![1, 2, 3]);
@@ -43,8 +43,8 @@ fn can_insert_into_multi_column_table() {
     table.get_col("c");
 }
 
-fn two_col_test_table() -> overswap_rle_compression::OverswapRLETable {
-    let mut table = overswap_rle_compression::OverswapRLETable::new();
+fn two_col_test_table() -> compactive_compression::CoCoTable {
+    let mut table = compactive_compression::CoCoTable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{
             "a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6],
@@ -53,18 +53,10 @@ fn two_col_test_table() -> overswap_rle_compression::OverswapRLETable {
     table
 }
 
-fn assert_base_column_equals(t: overswap_rle_compression::OverswapRLETable, column_name: &str, expected: Vec<i64>) {
+fn assert_base_column_equals(t: compactive_compression::CoCoTable, column_name: &str, expected: Vec<i64>) {
     match t.get_col(column_name) {
         ref col => assert_eq!(col.v, expected),
     }
-}
-
-#[test]
-fn can_index_into_multi_column_table() {
-    let table = two_col_test_table();
-    let selection = table.get_indices(vec![0, 1, 5, 8, 10, 11].iter());
-    assert_base_column_equals(selection.clone(), "a", vec![13, 16, 12, 19, 14, 11]);
-    assert_base_column_equals(selection.clone(), "b", vec![1, 1, 1, 1, 1, 1]);
 }
 
 #[test]
@@ -83,8 +75,8 @@ fn can_rearrange_tuples() {
     assert_base_column_equals(table.clone(), "b", vec![0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
 }
 
-fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> overswap_rle_compression::OverswapRLETable {
-    let mut adjacency_list = overswap_rle_compression::OverswapRLETable::new();
+fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> compactive_compression::CoCoTable {
+    let mut adjacency_list = compactive_compression::CoCoTable::new();
     adjacency_list.new_columns(vec!["src", "dst"]);
     adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
     adjacency_list.set_crk_col("src");
@@ -100,7 +92,7 @@ fn can_crack_in_three_for_single_value() {
     assert_base_column_equals(selection.clone(), "src", vec![3, 3, 3, 3]);
     assert_base_column_equals(selection.clone(), "dst", vec![2, 1, 4, 5]);
     assert_eq!(selection.count, 4);
-    assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 3, 3, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![2, 2, 1, 1, 2, 1, 1, 2, 3, 5, 4, 4, 4, 4, 5, 5, 5]);
 }
 
 #[test]
@@ -129,7 +121,7 @@ fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
 
     let selection_1 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_1.clone(), "dst", vec![1, 2, 1, 2, 1]);
+    assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
 
     let selection_2 = adjacency_list.cracker_select_specific(2);
     assert_base_column_equals(selection_2.clone(), "src", vec![2]);
@@ -143,7 +135,7 @@ fn can_exploit_cracker_index_for_selecting_single_value_medium_table() {
     assert_base_column_equals(selection_4.clone(), "src", vec![3, 3, 3]);
     assert_base_column_equals(selection_4.clone(), "dst", vec![4, 5, 5]);
     // After the BFS the cracker column should be fully clustered
-    assert_eq!(adjacency_list.crk_col.crk, vec![1, 1, 1, 2, 3, 3, 3, 5, 5, 5, 5, 5]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 5]);
 }
 
 #[test]
@@ -167,7 +159,7 @@ fn can_exploit_cracker_index_for_selecting_single_value_small_table() {
     assert_base_column_equals(selection_4.clone(), "src", vec![]);
     assert_base_column_equals(selection_4.clone(), "dst", vec![]);
     // After the BFS the cracker column should be fully clustered
-    assert_eq!(adjacency_list.crk_col.crk, vec![2, 3, 4, 4, 4, 4]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![2, 3, 4]);
 }
 
 #[test]
@@ -178,11 +170,11 @@ fn repeat_queries_return_same_results() {
 
     let selection_1 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_1.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_1.clone(), "dst", vec![1, 2, 1, 2, 1]);
+    assert_base_column_equals(selection_1.clone(), "dst", vec![2, 1, 1, 2, 1]);
 
     let selection_2 = adjacency_list.cracker_select_specific(5);
     assert_base_column_equals(selection_2.clone(), "src", vec![5, 5, 5, 5, 5]);
-    assert_base_column_equals(selection_2.clone(), "dst", vec![1, 2, 1, 2, 1]);
+    assert_base_column_equals(selection_2.clone(), "dst", vec![2, 1, 1, 2, 1]);
 }
 
 #[test]
@@ -192,7 +184,7 @@ fn can_do_pagerank_iteration() {
     let m = 0.01363636; // = (1 - d) / n
 
     // Edge data
-    let mut table = overswap_rle_compression::OverswapRLETable::new();
+    let mut table = compactive_compression::CoCoTable::new();
     table.new_columns(vec!["src", "dst"]);
     table.insert(&mut map!{"src" => vec![7, 4, 2, 3, 5, 9, 6, 5, 11, 4, 10, 8, 5, 6, 8, 7, 9],
                            "dst" => vec![2, 2, 3, 2, 4, 5, 5, 6, 5,  1, 5,  5, 2, 2, 2, 5, 2]});
@@ -262,12 +254,12 @@ fn can_recognize_crk_idx_single_value_below_lower_bound() {
     let selection = adjacency_list.cracker_select_specific(3);
     assert_base_column_equals(selection.clone(), "src", vec![3, 3]);
     assert_base_column_equals(selection.clone(), "dst", vec![4, 1]);
-    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 4, 4, 4, 4]);
 
     let selection = adjacency_list.cracker_select_specific(0);
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
-    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 4, 4, 4, 4]);
 }
 
 #[test]
@@ -276,12 +268,12 @@ fn can_recognize_crk_idx_single_value_above_upper_bound() {
     let selection = adjacency_list.cracker_select_specific(4);
     assert_base_column_equals(selection.clone(), "src", vec![4, 4, 4, 4]);
     assert_base_column_equals(selection.clone(), "dst", vec![4, 2, 3, 5]);
-    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4]);
 
     let selection = adjacency_list.cracker_select_specific(10);
     assert_base_column_equals(selection.clone(), "src", vec![]);
     assert_base_column_equals(selection.clone(), "dst", vec![]);
-    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4, 4, 4, 4]);
+    assert_eq!(adjacency_list.crk_col.crk, vec![1, 2, 3, 3, 4]);
 }
 
 #[test]

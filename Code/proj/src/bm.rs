@@ -24,8 +24,7 @@ pub mod load_person_csv;
 pub mod personrank;
 
 fn main() {
-    let (src, dst) = datagen::randomly_connected_graph(10, 3.0);
-    prep_graphviz(src, dst);
+    check_s3g2_pr();
 }
 
 fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
@@ -45,11 +44,7 @@ fn check_s3g2_pr() {
 
     for (k, v) in &decracked_ranks {
         assert!((*v - reco_ranks[k]).abs() < 0.0005);
-        if (*v - coco_ranks[k]).abs() < 0.0005 {
-            println!("error:");
-            println!("expected:{}", *v);
-            println!("actual:  {}", coco_ranks[k]);
-        }
+        assert!((*v - coco_ranks[k]).abs() < 0.0005);
         assert!((*v - underswap_ranks[k]).abs() < 0.0005);
         assert!((*v - overswap_ranks[k]).abs() < 0.0005);
     }

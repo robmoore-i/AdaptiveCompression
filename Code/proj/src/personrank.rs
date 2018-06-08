@@ -175,7 +175,7 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_i64_col("src").v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v).get_col("src").v.iter() {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 

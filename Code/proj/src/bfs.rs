@@ -480,7 +480,7 @@ fn coco_bfs_adjl(adjacency_list: &mut compactive_compression::CoCoTable, start_n
         // and add them to a new, empty frontier.
         for src in prev_frontier {
             let selection = adjacency_list.cracker_select_specific(src);
-            for dst in &(*(selection.get_i64_col("dst"))).v {
+            for dst in &(*(selection.get_col("dst"))).v {
                 discover(*dst, &mut visited, &mut frontier);
             }
         }

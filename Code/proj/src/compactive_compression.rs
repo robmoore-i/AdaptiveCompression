@@ -132,7 +132,7 @@ impl CoCoTable {
         self.crk_col.rearrange(indices.clone());
     }
 
-    pub fn get_i64_col(&self, col: &str) -> &IntCol {
+    pub fn get_col(&self, col: &str) -> &IntCol {
         self.int_columns.get(&(col.to_string())).expect(&*("get_col: No column called ".to_string() + col))
     }
 
@@ -224,13 +224,8 @@ impl CoCoTable {
         t
     }
 
-    // Returns the elements of T where the cracker columns's value equals X
-    pub fn cracker_select_specific(&mut self, x: i64) -> CoCoTable {
-        self.cracker_select_in_three(x, x, true, true)
-    }
-
     // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
-    pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> CoCoTable {
+    pub fn cracker_select_specific(&mut self, x: i64) -> CoCoTable {
 
         // PHASE 0: Setup
 
@@ -245,19 +240,17 @@ impl CoCoTable {
             self.crk_col.ofs = (0..self.count).collect();
         }
 
-        let adjusted_low = low + !inc_l as i64;
-        let adjusted_high = high - !inc_h as i64;
         // c_low(x)  <=> x outside catchment at low  end
         // c_high(x) <=> x outside catchment at high end
-        let c_low = |x| x < adjusted_low;
-        let c_high = |x| x > adjusted_high;
+        let c_low = |n| n < x;
+        let c_high = |n| n > x;
 
         let count = self.crk_col.crk.len();
 
         // Start with a pointer at both ends of the array: p_low, p_high
 
-        let mut p_low = self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
-        let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or((count - 1) as usize);
+        let mut p_low = self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
+        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or((count - 1) as usize);
         if p_high >= count { p_high = count - 1; }
         if p_low >= count { p_low = count - 1; }
 
@@ -273,10 +266,10 @@ impl CoCoTable {
 
         // while p_high is pointing at an element satisfying c_high, move it backwards
         while c_high(self.crk_col.crk[p_high]) {
-            p_high -= 1;
-            if p_high == 0 && c_high(self.crk_col.crk[p_high]) {
+            if p_high == 0 {
                 return self.get_indices(vec![].iter(), 0..0);
             }
+            p_high -= 1;
         }
 
         // If the vertex is compressed/contains a single entry, return that.
@@ -315,23 +308,21 @@ impl CoCoTable {
             }
         }
 
+
         // PHASE 3: Compression
 
-        let high_v = high + inc_h as i64;
-        if !(high_v > self.crk_col.crk.len() as i64) {
-            self.crk_col.crk_idx.insert(high_v, p_itr);
-            self.compact(high_v, p_itr);
+        if p_itr <= self.crk_col.crk.len() {
+            self.crk_col.crk_idx.insert(x + 1, p_itr);
+            self.compact(x + 1, p_itr);
         }
 
-        let low_v = adjusted_low;
-        self.crk_col.crk_idx.insert(low_v, p_low);
-        self.compact(low_v, p_low);
+        self.crk_col.crk_idx.insert(x, p_low);
+        self.compact(x, p_low);
 
         // PHASE 4: Decompression
 
-        if adjusted_low == adjusted_high && p_low <= p_high {
-            let index_of_x = self.crk_col.crk_idx.get(adjusted_low).unwrap();
-            self.decompress_index(index_of_x)
+        if p_low <= p_high {
+            self.decompress_index(p_low)
         } else {
             let compressed_high_ptr = if p_itr >= count { p_itr } else { self.crk_col.ofs[p_itr] };
             self.get_indices(self.crk_col.base_idx[self.crk_col.ofs[p_low]..compressed_high_ptr].iter(), p_low..p_itr)
@@ -340,7 +331,7 @@ impl CoCoTable {
 
     // Counts the places where a given column equals a given value
     pub fn count_col_eq(&self, col: &str, eq: i64) -> i64 {
-        self.get_i64_col(col).v.iter().map(|&x|(x==eq)as i64).fold(0,|sum,x|sum+x) as i64
+        self.get_col(col).v.iter().map(|&x|(x==eq)as i64).fold(0, |sum, x|sum+x) as i64
     }
 }
 
