@@ -43,9 +43,8 @@ pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
     let (n, d, max_iterations) = (people.len(), 0.85, 10);
 
-    let end = PreciseTime::now();
-
-    println!("setup time = {:?}", (start.to(end)).to_string());
+    let setup_end = PreciseTime::now();
+    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -79,6 +78,10 @@ pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
             break;
         }
     }
+
+    let alg_end = PreciseTime::now();
+    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+
     new_rank
 }
 
@@ -98,9 +101,8 @@ pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
     let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d, max_iterations) = (people.len(), 0.85, 10);
 
-    let end = PreciseTime::now();
-
-    println!("setup time = {:?}", (start.to(end)).to_string());
+    let setup_end = PreciseTime::now();
+    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -134,6 +136,10 @@ pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
             break;
         }
     }
+
+    let alg_end = PreciseTime::now();
+    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+
     new_rank
 }
 
@@ -153,9 +159,8 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
     let mut adjacency_list = compactive_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d, max_iterations) = (people.len(), 0.85, 10);
 
-    let end = PreciseTime::now();
-
-    println!("setup time = {:?}", (start.to(end)).to_string());
+    let setup_end = PreciseTime::now();
+    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -189,6 +194,10 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
             break;
         }
     }
+
+    let alg_end = PreciseTime::now();
+    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+
     new_rank
 }
 
@@ -209,10 +218,8 @@ pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
 
     let (n, d, max_iterations) = (people.len(), 0.85, 10);
 
-    let end = PreciseTime::now();
-
-    println!("setup time = {:?}", (start.to(end)).to_string());
-
+    let setup_end = PreciseTime::now();
+    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -246,6 +253,10 @@ pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
             break;
         }
     }
+
+    let alg_end = PreciseTime::now();
+    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+
     new_rank
 }
 
@@ -265,9 +276,8 @@ pub fn overswap_personrank(sf: i16) -> HashMap<i64, f64> {
     let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d, max_iterations) = (people.len(), 0.85, 10);
 
-    let end = PreciseTime::now();
-
-    println!("setup time = {:?}", (start.to(end)).to_string());
+    let setup_end = PreciseTime::now();
+    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -301,5 +311,9 @@ pub fn overswap_personrank(sf: i16) -> HashMap<i64, f64> {
             break;
         }
     }
+
+    let alg_end = PreciseTime::now();
+    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+
     new_rank
 }

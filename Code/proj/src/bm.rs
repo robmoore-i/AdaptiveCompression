@@ -23,15 +23,14 @@ pub mod pagerank;
 pub mod load_person_csv;
 pub mod personrank;
 
+use time::PreciseTime;
+
 fn main() {
-    println!("BFS small check");
-    bfs::example_test_bfs_methods();
-    println!();
-    println!("PR small check");
-    pagerank::example_test_pagerank_methods();
-    println!();
-    println!("PR S3G2 check");
-    check_s3g2_pr();
+//    personrank::decracked_personrank(1);
+//    personrank::reco_personrank(1);
+//    personrank::coco_personrank(1);
+//    personrank::underswap_personrank(1);
+//    personrank::overswap_personrank(1);
 }
 
 fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {

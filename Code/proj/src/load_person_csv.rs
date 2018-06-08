@@ -12,7 +12,7 @@ use std::fs::File;
 
 // SET THIS WHEN DOING EXPERIMENTS
 pub fn cur_data_home() -> &'static str {
-    home_data_home()
+    uni_data_home()
 }
 
 pub fn uni_data_home() -> &'static str {
