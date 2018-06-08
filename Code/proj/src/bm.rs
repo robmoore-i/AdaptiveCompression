@@ -24,6 +24,19 @@ pub mod load_person_csv;
 pub mod personrank;
 
 fn main() {
+    let (src, dst) = datagen::randomly_connected_graph(10, 3.0);
+    prep_graphviz(src, dst);
+}
+
+fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
+    print!("digraph {} ", "{");
+    for i in 0..src.len() {
+        print!("{} -> {}; ", src[i], dst[i]);
+    }
+    print!("{}\n", "}");
+}
+
+fn check_s3g2_pr() {
     let decracked_ranks = personrank::decracked_personrank(1);
     let reco_ranks      = personrank::reco_personrank(1);
     let coco_ranks      = personrank::coco_personrank(1);
@@ -32,7 +45,7 @@ fn main() {
 
     for (k, v) in &decracked_ranks {
         assert!((*v - reco_ranks[k]).abs() < 0.0005);
-        if ((*v - coco_ranks[k]).abs() < 0.0005) {
+        if (*v - coco_ranks[k]).abs() < 0.0005 {
             println!("error:");
             println!("expected:{}", *v);
             println!("actual:  {}", coco_ranks[k]);

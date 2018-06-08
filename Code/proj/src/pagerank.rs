@@ -1,10 +1,14 @@
 use utils;
+use datagen;
 
 use decomposed_cracking;
 use recognitive_compression;
 use compactive_compression;
 use underswap_rle_compression;
 use overswap_rle_compression;
+
+use rand::Rng; // HMM
+use rand;
 
 /* PAGERANK
     Given an adjacency list of two i64 vecs, SRC_NODE and DST_NODE and a vector of PAGERANKS, where
@@ -74,6 +78,30 @@ fn pagerank_example_test<F>(mut pagerank: F) where F: FnMut(Vec<i64>, Vec<i64>, 
         }
     }
     println!("Passed!");
+}
+
+pub fn bait() {
+    let n: usize = 20;
+
+    let (src, dst) = datagen::randomly_connected_graph(n as i64, 5.0);
+//    println!("let src = vec!{:?};", src);
+//    println!("let dst = vec!{:?};", dst);
+
+    let true_prs = unoptimised_pagerank(src.clone(), dst.clone(), &mut initialise_pageranks(n), 0.85, 0.005, 20);
+    let test_prs =        coco_pagerank(src, dst, &mut initialise_pageranks(n), 0.85, 0.005, 20);
+
+    let mut failed = false;
+
+    for i in 0..n {
+        if (true_prs[i] - test_prs[i]).abs() > 0.005 {
+            println!("Expected pr[{}] = {}, actually got {}", i, true_prs[i], test_prs[i]);
+            failed = true;
+        }
+    }
+
+    if failed {
+        println!("Failed!");
+    }
 }
 
 fn inherit(inherited_rank: &mut f64, prw: f64, lw: i64) {

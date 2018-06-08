@@ -148,7 +148,7 @@ pub fn bfs_example_test<F>(mut bfs: F) where F: FnMut(Vec<i64>, Vec<i64>, i64) -
 }
 
 pub fn bait() {
-    let n = 10000 as i64;
+    let n = 30 as i64;
 
     let (src, dst) = datagen::randomly_connected_tree(n);
     let start_node = rand::thread_rng().gen_range(1, n);
@@ -156,7 +156,7 @@ pub fn bait() {
 //    println!("let dst = vec!{:?};", dst);
 //    println!("let start_node = {};", start_node);
 
-    let visited = overswap_rle_bfs(src, dst, start_node);
+    let visited = coco_bfs(src, dst, start_node);
     let mut failed = false;
     if visited.len() != n as usize {
         println!("Incorrect visitations: {:?}", visited);
@@ -480,9 +480,8 @@ fn coco_bfs_adjl(adjacency_list: &mut compactive_compression::CoCoTable, start_n
         // and add them to a new, empty frontier.
         for src in prev_frontier {
             let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_i64_col("dst"))).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+            for dst in &(*(selection.get_i64_col("dst"))).v {
+                discover(*dst, &mut visited, &mut frontier);
             }
         }
     }

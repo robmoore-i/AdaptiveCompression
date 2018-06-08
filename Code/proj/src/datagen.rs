@@ -66,3 +66,44 @@ pub fn randomly_connected_tree(n: i64) -> (Vec<i64>, Vec<i64>) {
     pairwise_shuffle(src_col, dst_col)
 }
 
+pub fn randomly_connected_graph(n: i64, d: f64) -> (Vec<i64>, Vec<i64>) {
+    let mut rng = rand::thread_rng();
+
+    // Start with two random edges from a single source
+    let src_1 = rng.gen_range(0, n);
+    let mut dst_1 = rng.gen_range(0, n);
+    while dst_1 == src_1 {
+        dst_1 = rng.gen_range(0, n);
+    }
+    let mut dst_2 = rng.gen_range(0, n);
+    while dst_2 == src_1 || dst_2 == dst_1 {
+        dst_2 = rng.gen_range(0, n);
+    }
+    let mut src = vec![src_1, src_1];
+    let mut dst = vec![dst_1, dst_2];
+
+    // Edges / nodes
+    while ((src.len() as f64) / (n as f64)) < d {
+        // Inward edge
+        let dst_idx_in = rng.gen_range(0, (2 * src.len()) - 1);
+        let dst_in = if dst_idx_in < src.len() { dst[dst_idx_in] } else { src[dst_idx_in - src.len()] };
+        let mut src_in = rng.gen_range(0, n);
+        while dst_in == src_in {
+            src_in = rng.gen_range(0, n);
+        }
+        src.push(src_in);
+        dst.push(dst_in);
+
+        // Outward edge
+        let src_idx_out = rng.gen_range(0, (2 * src.len()) - 1);
+        let src_out = if src_idx_out < src.len() { dst[src_idx_out] } else { src[src_idx_out - src.len()] };
+        let mut dst_out = rng.gen_range(0, n);
+        while src_out == dst_out {
+            dst_out = rng.gen_range(0, n);
+        }
+        src.push(src_out);
+        dst.push(dst_out);
+    }
+
+    pairwise_shuffle(src, dst)
+}

@@ -2,24 +2,26 @@ use bit_vec::BitVec;
 
 use std::collections::HashMap;
 
-use overswap_rle_compression::*;
+use overswap_rle_compression;
+use compactive_compression;
 use cracker_index::AVLCrackerIndex;
 
 #[test]
 fn single_column_table_initialised_empty() {
-    let table = OverswapRLETable::new();
+    let table = overswap_rle_compression::OverswapRLETable::new();
     assert_eq!(table.count, 0);
+
 }
 
 #[test]
 fn cracker_column_initialised_empty() {
-    let table = OverswapRLETable::new();
+    let table = overswap_rle_compression::OverswapRLETable::new();
     assert_eq!(table.crk_col.crk.len(), 0);
 }
 
 #[test]
 fn can_create_table_with_three_columns() {
-    let mut table = OverswapRLETable::new();
+    let mut table = overswap_rle_compression::OverswapRLETable::new();
     table.new_columns(vec!["a", "b", "c"]);
     let mut keys = Vec::new();
     for key in table.columns.keys() {
@@ -33,7 +35,7 @@ fn can_create_table_with_three_columns() {
 #[test]
 #[should_panic]
 fn can_insert_into_multi_column_table() {
-    let mut table = OverswapRLETable::new();
+    let mut table = overswap_rle_compression::OverswapRLETable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{"a" => vec![1, 2, 3], "b" => vec![4, 5, 6]});
     assert_eq!(table.get_col("a").v, vec![1, 2, 3]);
@@ -41,8 +43,8 @@ fn can_insert_into_multi_column_table() {
     table.get_col("c");
 }
 
-fn two_col_test_table() -> OverswapRLETable {
-    let mut table = OverswapRLETable::new();
+fn two_col_test_table() -> overswap_rle_compression::OverswapRLETable {
+    let mut table = overswap_rle_compression::OverswapRLETable::new();
     table.new_columns(vec!["a", "b"]);
     table.insert(&mut map!{
             "a" => vec![13, 16, 4, 9, 2, 12, 7, 1, 19, 3, 14, 11, 8, 6],
@@ -51,7 +53,7 @@ fn two_col_test_table() -> OverswapRLETable {
     table
 }
 
-fn assert_base_column_equals(t: OverswapRLETable, column_name: &str, expected: Vec<i64>) {
+fn assert_base_column_equals(t: overswap_rle_compression::OverswapRLETable, column_name: &str, expected: Vec<i64>) {
     match t.get_col(column_name) {
         ref col => assert_eq!(col.v, expected),
     }
@@ -81,8 +83,8 @@ fn can_rearrange_tuples() {
     assert_base_column_equals(table.clone(), "b", vec![0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 1, 1, 0, 0]);
 }
 
-fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> OverswapRLETable {
-    let mut adjacency_list = OverswapRLETable::new();
+fn adjacency_list_table(src: Vec<i64>, dst: Vec<i64>) -> overswap_rle_compression::OverswapRLETable {
+    let mut adjacency_list = overswap_rle_compression::OverswapRLETable::new();
     adjacency_list.new_columns(vec!["src", "dst"]);
     adjacency_list.insert(&mut map!{"src" => src, "dst" => dst});
     adjacency_list.set_crk_col("src");
@@ -190,7 +192,7 @@ fn can_do_pagerank_iteration() {
     let m = 0.01363636; // = (1 - d) / n
 
     // Edge data
-    let mut table = OverswapRLETable::new();
+    let mut table = overswap_rle_compression::OverswapRLETable::new();
     table.new_columns(vec!["src", "dst"]);
     table.insert(&mut map!{"src" => vec![7, 4, 2, 3, 5, 9, 6, 5, 11, 4, 10, 8, 5, 6, 8, 7, 9],
                            "dst" => vec![2, 2, 3, 2, 4, 5, 5, 6, 5,  1, 5,  5, 2, 2, 2, 5, 2]});
@@ -326,7 +328,7 @@ fn indicise(v: Vec<i64>) -> Vec<i64> {
 }
 
 pub fn bfs_test(n: i64, src_nodes: Vec<i64>, dst_nodes: Vec<i64>, start_node: i64) -> bool {
-    let mut adjacency_list = from_adjacency_vectors(src_nodes, dst_nodes, "src");
+    let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_nodes, dst_nodes, "src");
 
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
@@ -418,4 +420,22 @@ fn l_side_i_longer_tessellating() {
     let dst = vec![2, 13, 10, 16, 2, 20, 20, 7, 19, 27, 25, 1, 2, 3, 22, 2, 2, 2, 29, 2, 5, 2, 29, 20, 22, 22, 7, 3, 20, 21, 2, 30, 17, 16, 11, 12, 9, 23, 4, 13, 20, 26, 9, 8, 3, 22, 2, 15, 24, 29, 2, 28, 6, 18, 2, 14, 2, 29];
     let start_node = 1;
     assert!(bfs_test(30, src, dst, start_node));
+}
+
+#[test]
+fn okay_when_element_doesnt_exist() {
+    let mut t = compactive_compression::from_adjacency_vectors(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], vec![1, 3, 6, 2, 3, 9, 4, 7, 6, 2], "dst");
+    let selected = t.cracker_select_specific(5);
+    assert_eq!(0, selected.count);
+    assert_eq!(0, selected.crk_col.crk.len());
+    let empty_vec: Vec<i64> = Vec::new();
+    assert_eq!(empty_vec, selected.int_columns[&"src".to_string()].v);
+    assert_eq!(empty_vec, selected.int_columns[&"dst".to_string()].v);
+
+    let selected = t.cracker_select_specific(5);
+    assert_eq!(0, selected.count);
+    assert_eq!(0, selected.crk_col.crk.len());
+    let empty_vec: Vec<i64> = Vec::new();
+    assert_eq!(empty_vec, selected.int_columns[&"src".to_string()].v);
+    assert_eq!(empty_vec, selected.int_columns[&"dst".to_string()].v);
 }
