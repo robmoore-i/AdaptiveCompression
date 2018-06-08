@@ -126,6 +126,14 @@ impl OverswapRLETable {
         t
     }
 
+    pub fn get_values(&self, indices: Iter<usize>, col: &str) -> Vec<i64> {
+        let mut buf = Vec::new();
+        for &i in indices {
+            buf.push(self.columns[&col.to_string()].v[i]);
+        }
+        buf
+    }
+
     pub fn rearrange(&mut self, indices: Iter<usize>) {
         for col in self.columns.values_mut() {
             col.rearrange(indices.clone());
@@ -134,7 +142,7 @@ impl OverswapRLETable {
     }
 
     // Returns the elements of T where the cracker columns's value equals X
-    pub fn cracker_select_specific(&mut self, x: i64) -> OverswapRLETable {
+    pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
         // Init
         if self.crk_col.crk.len() == 0 {
             self.crk_col.crk = self.crk_col.v.clone();
@@ -145,7 +153,7 @@ impl OverswapRLETable {
         // Setup
         let mut p_low  = self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
         if p_low == self.count {
-            return self.get_indices(self.crk_col.base_idx[0..0].iter());
+            return vec![];
         }
         let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
 
@@ -195,9 +203,9 @@ impl OverswapRLETable {
 
         if p_low >= p_high {
             if self.crk_col.crk[p_low] == x {
-                return self.get_indices(self.crk_col.base_idx[p_low..(p_low + 1)].iter())
+                return self.get_values(self.crk_col.base_idx[p_low..(p_low + 1)].iter(), col);
             } else {
-                return self.get_indices(self.crk_col.base_idx[0..0].iter())
+                return vec![]
             }
         }
 
@@ -461,7 +469,7 @@ impl OverswapRLETable {
 
         // If nothing is selected, then return nothing
         if p_high < p_low {
-            return self.get_indices(self.crk_col.base_idx[0..0].iter())
+            return vec![];
         }
 
         // Memo
@@ -471,7 +479,7 @@ impl OverswapRLETable {
         // Store in cracker index
         self.crk_col.crk_idx.insert(x, p_low);
         self.crk_col.crk_idx.insert(x + 1, p_high + 1);
-        self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter())
+        self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col)
     }
 
     // Counts the places where a given column equals a given value

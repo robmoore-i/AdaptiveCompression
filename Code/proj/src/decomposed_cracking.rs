@@ -94,6 +94,14 @@ impl DeCrackedTable {
         t
     }
 
+    pub fn get_values(&self, indices: Iter<usize>, col: &str) -> Vec<i64> {
+        let mut buf = Vec::new();
+        for &i in indices {
+            buf.push(self.columns[&col.to_string()].v[i]);
+        }
+        buf
+    }
+
     pub fn rearrange(&mut self, indices: Iter<usize>) {
         for col in self.columns.values_mut() {
             col.rearrange(indices.clone());
@@ -102,12 +110,12 @@ impl DeCrackedTable {
     }
 
     // Returns the elements of T where the cracker columns's value equals X
-    pub fn cracker_select_specific(&mut self, x: i64) -> DeCrackedTable {
-        self.cracker_select_in_three(x, x, true, true)
+    pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
+        self.cracker_select_in_three(x, x, true, true, col)
     }
 
-    // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
-    pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool) -> DeCrackedTable {
+    // Returns the elements(COL) of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
+    pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool, col: &str) -> Vec<i64> {
         // If column hasn't been cracked before, copy it, and copy a reference to the current
         // indices of the base table.
         if self.crk_col.crk.len() == 0 {
@@ -130,7 +138,7 @@ impl DeCrackedTable {
         while c_low(self.crk_col.crk[p_low]) {
             p_low += 1;
             if p_low == self.count as usize {
-                return self.get_indices(self.crk_col.base_idx[0..0].iter());
+                return vec![];
             }
         }
 
@@ -138,12 +146,12 @@ impl DeCrackedTable {
         while c_high(self.crk_col.crk[p_high]) {
             p_high -= 1;
             if p_high == 0 && c_high(self.crk_col.crk[p_high]) {
-                return self.get_indices(self.crk_col.base_idx[0..0].iter());
+                return vec![];
             }
         }
 
         if p_low == p_high {
-            return self.get_indices(self.crk_col.base_idx[p_low..(p_high + 1)].iter());
+            return self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col);
         }
 
         let mut p_itr = p_low.clone();
@@ -173,7 +181,7 @@ impl DeCrackedTable {
         let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
         self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
         self.crk_col.crk_idx.insert(high + inc_h as i64, high_ptr);
-        self.get_indices(self.crk_col.base_idx[p_low..p_itr].iter())
+        self.get_values(self.crk_col.base_idx[p_low..p_itr].iter(), col)
     }
 
     // Counts the places where a given column equals a given value

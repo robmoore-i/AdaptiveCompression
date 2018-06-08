@@ -65,7 +65,7 @@ pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_col("src".to_string()).unwrap().v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v, "src") {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 
@@ -120,7 +120,7 @@ pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_i64_col("src").v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v, "src") {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 
@@ -175,7 +175,7 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_col("src").v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v, "src") {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 
@@ -232,7 +232,7 @@ pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_col("src").v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v, "src") {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 
@@ -287,7 +287,7 @@ pub fn overswap_personrank(sf: i16) -> HashMap<i64, f64> {
         for v in &vertices {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(*v).get_col("src").v.iter() {
+            for w in adjacency_list.cracker_select_specific(*v, "src") {
                 inherited_rank += rank[&w] / (out_degree[&w] as f64);
             }
 

@@ -172,6 +172,36 @@ impl CoCoTable {
         t
     }
 
+    pub fn get_values(&self, base_indices: Iter<usize>, col: &str) -> Vec<i64> {
+        let mut buf = Vec::new();
+        for &i in base_indices {
+            buf.push(self.int_columns[&col.to_string()].v[i]);
+        }
+        buf
+    }
+
+    pub fn decompress_values(&self, compressed_index: usize, col: &str) -> Vec<i64> {
+        let offset = self.crk_col.ofs[compressed_index];
+
+        let next_offset = if compressed_index >= self.crk_col.ofs.len() - 1 {
+            self.crk_col.base_idx.len()
+        } else {
+            self.crk_col.ofs[compressed_index + 1]
+        };
+
+        let index_range = offset..next_offset;
+        let mut base_indices = Vec::with_capacity(next_offset - offset);
+        for i in index_range {
+            base_indices.push(self.crk_col.base_idx[i]);
+        }
+
+        let mut buf = Vec::new();
+        for i in base_indices {
+            buf.push(self.int_columns[&col.to_string()].v[i]);
+        }
+        buf
+    }
+
     // Compact the cracker column if there is an opportunity to do so, given the recent crk_idx addition of V->I
     pub fn compact(&mut self, v: i64, i: usize) {
         if self.crk_col.ofs.is_empty() {
@@ -225,7 +255,7 @@ impl CoCoTable {
     }
 
     // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
-    pub fn cracker_select_specific(&mut self, x: i64) -> CoCoTable {
+    pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
 
         // PHASE 0: Setup
 
@@ -260,14 +290,14 @@ impl CoCoTable {
         while c_low(self.crk_col.crk[p_low]) {
             p_low += 1;
             if p_low == count as usize {
-                return self.get_indices(vec![].iter(), 0..0);
+                return vec![];
             }
         }
 
         // while p_high is pointing at an element satisfying c_high, move it backwards
         while c_high(self.crk_col.crk[p_high]) {
             if p_high == 0 {
-                return self.get_indices(vec![].iter(), 0..0);
+                return vec![];
             }
             p_high -= 1;
         }
@@ -277,9 +307,9 @@ impl CoCoTable {
             let v = self.crk_col.crk[p_low];
             let w = self.crk_col.crk[p_low] + 1;
             if self.crk_col.crk_idx.contains(v) && self.crk_col.crk_idx.contains(w) {
-                return self.decompress_index(p_low);
+                return self.decompress_values(p_low, col);
             } else {
-                return self.get_indices(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), p_low..(p_high + 1));
+                return self.get_values(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), col);
             }
         }
 
@@ -322,10 +352,10 @@ impl CoCoTable {
         // PHASE 4: Decompression
 
         if p_low <= p_high {
-            self.decompress_index(p_low)
+            self.decompress_values(p_low, col)
         } else {
             let compressed_high_ptr = if p_itr >= count { p_itr } else { self.crk_col.ofs[p_itr] };
-            self.get_indices(self.crk_col.base_idx[self.crk_col.ofs[p_low]..compressed_high_ptr].iter(), p_low..p_itr)
+            self.get_values(self.crk_col.base_idx[self.crk_col.ofs[p_low]..compressed_high_ptr].iter(), col)
         }
     }
 

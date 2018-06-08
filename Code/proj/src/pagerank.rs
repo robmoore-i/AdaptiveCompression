@@ -38,7 +38,7 @@ fn terminate(pageranks: &Vec<f64>, new_pageranks: &Vec<f64>, n: usize, epsilon: 
     e < epsilon
 }
 
-pub fn test_pagerank_methods() {
+pub fn example_test_pagerank_methods() {
     println!("Unoptimised");
     pagerank_example_test(unoptimised_pagerank);
     println!("Preclustered");
@@ -294,7 +294,7 @@ fn decracked_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src".to_string()).unwrap().v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64, "src").iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }
@@ -332,7 +332,7 @@ fn reco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: 
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_i64_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64, "src").iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }
@@ -371,7 +371,7 @@ fn coco_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f64>, d: 
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64, "src").iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }
@@ -409,7 +409,7 @@ fn underswap_rle_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64, "src").iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }
@@ -447,7 +447,7 @@ fn overswap_rle_pagerank(src_node: Vec<i64>, dst_node: Vec<i64>, prs: &mut Vec<f
         for v in 1..n {
             let mut inherited_rank = 0.0;
 
-            for w in adjacency_list.cracker_select_specific(v as i64).get_col("src").v.iter().map(|&x|x as usize) {
+            for w in adjacency_list.cracker_select_specific(v as i64, "src").iter().map(|&x|x as usize) {
                 let lw = if l[w] == -1 { l[w] = (&adjacency_list).count_col_eq("src", w as i64); l[w] } else { l[w] };
                 inherit(&mut inherited_rank, pageranks[w], lw);
             }

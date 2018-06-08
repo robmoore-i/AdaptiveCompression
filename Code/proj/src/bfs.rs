@@ -411,10 +411,9 @@ fn decracked_bfs_adjl(adjacency_list: &mut decomposed_cracking::DeCrackedTable, 
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_col("dst".to_string()).unwrap())).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
             }
         }
     }
@@ -445,10 +444,9 @@ fn reco_bfs_adjl(adjacency_list: &mut recognitive_compression::ReCoTable, start_
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_i64_col("dst"))).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
             }
         }
     }
@@ -479,8 +477,8 @@ fn coco_bfs_adjl(adjacency_list: &mut compactive_compression::CoCoTable, start_n
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            for dst in &(*(selection.get_col("dst"))).v {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
                 discover(*dst, &mut visited, &mut frontier);
             }
         }
@@ -513,10 +511,9 @@ fn underswap_rle_bfs_adjl(adjacency_list: &mut underswap_rle_compression::Unders
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_col("dst"))).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
             }
         }
     }
@@ -547,10 +544,9 @@ fn overswap_rle_bfs_adjl(adjacency_list: &mut overswap_rle_compression::Overswap
         // For each src in the previous frontier, find the dsts which haven't been visited yet,
         // and add them to a new, empty frontier.
         for src in prev_frontier {
-            let selection = adjacency_list.cracker_select_specific(src);
-            let neighbours = (*(selection.get_col("dst"))).v.clone();
-            for dst in neighbours {
-                discover(dst, &mut visited, &mut frontier);
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
             }
         }
     }

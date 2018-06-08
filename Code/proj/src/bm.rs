@@ -24,6 +24,13 @@ pub mod load_person_csv;
 pub mod personrank;
 
 fn main() {
+    println!("BFS small check");
+    bfs::example_test_bfs_methods();
+    println!();
+    println!("PR small check");
+    pagerank::example_test_pagerank_methods();
+    println!();
+    println!("PR S3G2 check");
     check_s3g2_pr();
 }
 
