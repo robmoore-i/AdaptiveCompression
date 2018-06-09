@@ -27,11 +27,13 @@ use time::PreciseTime;
 
 fn main() {
     check_s3g2_pr();
-//    personrank::decracked_personrank(1);
-//    personrank::reco_personrank(1);
-//    personrank::coco_personrank(1);
-//    personrank::underswap_personrank(1);
-//    personrank::overswap_personrank(1);
+    let sf = 1;
+    let mi = 10;
+//    personrank::decracked_personrank(sf, mi);
+//    personrank::reco_personrank(sf, mi);
+//    personrank::coco_personrank(sf, mi);
+//    personrank::underswap_personrank(sf, mi);
+//    personrank::overswap_personrank(sf, mi);
 }
 
 fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
