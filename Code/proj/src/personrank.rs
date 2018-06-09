@@ -27,7 +27,8 @@ fn get_vertices(people: &Vec<load_person_csv::Person>) -> Vec<i64> {
     people.iter().map(|p|p.id).collect()
 }
 
-pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
+pub fn decracked_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("decracked personrank, sf = {}, iterations = {}", sf, max_iterations);
     // Setup
 
     let start = PreciseTime::now();
@@ -41,7 +42,7 @@ pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
     let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
-    let (n, d, max_iterations) = (people.len(), 0.85, 10);
+    let (n, d) = (people.len(), 0.85);
 
     let setup_end = PreciseTime::now();
     println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
@@ -85,7 +86,8 @@ pub fn decracked_personrank(sf: i16) -> HashMap<i64, f64> {
     new_rank
 }
 
-pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
+pub fn reco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("reco personrank, sf = {}, iterations = {}", sf, max_iterations);
     // Setup
 
     let start = PreciseTime::now();
@@ -99,7 +101,7 @@ pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
     let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src, dst, "dst");
-    let (n, d, max_iterations) = (people.len(), 0.85, 10);
+    let (n, d) = (people.len(), 0.85);
 
     let setup_end = PreciseTime::now();
     println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
@@ -143,7 +145,8 @@ pub fn reco_personrank(sf: i16) -> HashMap<i64, f64> {
     new_rank
 }
 
-pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
+pub fn coco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("coco personrank, sf = {}, iterations = {}", sf, max_iterations);
     // Setup
 
     let start = PreciseTime::now();
@@ -157,7 +160,7 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
     let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = compactive_compression::from_adjacency_vectors(src, dst, "dst");
-    let (n, d, max_iterations) = (people.len(), 0.85, 10);
+    let (n, d) = (people.len(), 0.85);
 
     let setup_end = PreciseTime::now();
     println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
@@ -201,7 +204,8 @@ pub fn coco_personrank(sf: i16) -> HashMap<i64, f64> {
     new_rank
 }
 
-pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
+pub fn underswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("underswap personrank, sf = {}, iterations = {}", sf, max_iterations);
     // Setup
 
     let start = PreciseTime::now();
@@ -216,7 +220,7 @@ pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src, dst, "dst");
 
-    let (n, d, max_iterations) = (people.len(), 0.85, 10);
+    let (n, d) = (people.len(), 0.85);
 
     let setup_end = PreciseTime::now();
     println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
@@ -260,7 +264,8 @@ pub fn underswap_personrank(sf: i16) -> HashMap<i64, f64> {
     new_rank
 }
 
-pub fn overswap_personrank(sf: i16) -> HashMap<i64, f64> {
+pub fn overswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("overswap personrank, sf = {}, iterations = {}", sf, max_iterations);
     // Setup
 
     let start = PreciseTime::now();
@@ -274,7 +279,7 @@ pub fn overswap_personrank(sf: i16) -> HashMap<i64, f64> {
     let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src, dst, "dst");
-    let (n, d, max_iterations) = (people.len(), 0.85, 10);
+    let (n, d) = (people.len(), 0.85);
 
     let setup_end = PreciseTime::now();
     println!("cfg_time = {:?}", (start.to(setup_end)).to_string());

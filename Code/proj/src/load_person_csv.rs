@@ -12,7 +12,7 @@ use std::fs::File;
 
 // SET THIS WHEN DOING EXPERIMENTS
 pub fn cur_data_home() -> &'static str {
-    uni_data_home()
+    home_data_home()
 }
 
 pub fn uni_data_home() -> &'static str {
@@ -30,7 +30,6 @@ pub fn social_network_sf1() -> String {
 pub fn social_network_sf10() -> String {
     cur_data_home().to_string() + "/social_network_sf10"
 }
-
 
 pub fn nodes(social_network: String) -> String {
     social_network + "/person_0_0.csv"

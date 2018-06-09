@@ -26,6 +26,7 @@ pub mod personrank;
 use time::PreciseTime;
 
 fn main() {
+    check_s3g2_pr();
 //    personrank::decracked_personrank(1);
 //    personrank::reco_personrank(1);
 //    personrank::coco_personrank(1);
@@ -42,11 +43,13 @@ fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
 }
 
 fn check_s3g2_pr() {
-    let decracked_ranks = personrank::decracked_personrank(1);
-    let reco_ranks      = personrank::reco_personrank(1);
-    let coco_ranks      = personrank::coco_personrank(1);
-    let underswap_ranks = personrank::underswap_personrank(1);
-    let overswap_ranks  = personrank::overswap_personrank(1);
+    let sf = 1;
+    let mi = 10;
+    let decracked_ranks = personrank::decracked_personrank(sf, mi);
+    let reco_ranks      = personrank::reco_personrank(sf, mi);
+    let coco_ranks      = personrank::coco_personrank(sf, mi);
+    let underswap_ranks = personrank::underswap_personrank(sf, mi);
+    let overswap_ranks  = personrank::overswap_personrank(sf, mi);
 
     for (k, v) in &decracked_ranks {
         assert!((*v - reco_ranks[k]).abs() < 0.0005);

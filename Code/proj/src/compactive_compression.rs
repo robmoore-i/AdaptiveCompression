@@ -265,7 +265,6 @@ impl CoCoTable {
             self.crk_col.crk = self.crk_col.v.clone();
             self.crk_col.base_idx = (0..self.count).collect();
         }
-
         if self.crk_col.ofs.is_empty() {
             self.crk_col.ofs = (0..self.count).collect();
         }
@@ -302,14 +301,20 @@ impl CoCoTable {
             p_high -= 1;
         }
 
-        // If the vertex is compressed/contains a single entry, return that.
+        // If the vertex is compressed/contains a single entry, return.
         if p_low == p_high {
-            let v = self.crk_col.crk[p_low];
-            let w = self.crk_col.crk[p_low] + 1;
-            if self.crk_col.crk_idx.contains(v) && self.crk_col.crk_idx.contains(w) {
-                return self.decompress_values(p_low, col);
+            if p_low == (count - 1) {
+                if self.crk_col.crk_idx.contains(self.crk_col.crk[p_low]) && self.crk_col.crk_idx.contains(self.crk_col.crk[p_low] + 1) {
+                    return self.decompress_values(p_low, col);
+                } else {
+                    return self.get_values(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), col);
+                }
             } else {
-                return self.get_values(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), col);
+                if self.crk_col.ofs[p_low + 1] - self.crk_col.ofs[p_low] > 1 {
+                    return self.decompress_values(p_low, col);
+                } else {
+                    return self.get_values(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), col);
+                }
             }
         }
 
