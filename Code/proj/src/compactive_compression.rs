@@ -359,7 +359,7 @@ impl CoCoTable {
         if p_low <= p_high {
             self.decompress_values(p_low, col)
         } else {
-            self.get_values(vec![self.crk_col.base_idx[self.crk_col.ofs[p_low]]].iter(), col)
+            vec![]
         }
     }
 
