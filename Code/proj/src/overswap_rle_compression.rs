@@ -448,21 +448,6 @@ impl OverswapRLETable {
                     p_high -= rl;
                 }
             } else {
-                // Advance itr
-                let mut rl = self.crk_col.run_lengths[p_itr];
-                while p_itr + rl < self.count {
-                    if self.crk_col.crk[p_itr + rl] == x {
-                        if p_itr + rl + self.crk_col.run_lengths[p_itr + rl] < self.count {
-                            rl += self.crk_col.run_lengths[p_itr + rl];
-                            self.crk_col.run_lengths[p_itr] = rl;
-                            self.crk_col.run_lengths[p_itr + rl - 1] = rl;
-                        } else {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
                 p_itr += self.crk_col.run_lengths[p_itr];
             }
         }
