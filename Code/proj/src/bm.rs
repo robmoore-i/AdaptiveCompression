@@ -26,9 +26,9 @@ pub mod personrank;
 use time::PreciseTime;
 
 fn main() {
-    check_s3g2_pr();
     let sf = 1;
     let mi = 10;
+    check_s3g2_pr(sf, mi);
 //    personrank::decracked_personrank(sf, mi);
 //    personrank::reco_personrank(sf, mi);
 //    personrank::coco_personrank(sf, mi);
@@ -44,14 +44,12 @@ fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
     print!("{}\n", "}");
 }
 
-fn check_s3g2_pr() {
-    let sf = 1;
-    let mi = 10;
+fn check_s3g2_pr(sf: i16, mi: i16) {
 //    let unoptimised_ranks  = personrank::unoptimised_personrank(sf, mi);
     let preclustered_ranks = personrank::preclustered_personrank(sf, mi);
-    let decracked_ranks    = personrank::decracked_personrank(sf, mi);
-    let reco_ranks         = personrank::reco_personrank(sf, mi);
-    let coco_ranks         = personrank::coco_personrank(sf, mi);
+//    let decracked_ranks    = personrank::decracked_personrank(sf, mi);
+//    let reco_ranks         = personrank::reco_personrank(sf, mi);
+//    let coco_ranks         = personrank::coco_personrank(sf, mi);
     let underswap_ranks    = personrank::underswap_personrank(sf, mi);
     let overswap_ranks     = personrank::overswap_personrank(sf, mi);
 
@@ -59,9 +57,9 @@ fn check_s3g2_pr() {
     
     for (k, v) in &preclustered_ranks {
 //        assert!((*v - preclustered_ranks[k]).abs() < epsilon);
-        assert!((*v - decracked_ranks[k]).abs() < epsilon);
-        assert!((*v - reco_ranks[k]).abs() < epsilon);
-        assert!((*v - coco_ranks[k]).abs() < epsilon);
+//        assert!((*v - decracked_ranks[k]).abs() < epsilon);
+//        assert!((*v - reco_ranks[k]).abs() < epsilon);
+//        assert!((*v - coco_ranks[k]).abs() < epsilon);
         assert!((*v - underswap_ranks[k]).abs() < epsilon);
         assert!((*v - overswap_ranks[k]).abs() < epsilon);
     }

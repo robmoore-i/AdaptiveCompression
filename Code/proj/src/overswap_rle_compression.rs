@@ -201,11 +201,11 @@ impl OverswapRLETable {
             p_high -= rl;
         }
 
-        if p_low >= p_high {
+        if p_low == p_high {
             if self.crk_col.crk[p_low] == x {
                 return self.get_values(self.crk_col.base_idx[p_low..(p_low + 1)].iter(), col);
             } else {
-                return vec![]
+                return vec![];
             }
         }
 
