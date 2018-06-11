@@ -93,7 +93,7 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     println!("===");
 }
 
-fn run_all() {
+fn run_all(sf: i16, mi: i16) {
     personrank::decracked_personrank(sf, mi);
     personrank::reco_personrank(sf, mi);
     personrank::coco_personrank(sf, mi);
