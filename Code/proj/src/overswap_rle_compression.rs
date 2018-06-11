@@ -230,15 +230,15 @@ impl OverswapRLETable {
                         // Swap around the overlap
                         self.crk_col.swap_range(rl_itr - overlap_size, p_low, p_itr + overlap_size);
                     } else {
+                        // No overlap
                         // Combine all the runs between L and I
                         if p_itr - p_low == rl_itr {
                             // If the low run padding goes up to right next to I, then adjust slightly
-                            self.crk_col.run_lengths[p_low]              = rl_itr;
-                            self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_itr;
+                            self.crk_col.run_lengths[p_low] = p_itr - p_low;
                         } else {
-                            self.crk_col.run_lengths[p_low + rl_itr]     = p_itr - p_low;
-                            self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;
+                            self.crk_col.run_lengths[p_low + rl_itr] = p_itr - p_low;
                         }
+                        self.crk_col.run_lengths[p_low + rl_itr - 1] = p_itr - p_low;
 
                         // Now swap the whole thing.
                         self.crk_col.swap_range(rl_itr, p_low, p_itr);
