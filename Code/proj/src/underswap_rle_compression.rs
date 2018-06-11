@@ -8,7 +8,6 @@ use column::IntCol;
 use cracker_index::AVLCrackerIndex;
 use std::collections::HashMap;
 use std::slice::Iter;
-use lib::cracker_index::max;
 
 #[derive(Clone)]
 pub struct UnderswapRLETable {

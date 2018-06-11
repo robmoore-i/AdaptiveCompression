@@ -7,9 +7,6 @@ use compactive_compression;
 use underswap_rle_compression;
 use overswap_rle_compression;
 
-use rand::Rng; // HMM
-use rand;
-
 /* PAGERANK
     Given an adjacency list of two i64 vecs, SRC_NODE and DST_NODE and a vector of PAGERANKS, where
     every pagerank is initialised to 1/|V|, perform an iterative computation of the pagerank until

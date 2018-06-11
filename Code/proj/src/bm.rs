@@ -60,6 +60,7 @@ fn check_s3g2_pr(sf: i16, mi: i16) {
 }
 
 fn speed_test(sf: i16, mi: i16, n: i8) {
+    println!("Speed test over {} iterations", n);
     let mut diffs: Vec<Duration> = Vec::new();
 
     for _ in 0..n {

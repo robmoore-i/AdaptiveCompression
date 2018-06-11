@@ -1,10 +1,6 @@
 use csv;
 
 use std::error::Error;
-use std::io;
-use std::process;
-use std::env;
-use std::ffi::OsString;
 use std::fs::File;
 
 // Nodes @ social_network/person_0_0.csv
@@ -79,7 +75,7 @@ fn read_people(file_path: String) -> Result<Vec<Person>, Box<Error>> {
 pub fn read_nodes(file_path: String) -> Vec<Person> {
     match read_people(file_path) {
         Ok(people) => people,
-        Err(err)   => panic!(),
+        Err(_err)   => panic!(),
     }
 }
 
@@ -137,14 +133,14 @@ fn read_friendships_adjl(file_path: String) -> Result<(Vec<i64>, Vec<i64>), Box<
 pub fn read_edges(file_path: String) -> Vec<Friendship> {
     match read_friendships(file_path) {
         Ok(friendships) => friendships,
-        Err(err)        => panic!(),
+        Err(_err)        => panic!(),
     }
 }
 
 pub fn read_edges_adjl(file_path: String) -> (Vec<i64>, Vec<i64>) {
     match read_friendships_adjl(file_path) {
         Ok((src, dst)) => (src, dst),
-        Err(err)        => panic!(),
+        Err(_err)        => panic!(),
     }
 }
 
