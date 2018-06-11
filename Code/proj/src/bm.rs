@@ -24,16 +24,12 @@ pub mod load_person_csv;
 pub mod personrank;
 
 use time::PreciseTime;
+use time::Duration;
 
 fn main() {
     let sf = 1;
     let mi = 10;
-    check_s3g2_pr(sf, mi);
-//    personrank::decracked_personrank(sf, mi);
-//    personrank::reco_personrank(sf, mi);
-//    personrank::coco_personrank(sf, mi);
-//    personrank::underswap_personrank(sf, mi);
-//    personrank::overswap_personrank(sf, mi);
+    speed_test(sf, mi, 5);
 }
 
 fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
@@ -45,22 +41,62 @@ fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
 }
 
 fn check_s3g2_pr(sf: i16, mi: i16) {
-//    let unoptimised_ranks  = personrank::unoptimised_personrank(sf, mi);
     let preclustered_ranks = personrank::preclustered_personrank(sf, mi);
-//    let decracked_ranks    = personrank::decracked_personrank(sf, mi);
-//    let reco_ranks         = personrank::reco_personrank(sf, mi);
-//    let coco_ranks         = personrank::coco_personrank(sf, mi);
+    let decracked_ranks    = personrank::decracked_personrank(sf, mi);
+    let reco_ranks         = personrank::reco_personrank(sf, mi);
+    let coco_ranks         = personrank::coco_personrank(sf, mi);
     let underswap_ranks    = personrank::underswap_personrank(sf, mi);
     let overswap_ranks     = personrank::overswap_personrank(sf, mi);
 
     let epsilon = 0.00001;
     
     for (k, v) in &preclustered_ranks {
-//        assert!((*v - preclustered_ranks[k]).abs() < epsilon);
-//        assert!((*v - decracked_ranks[k]).abs() < epsilon);
-//        assert!((*v - reco_ranks[k]).abs() < epsilon);
-//        assert!((*v - coco_ranks[k]).abs() < epsilon);
+        assert!((*v - decracked_ranks[k]).abs() < epsilon);
+        assert!((*v - reco_ranks[k]).abs() < epsilon);
+        assert!((*v - coco_ranks[k]).abs() < epsilon);
         assert!((*v - underswap_ranks[k]).abs() < epsilon);
         assert!((*v - overswap_ranks[k]).abs() < epsilon);
     }
+}
+
+fn speed_test(sf: i16, mi: i16, n: i8) {
+    let mut diffs: Vec<Duration> = Vec::new();
+
+    for _ in 0..n {
+        let ds = PreciseTime::now();
+        let decracked_ranks = personrank::decracked_personrank(sf, mi);
+        let de = PreciseTime::now();
+
+        let dt = ds.to(de);
+
+        let os = PreciseTime::now();
+        let overswap_ranks  = personrank::overswap_personrank(sf, mi);
+        let oe = PreciseTime::now();
+
+        let ot = os.to(oe);
+
+        let diff = dt - ot;
+        diffs.push(diff);
+
+        let epsilon = 0.00001;
+
+        for (k, v) in &decracked_ranks {
+            assert!((*v - overswap_ranks[k]).abs() < epsilon);
+        }
+    }
+
+    let sum: Duration = diffs.iter().fold(Duration::hours(0), |sum, val| sum + *val);
+    let avg = sum / (diffs.len() as i32);
+
+    println!("===");
+    println!("Avg diff: {:?}", avg.to_string());
+    println!("===");
+}
+
+fn run_all() {
+    personrank::decracked_personrank(sf, mi);
+    personrank::reco_personrank(sf, mi);
+    personrank::coco_personrank(sf, mi);
+    personrank::underswap_personrank(sf, mi);
+    personrank::overswap_personrank(sf, mi);
 }
