@@ -70,19 +70,19 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
 
         let dt = ds.to(de);
 
-        let os = PreciseTime::now();
-        let overswap_ranks  = personrank::overswap_personrank(sf, mi);
-        let oe = PreciseTime::now();
+        let s = PreciseTime::now();
+        let underswap_ranks = personrank::underswap_personrank(sf, mi);
+        let e = PreciseTime::now();
 
-        let ot = os.to(oe);
+        let t = s.to(e);
 
-        let diff = dt - ot;
+        let diff = dt - t;
         diffs.push(diff);
 
         let epsilon = 0.00001;
 
         for (k, v) in &decracked_ranks {
-            assert!((*v - overswap_ranks[k]).abs() < epsilon);
+            assert!((*v - underswap_ranks[k]).abs() < epsilon);
         }
     }
 

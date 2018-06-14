@@ -216,24 +216,38 @@ impl UnderswapRLETable {
                 let rl_itr = self.crk_col.run_lengths[p_itr];
                 let rl_low = self.crk_col.run_lengths[p_low];
 
-                let n_swaps = if rl_itr == rl_low {
-                    rl_itr
+                if rl_itr == rl_low {
+                    self.crk_col.swap_range(rl_itr, p_low, p_itr);
+                    p_low += rl_itr;
                 } else {
-                    let cmp = (rl_itr < rl_low) as usize;
-                    let s_ptr = (p_itr * cmp)       + (p_low * (1 - cmp));
-                    let g_ptr = (p_itr * (1 - cmp)) + (p_low * cmp);
-                    let g_rl = self.crk_col.run_lengths[g_ptr];
-                    let s_rl = self.crk_col.run_lengths[s_ptr];
-                    self.crk_col.run_lengths[g_ptr + g_rl - 1] -= s_rl;
-                    self.crk_col.run_lengths[g_ptr + s_rl]      = self.crk_col.run_lengths[g_ptr + g_rl - 1];
-                    self.crk_col.run_lengths[g_ptr]             = s_rl;
-                    self.crk_col.run_lengths[g_ptr + s_rl - 1]  = s_rl;
-                    s_rl
-                };
+                    // Combine the runs
+                    let rl_low = p_itr - p_low;
 
-                self.crk_col.swap_range(n_swaps, p_low, p_itr);
-
-                p_low += n_swaps;
+                    if rl_itr > rl_low { // |S|BIG|
+                        // Set up L-run
+                        self.crk_col.run_lengths[p_low]     = rl_low;
+                        self.crk_col.run_lengths[p_itr - 1] = rl_low;
+                        // Prepare I-run for swap
+                        self.crk_col.run_lengths[p_itr + rl_itr - rl_low]     = rl_itr;
+                        self.crk_col.run_lengths[p_itr + rl_itr - rl_low - 1] = rl_itr;
+                        self.crk_col.swap_range(rl_low, p_low, p_itr + rl_itr - rl_low);
+                        p_low += rl_itr;
+                        p_itr += rl_itr - rl_low;
+                    } else if rl_itr < rl_low { // |BIG|S|
+                        // Prepare L-run for swap
+                        self.crk_col.run_lengths[p_low + rl_itr]     = rl_low;
+                        self.crk_col.run_lengths[p_low + rl_itr - 1] = rl_low;
+                        self.crk_col.swap_range(rl_itr, p_low, p_itr);
+                        p_low += rl_itr;
+                        p_itr += rl_itr;
+                    } else { // |EQ|EQ|
+                        // Set up L-run
+                        self.crk_col.run_lengths[p_low]     = rl_low;
+                        self.crk_col.run_lengths[p_itr - 1] = rl_low;
+                        self.crk_col.swap_range(rl_itr, p_low, p_itr);
+                        p_low += rl_itr;
+                    }
+                }
 
                 while self.crk_col.crk[p_low] < x && p_low < p_high {
                     let mut rl = self.crk_col.run_lengths[p_low];

@@ -269,32 +269,27 @@ impl CoCoTable {
             self.crk_col.ofs = (0..self.count).collect();
         }
 
-        // c_low(x)  <=> x outside catchment at low  end
-        // c_high(x) <=> x outside catchment at high end
-        let c_low = |n| n < x;
-        let c_high = |n| n > x;
-
-        let count = self.crk_col.crk.len();
+        let compressed_count = self.crk_col.crk.len();
 
         // Start with a pointer at both ends of the array: p_low, p_high
 
         let mut p_low = self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
-        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or((count - 1) as usize);
-        if p_high >= count { p_high = count - 1; }
-        if p_low >= count { p_low = count - 1; }
+        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or((compressed_count - 1) as usize);
+        if p_high >= compressed_count { p_high = compressed_count - 1; }
+        if p_low  >= compressed_count { p_low  = compressed_count - 1; }
 
         // PHASE 1: Move pointers inwards
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
-        while c_low(self.crk_col.crk[p_low]) {
+        while self.crk_col.crk[p_low] < x {
             p_low += 1;
-            if p_low == count as usize {
+            if p_low == compressed_count as usize {
                 return vec![];
             }
         }
 
         // while p_high is pointing at an element satisfying c_high, move it backwards
-        while c_high(self.crk_col.crk[p_high]) {
+        while self.crk_col.crk[p_high] > x {
             if p_high == 0 {
                 return vec![];
             }
@@ -303,7 +298,7 @@ impl CoCoTable {
 
         // If the vertex is compressed/contains a single entry, return.
         if p_low == p_high {
-            if p_low == (count - 1) {
+            if p_low == (compressed_count - 1) {
                 if self.crk_col.crk_idx.contains(self.crk_col.crk[p_low]) && self.crk_col.crk_idx.contains(self.crk_col.crk[p_low] + 1) {
                     return self.decompress_values(p_low, col);
                 } else {
@@ -323,19 +318,19 @@ impl CoCoTable {
         let mut p_itr = p_low.clone();
 
         while p_itr <= p_high {
-            if c_low(self.crk_col.crk[p_itr]) {
+            if self.crk_col.crk[p_itr] < x {
                 self.crk_col.crk.swap(p_low, p_itr);
                 self.crk_col.base_idx.swap(self.crk_col.ofs[p_low], self.crk_col.ofs[p_itr]);
-                while c_low(self.crk_col.crk[p_low]) {
+                while self.crk_col.crk[p_low] < x {
                     p_low += 1;
                 }
                 if p_itr < p_low {
                     p_itr = p_low.clone();
                 }
-            } else if c_high(self.crk_col.crk[p_itr]) {
+            } else if self.crk_col.crk[p_itr] > x {
                 self.crk_col.crk.swap(p_itr, p_high);
                 self.crk_col.base_idx.swap(self.crk_col.ofs[p_itr], self.crk_col.ofs[p_high]);
-                while c_high(self.crk_col.crk[p_high]) {
+                while self.crk_col.crk[p_high] > x {
                     p_high -= 1;
                 }
             } else {
