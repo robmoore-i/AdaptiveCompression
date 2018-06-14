@@ -4,63 +4,168 @@
 
 \section{Database Cracking}
 
-In this section we'll give a more detailed look at the cracking algorithm and the way in which we
-have employed it in this project.
+Database cracking was invented by Stratos Idreos as a method of auto-tuning for database kernels by using workload-aware physical restructuring on queried columns. It forms the basis for our contributions in which we apply variants of cracking to graph algorithms with adaptive compression.
 
-The algorithm we describe here as "the database cracking algorithm" is actually the "crack in three"
-variant of the algorithm as described by Idreos. This algorithm is a scan of a partition of a column in which values are rearranged in order to achieve a partial sort on the column. Through repeated
-scans of this nature the column approaches and eventually reaches a fully sorted state. There is also
-the possibility of not fully sorting the column, instead scanning naively provided the fragment
-under inspection is below a threshold size.
+\subsection{Cracker Column}
 
-In the first stage of the algorithm, a contiguous section of the column is selected for scanning by
-selecting two pointers from the cracker index, between which all of the result tuples are known to
-lie. If the cracker index is empty, then the entire column is selected as the sole fragment of the
-column. We will commonly refer to a section of the column which can be specified by values inside the cracker index as column fragments, or just fragments.
+To create an adaptive index for a relational database using a given column, we first copy that column into what is called a cracker column. When executing queries on the chosen column, we execute those queries on the cracker column using modified database operations called cracking operations. In this report we only need to use selection, however cracking can be exploited for insertion, deletion, updates and joins, as well as other operations. We will denote the cracker column by \textit{crk}.
 
-If \texttt{(value, index)} is stored in the cracker index, then at all indices preceeding
-\texttt{index}, the corresponding value in the cracker column is strictly less than \texttt{value}.
+\subsection{Cracker Select}
 
-In order to map back from the cracker column to the original columns of the table, we use an array
-which is initialised to store successive integers from 0, of the same length as the table. We apply
-all swapping operations to this array as well as the cracker column, which means that any range of
-values in the cracker column have indices which map to those same values in the original column of
-the original table. We refer to this array as the \texttt{base\_idx} array
+Initially, there is no information known about the values in the column and their locations. When a ordering query is sent to the cracker column, the column is scanned, and after the scan, all values too small to be selected appear contiguously at the start of the column, followed by all of the selected values, followed by all of the values too large to be selected. Below is an illustration indicating the effect of a cracking operation.
 
-We define two predicates with respect to the selected range of values. The first returns true when
-its input is outside of the selection on the lower end, the second returns true if the input is
-outside the selection on the higher end. We will refer to these predicates as lowp and highp
-respectively.
+\begin{figure}[h]
+  \centering
+  \includegraphics[]{d1_background_cracker_select}
+  \caption{Cracking physically restructures the column towards being sorted}
+  \label{fig:cracker_select_restructuring}
+\end{figure}
 
-The selected fragment is defined by two edge pointers which we have looked up. One pointing at the
-lower side of the fragment, \texttt{low\_ptr}, and one pointing at the upper side, \texttt{high\_ptr}.
-At all times during the algorithm, we will maintain the invariant that all indices before
-\texttt{low\_ptr} will point to a value in the cracker column which satisfies lowp. Similarly, all
-pointers after \texttt{high\_ptr} point to a value in the cracker column satisfying highp. By "all pointers", I mean all valid pointers across the entire of the cracker column.
+Every time we perform a new cracking scan, we learn more information about the values within the column and their associated locations. Our aim is to store and exploit this information to achieve a speed up in performing queries. Notably, selections which occur first in queries are clustered first. In this way the physical layout of the cracker column is adaptive to the workload the database is under. The contiguous regions created through cracking operations are called column fragments.
 
-We then tighten the two edge pointes inwards while the associated invariant holds. We will refer to
-this procedure as tightening.
+\subsection{Column Fragments}
 
-The next part involves scanning the fragment between the edge pointers. An iteration pointer,
-\texttt{itr\_ptr}, begins at the same point as \texttt{low\_ptr}, scanning upwards. For each value that it encounters in the cracker column, it is determined using the predicates, in which region of
-the column the value belongs - the low side out-of-bounds region, the selected region, or the upper
-side out-of-bounds region. If the value is not selected, that is, if it's out-of-bounds, it is swapped
-with the value at the respective edge pointer. The edge pointer is then tightened - resulting in it
-moving inwards by at least one, since the swapped-in value was determined to be out-of-bounds on that
-side. During the scan, we maintain the loop invariant that all indices before \texttt{itr\_ptr} point
-to a value in the cracker column which satisfies either lowp, or is within the selected range, which
-is equivalent to saying that all the indices from \texttt{low\_ptr} inclusive to \texttt{itr\_ptr}
-exclusive are within the selected range. At the end of the algorithm therefore, we will find that
-this corresponds with the inclusive range from \texttt{low\_ptr} to \texttt{high\_ptr}, which is
-defined by lowp values earlier in the column and highp values later in the column.
+Central to the use of cracking is the concept of a column fragment. This represents a contiguous region of the cracker column whose constituent values are potentially bounded by known values. Initially, the entire column represents the only column fragment where there are no bounds yet on the values. However, as queries come in, the scans across the cracker column cause us to gain knowledge about contiguous regions of the column and the values which bound them. As we build up more knowledge about the column, the column fragments get broken up smaller and smaller, meaning that the size of our scans is decreasing as well, given that we are exploiting our knowledge about the fragments and their bounds.
 
-After the scan is concluded, we have access to some information about the column we wish to store
-within the cracker index. The value at \texttt{low\_ptr} in the cracker column exceeds the values in all preceeding indices, therefore we store the key-value pair (cracker-column[\texttt{low\_ptr}],
-\texttt{low\_ptr}) to indicate this fact. Similarly, we know that all values at indices strictly greater than \texttt{high\_ptr} are strictly greater than the value stored at \texttt{high\_ptr}, so
-we store (cracker-column[\texttt{high\_ptr}] + 1, \texttt{high\_ptr} + 1).\footnote{For integers, the
-minimum difference between elements is 1, however, for other datatypes, this may be different. See
-the subsection on per-fragment compression within the adaptive compression chapter for a brief discussion on this point.}
+The information about the column fragments is stored in the cracker index.
 
-Having acquired the range of indices in which our desired range of values lies in the cracker column,
-we map this back to indices of the original columns using the \texttt{base\_idx} array, collect the
-values from the required columns, and return them.
+\subsection{Cracker Index}
+
+The cracker index is a storage data-structure which holds the workload-aware memory about the cracker column fragments. It is denoted \textit{CrkIdx} and is subject to one invariant:
+
+\begin{tcolorbox}
+$\texttt{(value, index)}$ $\epsilon$ $\texttt{CrkIdx} \Longrightarrow \forall i < \texttt{index}: crk[i] < \texttt{value}$
+\end{tcolorbox}
+
+In plain English, if a \texttt{(value, index)} pair are stored in the cracker index, then all values before \texttt{index} in the cracker column are less than \texttt{value}.
+
+When performing queries, we want to scan only the necessary parts of the column, so we use the information stored in the cracker index to identify the smallest column fragment which is known to contain all of the values we are looking for. After executing such a scan, we put information into the cracker index, effectively breaking up the column fragment we just scanned so that future queries will have to scan less.
+
+\subsection{Tuple Reconstruction}
+
+The cracker column is a copy of the original column, however, the cracking operations only apply to the cracker column, so to reconstruct original tuples based on our results from the cracker column, we use an additional array to act as the mapping between indices in the cracker column and indices in the base (original) columns. This is \textit{late} tuple reconstruction. When the cracker column is initialised, this array is also initialised, its value being an enumeration of the indices from 0 to the length of the column. We call this array the $base\_index$. All restructuring operations that happen to the cracker column also happen to the $base\_index$, in order to maintain the mapping between cracker and base columns.
+
+\subsection{Crack-in-three Algorithm}
+
+The algorithm we describe here as "the cracking algorithm" is actually the "crack in three" variant of the algorithm as described by Idreos. We are using this because for our use case, in which we are always selecting a single node, the crack-in-three algorithm is appropriate, whereas the simpler and faster crack-in-two scan is appropriate when querying for values one side of a given value.
+
+The cracker select operator is called with a low value, $low$ and a high value, $high$, as well as two booleans which indicate the inclusivity of these boundaries. The select returns all the values between $low$ and $high$ in the column using the specified inclusivities.
+
+The cracking algorithm can be grouped into five stages: Setup, tighten, scan, memo and return.
+
+\subsubsection{Stage 1: Setup}
+
+In the first stage of the algorithm, a contiguous section of the column is selected for scanning. If the column hasn't been cracked yet, the cracker column and $base\_index$ are initialised.
+
+Using the arguments, we define the smallest and largest values in the selected range, which depend on the inclusivity of the range at each end.
+
+\begin{tcolorbox}
+
+$\sigma _{min}$ = 
+\begin{math}
+  \left\{
+    \begin{array}{l}
+      $low + 1$ \footnote{For integers, the minimum difference between elements is 1, however, for other data types, this may be different. This is discussed further in \ref{ss:perfrag}.} \texttt{, if not inclusive}\\
+      $low$ \texttt{, if inclusive}
+    \end{array}
+  \right.
+\end{math}\\
+\newline{}\\
+$\sigma _{max}$ = 
+\begin{math}
+  \left\{
+    \begin{array}{l}
+      $high - 1$ \texttt{, if not inclusive}\\
+      $high$ \texttt{, if inclusive}
+    \end{array}
+  \right.
+\end{math}\\
+\end{tcolorbox}
+
+We then determine the initial values for the two \textit{edge pointers}. There is a low pointer and a high pointer, which we will denote as $L$ and $H$. These two pointers are subject during the scan to the following invariants.
+
+\begin{tcolorbox}
+$(L1)$  $\forall i < L: crk[i] < \sigma _{min}$\\
+$(L2)$ $crk[L] \geq \sigma _{min}$\\
+$(H1)$ $\forall i > H: crk[i] > \sigma _{max}$\\
+$(H2)$ $crk[H] \leq \sigma _{max}$
+\end{tcolorbox}
+
+The edge pointers then, bound the region of the cracker column in which all of the sought values lie. It would be optimal to initialise them as \textit{tightly} as possible. When we say \textit{tightly}, what we mean is as far from their associated edge as possible. For $L$ this means as close to the end of the column as possible, and for $H$ this means as close to the head of the column as possible.
+
+To initialise the edge pointers, we search in the cracker index for values which most tightly bound the region of cracker column we have to scan. For $L$, we are looking for the value in the cracker index which is as high as possible, but no more than $low$. If no such value exists, $L$ is intialised at 0. Similarly, for $H$, we seek the value in the cracker index which is as low as possible, but no less than $high$. If no such value exists, $H$ is initialised as $|crk| - 1$.
+
+\subsubsection{Stage 2: Tighten}
+
+The tightening operation involves moving the two edge pointers inwards as far as possible while maintaining their invariants. In practice this is a while loop which checks the associated invariant and if it still holds, tightens the pointer (increment in the case of $L$, decrement in the case of $H$).
+
+During this stage, it is possible to discover that no results exist. For example, if we try to select a value greater than any value in the column, then $L$ will advance all the way off the tail end. For $H$ of course, this happens when we select a value lower than any in the column, with it decrementing off the start of the column. In both of these cases, we return empty results.
+
+Both tightening operations (low-side and high-side) are used in the next stage of the algorithm as well.
+
+\subsubsection{Stage 3: Scan}
+
+At the start of this stage, $L$ is duplicated to produce the \textit{iteration pointer}, denoted $I$, which is subject to a single invariant.
+
+\begin{tcolorbox}
+$\forall i: L \leq i < I, \sigma _{min} \leq crk[i] \leq \sigma _{max}$
+\end{tcolorbox}
+
+The iteration pointer is used to scan the fragment from $L$ to $H$. As $I$ encounters values within the fragment, it is determined where in the final arrangement they should lie. For example, if the value is less than $\sigma _{min}$, then it is swapped to the value at $L$, and then $L$ is tightened. This maintains the $L$ invariant, while making progress towards the situation in which only selected values are between $L$ and $H$, which is the point at which the scan in finished.
+
+If the value at $I$ is one of the sought values, then $I$ is advanced, which maintains its invariant. Because of this, when $I$ surpasses $H$, this means that all values between $L$ and $H$ inclusive are in the selected range, and by the invariants on $L$ and $H$, every value in the selected range in the column lies between $L$ and $H$, meaning that we're finished with the scan.
+
+Figures \ref{fig:cracking_scan_low_side_1} to \ref{fig:cracking_scan_low_side_3} show the low side swap case from the identification of the swap to the advancement of the low pointer.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d2_background_cracking_scan_1a}
+  \caption{Standard Cracking: Low-side swap recognised}
+  \label{fig:cracking_scan_low_side_1}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d2_background_cracking_scan_1b}
+  \caption{Standard Cracking: Low-side swap performed}
+  \label{fig:cracking_scan_low_side_2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d2_background_cracking_scan_1c}
+  \caption{Standard Cracking: Low edge pointer tightened after swap}
+  \label{fig:cracking_scan_low_side_3}
+\end{figure}
+
+Figures \ref{fig:cracking_scan_high_side_1} to \ref{fig:cracking_scan_high_side_3} show the same thing for the high-side swap.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d3_background_cracking_scan_2a}
+  \caption{Standard Cracking: High-side swap recognised}
+  \label{fig:cracking_scan_high_side_1}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d3_background_cracking_scan_2b}
+  \caption{Standard Cracking: High-side swap performed}
+  \label{fig:cracking_scan_high_side_2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[]{d3_background_cracking_scan_2c}
+  \caption{Standard Cracking: High edge pointer tightened after swap}
+  \label{fig:cracking_scan_high_side_3}
+\end{figure}
+
+\subsubsection{Stage 4: Memo}
+
+At this point, we know for a fact that all values before $L$ in $crk$ are also less than $\sigma _{min}$. This combination of $L$ and $\sigma _{min}$ is enough information to satisfy the main property of the cracker index, so we insert $(L, \sigma _{min})$. Additionally, we know all values before and including $H$ in $crk$ are less than $\sigma _{max}$, so all values before $H+1$ in $crk$ satisfy the required cracker index property. Hence we also insert $(H + 1, \sigma _{max})$.
+
+\subsubsection{Stage 5: Return}
+
+Having acquired the range of cracker column indices in which the selected values lie, we map this back to indices of the original columns using the \texttt{base\_idx} array and retrieve values from the desired column.
