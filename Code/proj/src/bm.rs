@@ -29,7 +29,7 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    personrank::benchmark_all(3, 100, 10);
+    personrank::benchmark_all(10, 100, 10);
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).

@@ -29,3 +29,19 @@ Reco:         2.795305797s
 Coco:         3.204614897s
 Underswap:    3.039666007s
 Overswap:     2.952789012s
+
+SF3+100i
+Preclustered: 4.7265719610s
+Decracked:    13.503116437s
+Reco:         12.117731781s
+Coco:         15.533414527s
+Underswap:    13.379291867s
+Overswap:     13.274723342s
+
+SF10+100i
+Preclustered: 16.736757173s
+Decracked:    56.881621326s
+Reco:         54.017887466s
+Coco:         105.00248188s
+Underswap:    57.722683237s
+Overswap:     57.755641761s
