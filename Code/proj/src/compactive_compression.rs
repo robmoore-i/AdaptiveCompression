@@ -41,15 +41,12 @@ impl CoCoTable {
 
         match self.int_columns.get_mut(&(col_name.to_string())) {
             Some(ref mut c) => {
-                if c.crk.is_empty() {
-                    c.crk = c.v.clone();
-                }
-                self.crk_col.v = c.crk.clone();
-                self.crk_col.crk = c.crk.clone();
+                self.crk_col.v = c.v.clone();
+                self.crk_col.crk = c.v.clone();
                 self.crk_col.base_idx = (0..self.count).collect();
             },
             None => panic!("set_crk_col: no such col"),
-        }
+        };
     }
 
     pub fn new_columns(&mut self, cols: Vec<&str>) {
@@ -256,15 +253,8 @@ impl CoCoTable {
 
     // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
     pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
-
         // PHASE 0: Setup
 
-        // If column hasn't been cracked before, copy it, and copy a reference to the current
-        // indices of the base table.
-        if self.crk_col.crk.is_empty() {
-            self.crk_col.crk = self.crk_col.v.clone();
-            self.crk_col.base_idx = (0..self.count).collect();
-        }
         if self.crk_col.ofs.is_empty() {
             self.crk_col.ofs = (0..self.count).collect();
         }

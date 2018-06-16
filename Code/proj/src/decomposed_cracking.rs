@@ -117,6 +117,7 @@ impl DeCrackedTable {
         // Start with a pointer at both ends of the array: p_low, p_high
         let mut p_low = self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
         let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
+        if p_high + 1 == 0 { return vec![] }; // Value lower than lowest value in column - No results.
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
         while self.crk_col.crk[p_low] < x {
@@ -137,6 +138,7 @@ impl DeCrackedTable {
         if p_low == p_high {
             return self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col);
         }
+
 
         let mut p_itr = p_low.clone();
 
@@ -162,7 +164,7 @@ impl DeCrackedTable {
         }
 
         self.crk_col.crk_idx.insert(x, p_low);
-        self.crk_col.crk_idx.insert(x + 1, (p_high + 1));
+        self.crk_col.crk_idx.insert(x + 1, p_high + 1);
         self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col)
     }
 

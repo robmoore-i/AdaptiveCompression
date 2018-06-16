@@ -29,7 +29,7 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    speed_test(1, 10, 1);
+    personrank::benchmark_all(10, 50, 10);
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).
@@ -40,10 +40,11 @@ fn break_even_points(n: i64, i: usize) {
     let mut underswap_queries = Vec::new();
     let mut overswap_queries = Vec::new();
 
-    for _i in 0..i {
+    for j in 0..i {
+        let start = PreciseTime::now();
         let (src, dst) = datagen::randomly_connected_tree(n);
         let start_node = rand::thread_rng().gen_range(1, n);
-        println!("Created tree {}", _i);
+        println!("Created tree {} after {} seconds", j, start.to(PreciseTime::now()).to_string());
 
         let start = PreciseTime::now();
         bfs::precluster(&src, &dst);

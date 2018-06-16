@@ -1,0 +1,17 @@
+SF1+50i
+Preclustered: 0.653347008s
+Decracked:    1.446973441s
+Reco:         1.336495170s
+Coco:         1.635407046s
+Underswap:    1.448379580s
+Overswap:     1.459145489s
+
+SF3+50i
+Preclustered: PT2.419732900S
+Decracked:    PT6.546964296S
+Reco:         PT5.782988594S
+Coco:         PT8.766360797S
+Underswap:    PT6.493099248S
+Overswap:     PT6.460100086S
+
+SF10+50i

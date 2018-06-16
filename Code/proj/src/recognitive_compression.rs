@@ -179,6 +179,7 @@ impl ReCoTable {
         // Start with a pointer at both ends of the piece: p_low, p_high
         let mut p_low =  self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
         let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
+        if p_high + 1 == 0 { return vec![] };
 
         let is_uniform_column_piece = self.crk_col.crk_idx.contains(x) && self.crk_col.crk_idx.contains(x + 1);
         if is_uniform_column_piece {
