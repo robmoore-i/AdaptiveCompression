@@ -40,11 +40,8 @@ impl ReCoTable {
 
         match self.int_columns.get_mut(&(col_name.to_string())) {
             Some(ref mut c) => {
-                if c.crk.is_empty() {
-                    c.crk = c.v.clone();
-                }
-                self.crk_col.v        = c.crk.clone();
-                self.crk_col.crk      = c.crk.clone();
+                self.crk_col.v        = c.v.clone();
+                self.crk_col.crk      = c.v.clone();
                 self.crk_col.base_idx = (0..self.count).collect();
             },
             None => panic!("set_crk_col: no such col"),
@@ -245,9 +242,8 @@ impl ReCoTable {
             }
         }
 
-        // let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
         self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
-        self.crk_col.crk_idx.insert(high + inc_h as i64, p_itr);
+        self.crk_col.crk_idx.insert(high + inc_h as i64, p_high + 1);
         self.get_values(self.crk_col.base_idx[p_low..p_itr].iter(), col)
     }
 
