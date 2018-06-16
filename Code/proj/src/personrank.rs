@@ -8,6 +8,7 @@ use load_person_csv;
 
 use std::collections::HashMap;
 use time::PreciseTime;
+use time::Duration;
 
 fn get_out_degree(vertices: &Vec<i64>, src: &Vec<i64>) -> HashMap<i64, i64> {
     let mut out_degree: HashMap<i64, i64> = HashMap::new();
@@ -27,19 +28,63 @@ fn get_vertices(people: &Vec<load_person_csv::Person>) -> Vec<i64> {
     people.iter().map(|p|p.id).collect()
 }
 
-pub fn unoptimised_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("unoptimised personrank, sf = {}, iterations = {}", sf, max_iterations);
+pub fn benchmark_all(scale_factor: i16, pagerank_iterations: i16, averaging_iterations: usize) {
+    let (people, (src, dst)) = match scale_factor {
+        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
+        3 => (load_person_csv::sf3_nodes(), load_person_csv::sf3_edges_adjl()),
+        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
+        _ => panic!("No data for scale_factor: {}", scale_factor),
+    };
+    let vertices = get_vertices(&people);
+    
+    let mut preclustered_times = Vec::new();
+    let mut decracked_times = Vec::new();
+    let mut reco_times = Vec::new();
+    let mut coco_times = Vec::new();
+    let mut underswap_times = Vec::new();
+    let mut overswap_times = Vec::new();
+
+    for _ in 0..averaging_iterations {
+        // let unoptimised_ranks = unoptimised_personrank(vertices.clone(), src.clone(), dst.clone(), max_iterations);
+        let (preclustered_ranks, preclustered_t) = preclustered_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+        let (decracked_ranks, decracked_t)       = decracked_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+        let (reco_ranks, reco_t)                 = reco_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+        let (coco_ranks, coco_t)                 = coco_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+        let (underswap_ranks, underswap_t)       = underswap_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+        let (overswap_ranks, overswap_t)         = overswap_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
+
+        preclustered_times.push(preclustered_t);
+        decracked_times.push(decracked_t);
+        reco_times.push(reco_t);
+        coco_times.push(coco_t);
+        underswap_times.push(underswap_t);
+        overswap_times.push(overswap_t);
+        
+        let epsilon = 0.00001;
+
+        for (k, v) in &preclustered_ranks {
+            assert!((*v - decracked_ranks[k]).abs() < epsilon);
+            assert!((*v - reco_ranks[k]).abs() < epsilon);
+            assert!((*v - coco_ranks[k]).abs() < epsilon);
+            assert!((*v - underswap_ranks[k]).abs() < epsilon);
+            assert!((*v - overswap_ranks[k]).abs() < epsilon);
+        }
+    }
+
+    println!("Preclustered: {}", preclustered_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+    println!("Decracked:    {}", decracked_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+    println!("Reco:         {}", reco_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+    println!("Coco:         {}", coco_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+    println!("Underswap:    {}", underswap_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+    println!("Overswap:     {}", overswap_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));
+}
+
+pub fn unoptimised_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> HashMap<i64, f64> {
+    println!("unoptimised personrank");
     // Setup
 
     let start = PreciseTime::now();
 
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let (n, d) = (vertices.len(), 0.85);
 
@@ -86,24 +131,15 @@ pub fn unoptimised_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64>
     new_rank
 }
 
-pub fn preclustered_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("preclustered personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn preclustered_personrank(vertices: Vec<i64>, mut src: Vec<i64>, mut dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("preclustered personrank");
 
     let start = PreciseTime::now();
 
-    let (people, (mut src, mut dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     let e = src.len();
 
@@ -177,30 +213,21 @@ pub fn preclustered_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }
 
-pub fn decracked_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("decracked personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn decracked_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("decracked personrank");
 
     let start = PreciseTime::now();
 
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src, dst, "dst");
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -236,30 +263,21 @@ pub fn decracked_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }
 
-pub fn reco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("reco personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn reco_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("reco personrank");
 
     let start = PreciseTime::now();
 
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = recognitive_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -295,30 +313,21 @@ pub fn reco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }
 
-pub fn coco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("coco personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn coco_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("coco personrank");
 
     let start = PreciseTime::now();
 
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = compactive_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -354,31 +363,22 @@ pub fn coco_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }
 
-pub fn underswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("underswap personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn underswap_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("underswap personrank");
 
     let start = PreciseTime::now();
 
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src, dst, "dst");
 
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -414,30 +414,21 @@ pub fn underswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }
 
-pub fn overswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
-    println!("overswap personrank, sf = {}, iterations = {}", sf, max_iterations);
-    // Setup
+pub fn overswap_personrank(vertices: Vec<i64>, src: Vec<i64>, dst: Vec<i64>, max_iterations: i16) -> (HashMap<i64, f64>, Duration) {
+    println!("overswap personrank");
 
     let start = PreciseTime::now();
-
-    let (people, (src, dst)) = match sf {
-        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
-        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
-        _ => panic!("No data for sf: {}", sf),
-    };
-
-    let vertices = get_vertices(&people);
+    
     let out_degree = get_out_degree(&vertices, &src);
     let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src, dst, "dst");
     let (n, d) = (vertices.len(), 0.85);
 
     let setup_end = PreciseTime::now();
-    println!("cfg_time = {:?}", (start.to(setup_end)).to_string());
 
     // Personrank
 
@@ -473,7 +464,7 @@ pub fn overswap_personrank(sf: i16, max_iterations: i16) -> HashMap<i64, f64> {
     }
 
     let alg_end = PreciseTime::now();
-    println!("run_time = {:?}", (setup_end.to(alg_end)).to_string());
+    let alg_time = setup_end.to(alg_end);
 
-    new_rank
+    (new_rank, alg_time)
 }

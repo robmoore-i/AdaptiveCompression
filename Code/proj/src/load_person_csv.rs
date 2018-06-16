@@ -23,6 +23,10 @@ pub fn social_network_sf1() -> String {
     cur_data_home().to_string() + "/social_network_sf1"
 }
 
+pub fn social_network_sf3() -> String {
+    cur_data_home().to_string() + "/social_network_sf3"
+}
+
 pub fn social_network_sf10() -> String {
     cur_data_home().to_string() + "/social_network_sf10"
 }
@@ -156,6 +160,18 @@ pub fn sf1_edges() -> Vec<Friendship> {
 
 pub fn sf1_edges_adjl() -> (Vec<i64>, Vec<i64>) {
     read_edges_adjl(edges(social_network_sf1()))
+}
+
+pub fn sf3_nodes() -> Vec<Person> {
+    read_nodes(nodes(social_network_sf3()))
+}
+
+pub fn sf3_edges() -> Vec<Friendship> {
+    read_edges(edges(social_network_sf3()))
+}
+
+pub fn sf3_edges_adjl() -> (Vec<i64>, Vec<i64>) {
+    read_edges_adjl(edges(social_network_sf3()))
 }
 
 pub fn sf10_nodes() -> Vec<Person> {

@@ -29,9 +29,7 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    let sf = 1;
-    let mi = 10;
-    break_even_points(100000, 5);
+    personrank::benchmark_all(1, 30, 5)
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).
@@ -73,43 +71,24 @@ fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {
     print!("{}\n", "}");
 }
 
-fn check_s3g2_pr(sf: i16, mi: i16) {
-    let preclustered_ranks = personrank::preclustered_personrank(sf, mi);
-    let decracked_ranks    = personrank::decracked_personrank(sf, mi);
-    let reco_ranks         = personrank::reco_personrank(sf, mi);
-    let coco_ranks         = personrank::coco_personrank(sf, mi);
-    let underswap_ranks    = personrank::underswap_personrank(sf, mi);
-    let overswap_ranks     = personrank::overswap_personrank(sf, mi);
-
-    let epsilon = 0.00001;
-    
-    for (k, v) in &preclustered_ranks {
-        assert!((*v - decracked_ranks[k]).abs() < epsilon);
-        assert!((*v - reco_ranks[k]).abs() < epsilon);
-        assert!((*v - coco_ranks[k]).abs() < epsilon);
-        assert!((*v - underswap_ranks[k]).abs() < epsilon);
-        assert!((*v - overswap_ranks[k]).abs() < epsilon);
-    }
-}
-
 fn speed_test(sf: i16, mi: i16, n: i8) {
     println!("Speed test over {} iterations", n);
     let mut diffs: Vec<Duration> = Vec::new();
 
+    let (people, (src, dst)) = match sf {
+        1 => (load_person_csv::sf1_nodes(), load_person_csv::sf1_edges_adjl()),
+        3 => (load_person_csv::sf3_nodes(), load_person_csv::sf3_edges_adjl()),
+        10 => (load_person_csv::sf10_nodes(), load_person_csv::sf10_edges_adjl()),
+        _ => panic!("No data for scale_factor: {}", sf),
+    };
+    let vertices: Vec<i64> = people.iter().map(|p|p.id).collect();
+
     for _ in 0..n {
-        let ds = PreciseTime::now();
-        let decracked_ranks = personrank::decracked_personrank(sf, mi);
-        let de = PreciseTime::now();
+        let (decracked_ranks, dt) = personrank::decracked_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
-        let dt = ds.to(de);
+        let (underswap_ranks, ut) = personrank::underswap_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
-        let s = PreciseTime::now();
-        let underswap_ranks = personrank::underswap_personrank(sf, mi);
-        let e = PreciseTime::now();
-
-        let t = s.to(e);
-
-        let diff = dt - t;
+        let diff = dt - ut;
         diffs.push(diff);
 
         let epsilon = 0.00001;
@@ -125,14 +104,6 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     println!("===");
     println!("Avg diff: {:?}", avg.to_string());
     println!("===");
-}
-
-fn run_all(sf: i16, mi: i16) {
-    personrank::decracked_personrank(sf, mi);
-    personrank::reco_personrank(sf, mi);
-    personrank::coco_personrank(sf, mi);
-    personrank::underswap_personrank(sf, mi);
-    personrank::overswap_personrank(sf, mi);
 }
 
 fn speed_test_tighten(selectivity: f64, n: usize) {
