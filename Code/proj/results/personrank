@@ -7,11 +7,25 @@ Underswap:    1.448379580s
 Overswap:     1.459145489s
 
 SF3+50i
-Preclustered: PT2.419732900S
-Decracked:    PT6.546964296S
-Reco:         PT5.782988594S
-Coco:         PT8.766360797S
-Underswap:    PT6.493099248S
-Overswap:     PT6.460100086S
+Preclustered: 2.419732900s
+Decracked:    6.546964296s
+Reco:         5.782988594s
+Coco:         8.766360797s
+Underswap:    6.493099248s
+Overswap:     6.460100086s
 
 SF10+50i
+Preclustered: 10.620632675s
+Decracked:    30.074364334s
+Reco:         28.705369067s
+Coco:         82.696947944s
+Underswap:    31.189827726s
+Overswap:     31.368731724s
+
+SF1+100i
+Preclustered: 1.283603660s
+Decracked:    3.091417834s
+Reco:         2.795305797s
+Coco:         3.204614897s
+Underswap:    3.039666007s
+Overswap:     2.952789012s
