@@ -29,7 +29,7 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    personrank::benchmark_all(1, 30, 5)
+    speed_test(1, 10, 1);
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).
@@ -86,7 +86,7 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     for _ in 0..n {
         let (decracked_ranks, dt) = personrank::decracked_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
-        let (underswap_ranks, ut) = personrank::underswap_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
+        let (reco_ranks, ut) = personrank::reco_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
         let diff = dt - ut;
         diffs.push(diff);
@@ -94,7 +94,7 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
         let epsilon = 0.00001;
 
         for (k, v) in &decracked_ranks {
-            assert!((*v - underswap_ranks[k]).abs() < epsilon);
+            assert!((*v - reco_ranks[k]).abs() < epsilon);
         }
     }
 
