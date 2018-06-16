@@ -178,14 +178,12 @@ impl ReCoTable {
     pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
         // Start with a pointer at both ends of the piece: p_low, p_high
         let mut p_low =  self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
-        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count);
+        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
 
         let is_uniform_column_piece = self.crk_col.crk_idx.contains(x) && self.crk_col.crk_idx.contains(x + 1);
         if is_uniform_column_piece {
-            return self.get_values(self.crk_col.base_idx[p_low..p_high].iter(), col);
+            return self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col);
         }
-        if p_high == self.count { p_high = self.count - 1 };
-        if p_low  == self.count { p_low  = self.count - 1 };
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
         while self.crk_col.crk[p_low] < x {
@@ -232,8 +230,7 @@ impl ReCoTable {
 
         self.crk_col.crk_idx.insert(x, p_low);
         self.crk_col.crk_idx.insert(x + 1, p_high + 1);
-        assert_eq!(p_high + 1, p_itr);
-        self.get_values(self.crk_col.base_idx[p_low..p_itr].iter(), col)
+        self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col)
     }
 
     // Counts the places where a given column equals a given value

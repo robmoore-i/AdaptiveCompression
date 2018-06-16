@@ -84,8 +84,8 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     let vertices: Vec<i64> = people.iter().map(|p|p.id).collect();
 
     for _ in 0..n {
+        let (preclustered_ranks, _) = personrank::preclustered_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
         let (decracked_ranks, dt) = personrank::decracked_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
-
         let (reco_ranks, ut) = personrank::reco_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
         let diff = dt - ut;
@@ -93,7 +93,8 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
 
         let epsilon = 0.00001;
 
-        for (k, v) in &decracked_ranks {
+        for (k, v) in &preclustered_ranks {
+            assert!((*v - decracked_ranks[k]).abs() < epsilon);
             assert!((*v - reco_ranks[k]).abs() < epsilon);
         }
     }
@@ -102,7 +103,7 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     let avg = sum / (diffs.len() as i32);
 
     println!("===");
-    println!("Avg diff: {:?}", avg.to_string());
+    println!("On avg decracked is {:?} slower than reco", avg.to_string());
     println!("===");
 }
 
