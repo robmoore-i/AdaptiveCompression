@@ -120,7 +120,7 @@ fn speed_test_tighten(selectivity: f64, n: usize) {
     }
 
     let x = 1;
-    println!("Selecting {} from {}, {} times", x, v, n);
+    print!("Selecting {} from {}, {} times: ", x, v, n);
 
     let mut ts: Vec<Duration> = Vec::new();
     for _ in 0..n {
