@@ -31,6 +31,38 @@ use rand::Rng;
 fn main() {
     let sf = 1;
     let mi = 10;
+    break_even_points(100000, 5);
+}
+
+// Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).
+fn break_even_points(n: i64, i: usize) {
+    let mut decracked_queries = Vec::new();
+    let mut reco_queries = Vec::new();
+    let mut coco_queries = Vec::new();
+    let mut underswap_queries = Vec::new();
+    let mut overswap_queries = Vec::new();
+
+    for _i in 0..i {
+        let (src, dst) = datagen::randomly_connected_tree(n);
+        let start_node = rand::thread_rng().gen_range(1, n);
+        println!("Created tree {}", _i);
+
+        let start = PreciseTime::now();
+        bfs::precluster(&src, &dst);
+        let d = start.to(PreciseTime::now());
+
+        decracked_queries.push(bfs::decracked_bfs_adjl_until(decomposed_cracking::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node, d));
+        reco_queries.push(bfs::reco_bfs_adjl_until(recognitive_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node, d));
+        coco_queries.push(bfs::coco_bfs_adjl_until(compactive_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node, d));
+        underswap_queries.push(bfs::underswap_bfs_adjl_until(underswap_rle_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node, d));
+        overswap_queries.push(bfs::overswap_bfs_adjl_until(overswap_rle_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node, d));
+    }
+
+    println!("Decracked: {}", decracked_queries.iter().fold(0 as f64, |sum, val| sum + (*val  as f64)) / (i as f64));
+    println!("Reco:      {}", reco_queries.iter().fold(0 as f64, |sum, val| sum + (*val  as f64)) / (i as f64));
+    println!("Coco:      {}", coco_queries.iter().fold(0 as f64, |sum, val| sum + (*val  as f64)) / (i as f64));
+    println!("Underswap: {}", underswap_queries.iter().fold(0 as f64, |sum, val| sum + (*val  as f64)) / (i as f64));
+    println!("Overswap:  {}", overswap_queries.iter().fold(0 as f64, |sum, val| sum + (*val  as f64)) / (i as f64));
 }
 
 fn prep_graphviz(src: Vec<i64>, dst: Vec<i64>) {

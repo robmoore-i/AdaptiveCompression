@@ -10,6 +10,8 @@ use recognitive_compression;
 use compactive_compression;
 use underswap_rle_compression;
 use overswap_rle_compression;
+use time::Duration;
+use quicksort::*;
 
 /* BFS:
     Given an adjacency list of two i64 vectors, SRC_NODE and DST_NODE, this function visits every
@@ -21,7 +23,7 @@ use overswap_rle_compression;
 pub fn run() {
     let n = 1000;
     let (src, dst) = datagen::randomly_connected_tree(n);
-    let start_node = rand::thread_rng().gen_range(1, n);
+        let start_node = rand::thread_rng().gen_range(1, n);
     let _visited = underswap_rle_bfs(src, dst, start_node);
 }
 
@@ -279,7 +281,7 @@ fn unoptimised_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nod
 }
 
 // Preclustered
-fn precluster(src_node: Vec<i64>, dst_node: Vec<i64>) -> (Vec<i64>, Vec<i64>) {
+pub fn precluster(src_node: &Vec<i64>, dst_node: &Vec<i64>) -> (Vec<i64>, Vec<i64>) {
     let e = src_node.len();
     let mut src_col = src_node.clone();
     let mut dst_col = dst_node.clone();
@@ -288,7 +290,8 @@ fn precluster(src_node: Vec<i64>, dst_node: Vec<i64>) -> (Vec<i64>, Vec<i64>) {
     for i in 0..e {
         row_store.push((src_col[i], dst_col[i]));
     }
-    row_store.sort_by_key(|&k| k.0);
+    quicksort_by(&mut row_store, |&a, b| (a.0).cmp(&b.0));
+    // row_store.sort_by_key(|&k| k.0);
     for i in 0..e {
         src_col[i] = row_store[i].0;
         dst_col[i] = row_store[i].1;
@@ -335,11 +338,11 @@ fn preclustered_bfs_from_ready(src_col: &Vec<i64>, dst_col: &Vec<i64>, start_nod
     bv_where(visited)
 }
 fn preclustered_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec<i64> {
-    let (src_col, dst_col) = precluster(src_node, dst_node);
+    let (src_col, dst_col) = precluster(&src_node, &dst_node);
     preclustered_bfs_from_ready(&src_col, &dst_col, start_node)
 }
 fn preclustered_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_nodes: Vec<i64>) {
-    let (src_col, dst_col) = precluster(src_node, dst_node);
+    let (src_col, dst_col) = precluster(&src_node, &dst_node);
     for i in 0..n {
         preclustered_bfs_from_ready(&src_col, &dst_col, start_nodes[i]);
     }
@@ -557,4 +560,132 @@ fn overswap_rle_bfs_n(n: usize, src_node: Vec<i64>, dst_node: Vec<i64>, start_no
     for i in 0..n {
         overswap_rle_bfs_adjl(&mut adjacency_list, start_nodes[i]);
     }
+}
+
+// == BREAK-EVEN POINT ==
+// Returns number of queries completed before (d) elapses.
+
+pub fn decracked_bfs_adjl_until(mut adjacency_list: decomposed_cracking::DeCrackedTable, start_node: i64, d: Duration) -> usize {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    let start = PreciseTime::now();
+    let mut queries = 0;
+    while !frontier.is_empty() {
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+            queries += 1;
+            if start.to(PreciseTime::now()) > d {
+                return queries;
+            }
+        }
+    }
+    queries
+}
+
+pub fn reco_bfs_adjl_until(mut adjacency_list: recognitive_compression::ReCoTable, start_node: i64, d: Duration) -> usize {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    let start = PreciseTime::now();
+    let mut queries = 0;
+    while !frontier.is_empty() {
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+            queries += 1;
+            if start.to(PreciseTime::now()) > d {
+                return queries;
+            }
+        }
+    }
+    queries
+}
+
+pub fn coco_bfs_adjl_until(mut adjacency_list: compactive_compression::CoCoTable, start_node: i64, d: Duration) -> usize {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    let start = PreciseTime::now();
+    let mut queries = 0;
+    while !frontier.is_empty() {
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+            queries += 1;
+            if start.to(PreciseTime::now()) > d {
+                return queries;
+            }
+        }
+    }
+    queries
+}
+
+pub fn underswap_bfs_adjl_until(mut adjacency_list: underswap_rle_compression::UnderswapRLETable, start_node: i64, d: Duration) -> usize {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    let start = PreciseTime::now();
+    let mut queries = 0;
+    while !frontier.is_empty() {
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+            queries += 1;
+            if start.to(PreciseTime::now()) > d {
+                return queries;
+            }
+        }
+    }
+    queries
+}
+
+pub fn overswap_bfs_adjl_until(mut adjacency_list: overswap_rle_compression::OverswapRLETable, start_node: i64, d: Duration) -> usize {
+    let mut frontier = vec![start_node];
+    let mut visited = BitVec::from_elem(start_node as usize, false);
+
+    let start = PreciseTime::now();
+    let mut queries = 0;
+    while !frontier.is_empty() {
+        set_indices(&mut visited, indicise(frontier.clone()));
+
+        let prev_frontier = frontier.clone();
+        frontier.clear();
+        for src in prev_frontier {
+            let neighbours = adjacency_list.cracker_select_specific(src, "dst");
+            for dst in &neighbours {
+                discover(*dst, &mut visited, &mut frontier);
+            }
+            queries += 1;
+            if start.to(PreciseTime::now()) > d {
+                return queries;
+            }
+        }
+    }
+    queries
 }
