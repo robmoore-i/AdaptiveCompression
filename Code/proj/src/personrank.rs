@@ -44,7 +44,8 @@ pub fn benchmark_all(scale_factor: i16, pagerank_iterations: i16, averaging_iter
     let mut underswap_times = Vec::new();
     let mut overswap_times = Vec::new();
 
-    for _ in 0..averaging_iterations {
+    for i in 0..averaging_iterations {
+        let start = PreciseTime::now();
         // let unoptimised_ranks = unoptimised_personrank(vertices.clone(), src.clone(), dst.clone(), max_iterations);
         let (preclustered_ranks, preclustered_t) = preclustered_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
         let (decracked_ranks, decracked_t)       = decracked_personrank(vertices.clone(), src.clone(), dst.clone(), pagerank_iterations);
@@ -69,6 +70,8 @@ pub fn benchmark_all(scale_factor: i16, pagerank_iterations: i16, averaging_iter
             assert!((*v - underswap_ranks[k]).abs() < epsilon);
             assert!((*v - overswap_ranks[k]).abs() < epsilon);
         }
+
+        println!("Iteration {} done in {}", i, start.to(PreciseTime::now()));
     }
 
     println!("Preclustered: {}", preclustered_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (averaging_iterations as i32));

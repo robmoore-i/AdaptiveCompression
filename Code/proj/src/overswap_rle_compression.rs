@@ -70,11 +70,15 @@ impl OverswapRLETable {
     }
 
     pub fn set_crk_col(&mut self, col_name: &str) {
-        let col = match self.columns.get(&(col_name.to_string())) {
-            Some(ref c) => *c,
+        match self.columns.get(&(col_name.to_string())) {
+            Some(ref c) => {
+                self.crk_col.v = c.v.clone();
+                self.crk_col.crk = c.v.clone();
+                self.crk_col.base_idx = (0..self.count).collect();
+                self.crk_col.run_lengths = vec![1;self.count];
+            },
             None => panic!("set_crk_col: no such col"),
         };
-        self.crk_col = col.clone();
     }
 
     // TODO: Improve exception handling in this function
@@ -150,9 +154,7 @@ impl OverswapRLETable {
     pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
         // Init
         if self.crk_col.crk.len() == 0 {
-            self.crk_col.crk = self.crk_col.v.clone();
-            self.crk_col.base_idx = (0..self.count).collect();
-            self.crk_col.run_lengths = vec![1;self.count];
+
         }
 
         // Setup
@@ -161,6 +163,7 @@ impl OverswapRLETable {
             return vec![];
         }
         let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
+        if p_high + 1 == 0 { return vec![] };
 
         // Tighten
         while self.crk_col.crk[p_low] < x && p_low < p_high {

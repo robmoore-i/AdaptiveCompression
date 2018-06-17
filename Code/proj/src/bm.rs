@@ -29,7 +29,7 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    personrank::benchmark_all(1, 30, 5)
+    personrank::benchmark_all(10, 100, 10);
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).
@@ -40,10 +40,11 @@ fn break_even_points(n: i64, i: usize) {
     let mut underswap_queries = Vec::new();
     let mut overswap_queries = Vec::new();
 
-    for _i in 0..i {
+    for j in 0..i {
+        let start = PreciseTime::now();
         let (src, dst) = datagen::randomly_connected_tree(n);
         let start_node = rand::thread_rng().gen_range(1, n);
-        println!("Created tree {}", _i);
+        println!("Created tree {} after {} seconds", j, start.to(PreciseTime::now()).to_string());
 
         let start = PreciseTime::now();
         bfs::precluster(&src, &dst);
@@ -84,17 +85,18 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     let vertices: Vec<i64> = people.iter().map(|p|p.id).collect();
 
     for _ in 0..n {
+        let (preclustered_ranks, _) = personrank::preclustered_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
         let (decracked_ranks, dt) = personrank::decracked_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
-
-        let (underswap_ranks, ut) = personrank::underswap_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
+        let (reco_ranks, ut) = personrank::reco_personrank(vertices.clone(), src.clone(), dst.clone(), mi);
 
         let diff = dt - ut;
         diffs.push(diff);
 
         let epsilon = 0.00001;
 
-        for (k, v) in &decracked_ranks {
-            assert!((*v - underswap_ranks[k]).abs() < epsilon);
+        for (k, v) in &preclustered_ranks {
+            assert!((*v - decracked_ranks[k]).abs() < epsilon);
+            assert!((*v - reco_ranks[k]).abs() < epsilon);
         }
     }
 
@@ -102,7 +104,7 @@ fn speed_test(sf: i16, mi: i16, n: i8) {
     let avg = sum / (diffs.len() as i32);
 
     println!("===");
-    println!("Avg diff: {:?}", avg.to_string());
+    println!("On avg decracked is {:?} slower than reco", avg.to_string());
     println!("===");
 }
 

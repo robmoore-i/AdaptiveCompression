@@ -1,0 +1,47 @@
+SF1+50i
+Preclustered: 0.653347008s
+Decracked:    1.446973441s
+Reco:         1.336495170s
+Coco:         1.635407046s
+Underswap:    1.448379580s
+Overswap:     1.459145489s
+
+SF3+50i
+Preclustered: 2.419732900s
+Decracked:    6.546964296s
+Reco:         5.782988594s
+Coco:         8.766360797s
+Underswap:    6.493099248s
+Overswap:     6.460100086s
+
+SF10+50i
+Preclustered: 10.620632675s
+Decracked:    30.074364334s
+Reco:         28.705369067s
+Coco:         82.696947944s
+Underswap:    31.189827726s
+Overswap:     31.368731724s
+
+SF1+100i
+Preclustered: 1.283603660s
+Decracked:    3.091417834s
+Reco:         2.795305797s
+Coco:         3.204614897s
+Underswap:    3.039666007s
+Overswap:     2.952789012s
+
+SF3+100i
+Preclustered: 4.7265719610s
+Decracked:    13.503116437s
+Reco:         12.117731781s
+Coco:         15.533414527s
+Underswap:    13.379291867s
+Overswap:     13.274723342s
+
+SF10+100i
+Preclustered: 16.736757173s
+Decracked:    56.881621326s
+Reco:         54.017887466s
+Coco:         105.00248188s
+Underswap:    57.722683237s
+Overswap:     57.755641761s

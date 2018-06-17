@@ -40,11 +40,8 @@ impl ReCoTable {
 
         match self.int_columns.get_mut(&(col_name.to_string())) {
             Some(ref mut c) => {
-                if c.crk.is_empty() {
-                    c.crk = c.v.clone();
-                }
-                self.crk_col.v        = c.crk.clone();
-                self.crk_col.crk      = c.crk.clone();
+                self.crk_col.v        = c.v.clone();
+                self.crk_col.crk      = c.v.clone();
                 self.crk_col.base_idx = (0..self.count).collect();
             },
             None => panic!("set_crk_col: no such col"),
@@ -179,31 +176,18 @@ impl ReCoTable {
 
     // Returns the elements of T where the cracker columns's value equals X
     pub fn cracker_select_specific(&mut self, x: i64, col: &str) -> Vec<i64> {
-        self.cracker_select_in_three(x, x, true, true, col)
-    }
-
-    // Returns the elements of T where the cracker columns's value is between LOW and HIGH, with inclusivity given by INC_L and INC_H.
-    pub fn cracker_select_in_three(&mut self, low: i64, high: i64, inc_l: bool, inc_h: bool, col: &str) -> Vec<i64> {
-        let adjusted_low = low + !inc_l as i64;
-        let adjusted_high = high - !inc_h as i64;
-        // c_low(x)  <=> x outside catchment at low  end
-        // c_high(x) <=> x outside catchment at high end
-        let c_low  = |x| x < adjusted_low;
-        let c_high = |x| x > adjusted_high;
-
         // Start with a pointer at both ends of the piece: p_low, p_high
-        let mut p_low =  self.crk_col.crk_idx.lower_bound(&adjusted_low).unwrap_or(0);
-        let mut p_high = self.crk_col.crk_idx.upper_bound(&(high + inc_h as i64)).unwrap_or(self.count);
+        let mut p_low =  self.crk_col.crk_idx.lower_bound(&x).unwrap_or(0);
+        let mut p_high = self.crk_col.crk_idx.upper_bound(&(x + 1)).unwrap_or(self.count) - 1;
+        if p_high + 1 == 0 { return vec![] };
 
-        let is_uniform_column_piece = adjusted_low == adjusted_high && self.crk_col.crk_idx.contains(adjusted_low) && self.crk_col.crk_idx.contains(high + inc_h as i64);
+        let is_uniform_column_piece = self.crk_col.crk_idx.contains(x) && self.crk_col.crk_idx.contains(x + 1);
         if is_uniform_column_piece {
-            return self.get_values(self.crk_col.base_idx[p_low..p_high].iter(), col);
+            return self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col);
         }
-        if p_high == self.count { p_high = self.count - 1 };
-        if p_low  == self.count { p_low  = self.count - 1 };
 
         // while p_low is pointing at an element satisfying c_low,  move it forwards
-        while c_low(self.crk_col.crk[p_low]) {
+        while self.crk_col.crk[p_low] < x {
             p_low += 1;
             if p_low == self.count as usize {
                 return vec![]
@@ -211,7 +195,7 @@ impl ReCoTable {
         }
 
         // while p_high is pointing at an element satisfying c_high, move it backwards
-        while c_high(self.crk_col.crk[p_high]) {
+        while self.crk_col.crk[p_high] > x {
             if p_high == 0 {
                 return vec![];
             }
@@ -225,19 +209,19 @@ impl ReCoTable {
         let mut p_itr = p_low.clone();
 
         while p_itr <= p_high {
-            if c_low(self.crk_col.crk[p_itr]) {
+            if self.crk_col.crk[p_itr] < x {
                 self.crk_col.crk.swap(p_low, p_itr);
                 self.crk_col.base_idx.swap(p_low, p_itr);
-                while c_low(self.crk_col.crk[p_low]) {
+                while self.crk_col.crk[p_low] < x {
                     p_low += 1;
                 }
                 if p_itr < p_low {
                     p_itr = p_low.clone();
                 }
-            } else if c_high(self.crk_col.crk[p_itr]) {
+            } else if self.crk_col.crk[p_itr] > x {
                 self.crk_col.crk.swap(p_itr, p_high);
                 self.crk_col.base_idx.swap(p_itr, p_high);
-                while c_high(self.crk_col.crk[p_high]) {
+                while self.crk_col.crk[p_high] > x {
                     p_high -= 1;
                 }
             } else {
@@ -245,10 +229,9 @@ impl ReCoTable {
             }
         }
 
-        // let high_ptr = if p_itr >= self.count { self.count - 1 } else { p_itr };
-        self.crk_col.crk_idx.insert(low + !inc_l as i64, p_low);
-        self.crk_col.crk_idx.insert(high + inc_h as i64, p_itr);
-        self.get_values(self.crk_col.base_idx[p_low..p_itr].iter(), col)
+        self.crk_col.crk_idx.insert(x, p_low);
+        self.crk_col.crk_idx.insert(x + 1, p_high + 1);
+        self.get_values(self.crk_col.base_idx[p_low..(p_high + 1)].iter(), col)
     }
 
     // Counts the places where a given column equals a given value
