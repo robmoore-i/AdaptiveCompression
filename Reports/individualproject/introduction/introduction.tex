@@ -1,0 +1,47 @@
+\chapter{Introduction}
+
+\section{Connected Data Sources}
+
+Data sources featuring connections between entities are frequently used in the modern era to represent abstract networks, most notably, the world wide web and social networks. The nodes and edges of these graphs are analyzed using graph algorithms in order to learn something about the network, such as a which websites are trending or which individuals are most followed.
+
+\section{Modeling Graph Data}
+
+To store a graph in computer memory, we represent it as an array of edges. Each element of the array contains a source vertex and a destination vertex, which we denote as $src$ as $dst$. This is appropriately described as an \textit{edge array} format.
+
+An advancement on an \textit{edge array} is to cluster one side of the edges by vertex. For example all of the out-neighbours of every vertex might be clustered together. We might even, rather than store an \textit{edge array}, use a direct mapping from each vertex to an array containing its out-neighbours\footnote{This of course also can be done with in-neighbours.}. This storage format for a graph is called an \textit{adjacency list}, and converting an \textit{edge array} into an \textit{adjacency list} is a common preprocessing step for many graph processing frameworks.
+
+If we want to also store data specifically about vertices, we can also store vertex data separately in a key-value store of some kind, mapping vertex id to vertex data. A frequent approach to this is to map the given vertex ids onto the integers counting up from 0, and to store the $i$th vertex' data in the $i$th element of a vertex data array.
+
+\section{Graph Indexing}
+
+To speed up queries on graph data, we can build indices, just like we can with relational databases. These are structures based on the data which enable us to perform queries faster. For example, the preprocessing that converts an edge array into an adjacency list can be considered a form of indexing, that is, an adjacency list is an  index for an edge-array. There are a few terms used to describe different kinds of indexing, below we define three important ones.
+
+\begin{itemize}
+\item \textbf{Offline indexing} is the term used to describe building indices before queries are introduced to a system.
+\item \textbf{Online indexing} describes a technique in which the workload and performance of a system is examined and then the required indices are built when needed.
+\item \textbf{Adaptive indexing} is where an index is built in the course of answering incoming queries. The index is partially built as a collateral effect of answering queries.
+\end{itemize}
+
+\section{Database Cracking}
+
+Database cracking is an adaptive indexing technique originally created for relational databases. The index it builds towards is a sorted column. It does this by applying pivoted partitioning while scanning during range queries. Columns begin with values in an arbitrary order, but every range query causes values to get reorganized such that after the query is finished, all values are pivoted around the selected range.
+
+\section{Adaptive Graph Processing}
+
+The biggest names in the technology industry; Google, Facebook, Twitter etc. all rely on connected data. The functionality their services support is frequently subject to rapidly changing and unpredictable workloads in the forms of new trends, new news stories and new people. In the modern era, adapting to unpredictable query workloads is important in processing graph data. Towards this end we have explored novel techniques for adaptively indexing graph data.
+
+\section{Objectives}
+
+In this project, we have studied the potential of compression-based variations of database cracking when applied as an adaptive indexing technique for graph data. Compression is an obvious dimension with which to vary the original cracking algorithm; the algorithms we created effectively perform the conversion from edge array into adjacency list adaptively, and in the case of run-length encoding, values are compressed at even lower levels of granularity within the edge array.
+
+\section{Contributions}
+
+\begin{itemize}
+\item We introduce a range of compression-based variations of the cracking \cite{DBLP:conf/cidr/IdreosKM07} algorithm.
+\item We present a novel variant of the cracking algorithm which outperforms the original on the benchmarks we measured.
+\item We demonstrate two implementations of cracking variants which run-length encode the column while scanning, and evaluate them against the original cracking algorithm.
+\end{itemize}
+
+\section{Report Outline}
+
+Section \ref{ch:relatedwork} discusses related work in the fields of graph processing, graph indexing and workload-aware processing frameworks. In section \ref{ch:background}, we discuss the necessary preliminary background for our contributions. This constitutes an explanation of the original cracking algorithm. We describe and explain our contributions in section \ref{ch:adaptivecompression}, and evaluate them in section \ref{ch:evaluation}. We conclude the report in section \ref{ch:conclusion} with a summary of what we did and future work that can be undertaken to build upon our work.

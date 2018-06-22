@@ -1,0 +1,69 @@
+\chapter{Related Work}
+
+\label{ch:relatedwork}
+
+\section{Workload-Aware Frameworks}
+
+\subsection{Database Cracking}
+
+From Idreos et al. \cite{DBLP:conf/cidr/IdreosKM07}, cracking is an auto-tuning technique for relational databases. A column is indexed by being having a copy of it physically restructured in-place during queries, such that it is partially sorted.
+
+Figure \ref{fig:cracking_img} shows two queries being run against a column within a system employing database cracking. We can see that Q1 copies the original column into a cracker column. The cracker column is then scanned to retrieve the result tuples. As a side effect of the scan, the cracker column is partitioned around the pivots of the range query, and after returning, the new information about the structure of the column is stored to be exploited later. Q2 again scans the column, while also applying pivoted partitioning. The new information gained from the scans is shown in the diagram and could be exploited later in order to reduce the number of tuples that needed to be scanned.
+
+\begin{figure}[h]
+  \includegraphics[width=\textwidth]{images/cracking_img}
+  \caption{Example of a column being cracked}
+  \label{fig:cracking_img}
+\end{figure}
+
+The CPU efficiency of standard cracking has been improved since the original algorithm \cite{Pirk:2014:DCF:2619228.2619232}. This was done by first identifying the causes of CPU inefficiency in the algorithm, which were shown to be bad speculation and instructions entering the pipeline at the frontend. These problems were solved by first applying predication to cracking in order to remove the possibility for wasted cycles caused by bad speculation. The authors then identified the performance bottlenecks for the predicated implementation and mitigated them using vectorization.
+
+In the same paper, a parallel implementation of cracking was introduced. The initial parallelization of the algorithm was essentially the same as the parallelization of a sequential scan into a parallel scan. This was then refined to produce a more performant parallel implementation.
+
+The workload-robustness of database cracking has been improved by a technique called Stochastic Cracking \cite{Halim:2012:SDC:2168651.2168652}. This technique aims to improve the \textit{workload-robustness} of cracking. It identifies a weakness of cracking: That it can experience reduced performance when given a non-ideal workload, in which it may rescan the same values many times, such as in the case of a sequential workload, in which every query requests a range of values that follow the previous one. The solution presented in this paper was to create algorithms which were not purely query driven in their decisions to reorganize sections of the column, but also used the column data and randomness. They presented a range of techniques, and showed that they solved the lack of workload-robustness in standard cracking, while also mostly preserving the lightweight, adaptive properties of it for ideal workloads.
+
+Standard cracking is discussed in greater detail in chapter \ref{ch:background}.
+
+\subsection{Group-by-Query}
+
+In-part inspired by cracking was the thesis work of Aluç \cite{DBLP:phd/basesearch/Aluc15}, who proposed a group-by-query (G-by-Q) representation for RDF data, for which the structure of individual database records, as well as the way records are serialized on the storage system are dynamically determined based on the workload. 
+
+Using G-by-Q, the way database records are serialized and their contents are determined dynamically by the workload. The format of database records is determined by the queries on the database. The diagram below shows an example of the storage for a database which has had two types of queries applied to it. $P_{1}$ to $P_{3}$ are the results of a linear query, whereas $P_{4}$ and $P_{5}$ are both the results of star-shaped queries.
+
+\begin{figure}[h]
+  \includegraphics[width=\textwidth]{images/g_by_q_img}
+  \caption{Example of G-by-Q storage representation}
+  \label{fig:g_by_q_img}
+\end{figure}
+
+This technique proved to be fast and robust against other popular frameworks for querying RDF data, however, the system is complicated - Aluç's implementation was reported to be over 35,000 lines of C++. In this work we aimed to produce simpler contributions. Additionally, the G-by-Q technique is used for point-type queries, which seek to find all instances of certain subgraphs within a graph based on node labels, whereas our contributions are focused on traversal queries, which move through the graph by following edges and making computations based off the node and edge properties.
+
+\section{Graph Processing}
+
+\subsection{Ligra Framework}
+
+Ligra \cite{shun2013ligra} is a lightweight graph processing framework for shared-memory multi-core machines for graph traversal algorithms, such as pagerank and BFS. Ligra takes the form of a simple API of three routines: size, edgeMap and vertexMap, as described in the paper.
+
+\textbf{size}(U) returns the number of vertices in the set U.
+
+\textbf{edgeMap}(G, U, F, C) applies the function F to all edges in G with source vertex in U and target vertex satisfying C.
+
+\textbf{vertexMap}(U, F) applies the function F to every vertex in the set U.
+
+A crucial advantage of the Ligra framework is that in the cases of both edgeMap and vertexMap, the supplied function can run in parallel, however, the user must ensure parallel correctness.
+
+\subsection{Frequency Based Clustering}
+
+Frequency based clustering \cite{zhang2016optimizing} constitutes physically reorganizing the vertex data such that frequently accessed vertices are clustered together. In the case of traversal algorithms, as were studied specifically by this paper, the property by which to cluster vertices is their degree (in- or out-degree depending on the algorithm). By doing this clustering, cache contention between threads is reduced thanks to the improved locality between frequently accessed vertices. This improves cache utilization and reduces the cycles spent stalled on memory. The authors found that real world graphs often exhibit inherent locality, and disturbing the structure of the vertex data too much causes performance to worsen. They determined that they achieved the best performance when they clustered together vertices at one end of the graph only if their degree exceeded the mean degree across all nodes.
+
+\subsection{CSR segmenting}
+
+This technique, introduced in the same paper \cite{zhang2016optimizing} as frequency based clustering, aims to optimize the cache performance of a graph algorithm by making random accesses go only to the cache and by making all memory accesses sequential. It does this by working only on a single cache-sized segment of the vertex data at a time. By segmenting the graph into cache-sized subgraphs, all the required vertex data for the processing of a single subgraph can be stored in the cache.
+
+This method requires preprocessing of the adjacency list, followed by the processing of each segment. Segments are processed one at a time, but the computation within the segment is fully parallelized. There is no cache-contention because the threads all share the same read-only working set (vertex data). We can avoid high merging cost after the computations by not using too many segments. The author's did experiments using a high number of segments which fit in the L2 cache, however, the best performance was achieved by using fewer segments, each of which fit in the LLC and contained a large number of edges. After the segments are all processed a low-cost cache-aware merge is used to combine the intermediate results from each segment.
+
+\subsection{Space filling curve layouts}
+
+An alternative to clustering an edge array representation of a graph by vertex is to cluster edges according to the coordinates of a space filling curve. This has the potential to provide locality in both the source and destination vertices.
+
+The most famous example of this is the Hilbert Curve, which is a continuous mapping between a number and a point on a 2D square. Numbers which are close by are mapped closely together - in this way the Hilbert ordering of an index of an adjacency list is somewhat locality preserving. We can use a Hilbert ordering in order to improve locality on edge accesses, which therefore leads to improved cache performance \cite{189908}.

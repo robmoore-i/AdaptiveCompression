@@ -1,0 +1,57 @@
+\documentclass[a4paper, twoside]{report}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+%\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{url}
+\usepackage{tcolorbox}
+\usepackage{float}
+\usepackage{setspace}
+
+\title{Adaptive Compression for Graph Processing}
+\author{Rob Moore}
+% Update supervisor and other title stuff in title/title.tex
+
+\begin{document}
+\input{title/title.tex}
+
+\onehalfspacing
+%\doublespacing
+\linespread{1.15}
+
+\begin{abstract}
+Many graph-modeled data sources are subject to fast-changing, unpredictable workloads, such as a news story being searched for as it happens, or a trending post or person on social media causing an influx of related, similar queries. Most processing frameworks for graph data sources contain preprocessing steps to speed up the overall analysis, which prohibits them from responding to queries until that step is done. In this report we explore potential solutions to this problem by building novel variations of database cracking, an algorithm designed for auto-tuning relational databases, and showing how the cracking algorithm can be changed to improve performance for graph data processing.
+\end{abstract}
+
+\renewcommand{\abstractname}{Acknowledgements}
+\begin{abstract}
+I would like to thank my supervisor Holger Pirk for his knowledge and direction during the project. I am also grateful to my personal tutor, Paul Kelly, for his advice about projects in general and about optimization and graph algorithms, as well as all of the interesting discussions we've had while I've been at Imperial. Finally I'd like to thank my dad who scanned the boundary pieces of this report and gave me some advice on how to improve it.
+\end{abstract}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\input{introduction/introduction.tex}
+\input{relatedwork/relatedwork.tex}
+\input{background/background.tex}
+\input{project/project.tex}
+\input{evaluation/evaluation.tex}
+\input{conclusion/conclusion.tex}
+\input{appendix/appendix.tex}
+
+\renewcommand\bibname{References}
+\bibliographystyle{abbrv}
+\bibliography{bibs/refs}
+
+\end{document}

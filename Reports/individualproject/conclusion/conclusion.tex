@@ -1,0 +1,18 @@
+\chapter{Conclusion}
+
+\label{ch:conclusion}
+
+\section{What we did}
+
+We implemented four compression-based variations of the original cracking algorithm and applied them to graph data. We evaluated our implementations using pagerank and by finding the break-even point point for each algorithm, comparing their performance to that of standard cracking and to upfront sorting. 
+
+From the evaluation of these methods, we found compaction to be unsuitable due to the prohibitively high cost of compacting values. We found run-length encoding to perform similarly to standard cracking for overall speed in the execution of pagerank, however we found that the costs added to the scanning phase cause early queries to not retain the lightweight property of standard cracking. This caused its break-even point against upfront sorting to be far lower. Finally, we found a positive result among our explored variations - recognition-based compression was shown to be an improvement over standard cracking for our pagerank experiments, with the highest recorded cost to the break-even point being less than 2$\%$.
+
+\section{Future Work}
+
+\begin{itemize}
+\item \textbf{CPU efficient implementations}: None of our implementations used predication or vectorization in order to improve their CPU efficiency, which is known to be effective\cite{Pirk:2014:DCF:2619228.2619232}. Standard cracking sees a significant speed up in single-threaded performance for the predicated and vectorized implementation. It would be more complicated for the run-length encoding variant of cracking, because the implementation for standard cracking is fairly dependent on processing a single value at a time. This is the case for the backup and active slots for the predicated backup technique and also in accounting for buffer overflow in the vectorized implementation.
+\item \textbf{Parallel implementations}: We studied only single-threaded implementations of our algorithms. Parallel implementations of them present interesting difficulties, because the refined partition \& merge algorithm\cite{Pirk:2014:DCF:2619228.2619232} could not be naively copied over to a run-length encoding form of cracking - we would need a way to initialize the multiple edge pointers used such that they did not lie within runs. Furthermore, when swapping runs of different lengths, we would frequently encounter situations in which the high-side block of a separated block within the refined partition \& merge could not hold the different sized run due to overlapping with another block. These difficulties might suggest that we would be better off using the simple partition \& merge, despite its poorer performance, however that is all a possibility for future work.
+\item \textbf{Stochastic RLE Cracking}\cite{Halim:2012:SDC:2168651.2168652}: One of the properties of stochastic cracking that makes it an appealing choice for application towards RLE is that it improves the workload-robustness of it. In that, it aims to prevent unnecessary physical reorganization and scanning - a property that RLE cracking would benefit greatly from, given that the cost of scanning and swapping in RLE cracking is what makes it so much less lightweight that standard cracking.
+\item \textbf{Different compression schemes}: We used run-length encoding, but we didn't look at any other compression formats, such as compression formats optimized for different types of graph queries, such as point queries, which aim to find matching subgraphs within a database.
+\end{itemize}
