@@ -29,7 +29,40 @@ use time::Duration;
 use rand::Rng;
 
 fn main() {
-    personrank::benchmark_all(10, 100, 10);
+    traversal_time(2000, 10);
+}
+
+fn traversal_time(n: i64, i: usize) {
+    let mut decracked_times = Vec::new();
+    let mut underswap_times = Vec::new();
+    let mut overswap_times = Vec::new();
+
+    for j in 0..i {
+        let mut start = PreciseTime::now();
+        let (src, dst) = datagen::randomly_connected_tree(n);
+        let start_node = rand::thread_rng().gen_range(1, n);
+        println!("Created tree {} after {} seconds", j, start.to(PreciseTime::now()).to_string());
+
+        start = PreciseTime::now();
+        bfs::decracked_bfs_adjl(&mut decomposed_cracking::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node);
+        decracked_times.push(start.to(PreciseTime::now()));
+
+        start = PreciseTime::now();
+        bfs::underswap_rle_bfs_adjl(&mut underswap_rle_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node);
+        underswap_times.push(start.to(PreciseTime::now()));
+
+        start = PreciseTime::now();
+        bfs::overswap_rle_bfs_adjl(&mut overswap_rle_compression::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node);
+        overswap_times.push(start.to(PreciseTime::now()));
+    }
+
+    let decracked_avg: Duration = decracked_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (i as i32);
+    let underswap_avg: Duration = underswap_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (i as i32);
+    let overswap_avg: Duration = overswap_times.iter().fold(Duration::hours(0), |sum, val| sum + *val) / (i as i32);
+
+    println!("Decracked: {}", decracked_avg);
+    println!("Underswap: {}", underswap_avg);
+    println!("Overswap:  {}", overswap_avg);
 }
 
 // Gets for each method the average over (i) runs of the break-even point on a random tree of size (n).

@@ -401,7 +401,7 @@ fn decracked_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> Vec
     let mut adjacency_list = decomposed_cracking::from_adjacency_vectors(src_node, dst_node, "src");
     decracked_bfs_adjl(&mut adjacency_list, start_node)
 }
-fn decracked_bfs_adjl(adjacency_list: &mut decomposed_cracking::DeCrackedTable, start_node: i64) -> Vec<i64> {
+pub fn decracked_bfs_adjl(adjacency_list: &mut decomposed_cracking::DeCrackedTable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -501,7 +501,7 @@ fn underswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) ->
     let mut adjacency_list = underswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
     underswap_rle_bfs_adjl(&mut adjacency_list, start_node)
 }
-fn underswap_rle_bfs_adjl(adjacency_list: &mut underswap_rle_compression::UnderswapRLETable, start_node: i64) -> Vec<i64> {
+pub fn underswap_rle_bfs_adjl(adjacency_list: &mut underswap_rle_compression::UnderswapRLETable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
@@ -534,7 +534,7 @@ fn overswap_rle_bfs(src_node: Vec<i64>, dst_node: Vec<i64>, start_node: i64) -> 
     let mut adjacency_list = overswap_rle_compression::from_adjacency_vectors(src_node, dst_node, "src");
     overswap_rle_bfs_adjl(&mut adjacency_list, start_node)
 }
-fn overswap_rle_bfs_adjl(adjacency_list: &mut overswap_rle_compression::OverswapRLETable, start_node: i64) -> Vec<i64> {
+pub fn overswap_rle_bfs_adjl(adjacency_list: &mut overswap_rle_compression::OverswapRLETable, start_node: i64) -> Vec<i64> {
     let mut frontier = vec![start_node];
     let mut visited = BitVec::from_elem(start_node as usize, false);
 
