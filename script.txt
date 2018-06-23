@@ -1,13 +1,12 @@
 # Title
 
-Hello, for the next 35 minutes I'll be talking about adaptive compression for graph databases.
+Hello, for the next 25 minutes I'll be talking about adaptive compression for graph databases.
 
 Firstly, I'll go through all of these words to make sure we're all on the same page, and give you some context of the problem.
 
 # Graphs!
 
 What's in a graph? Nodes and the edges that connect them. That can be people and their relationships or sites and connecting links. We use data because we want to be able to answer questions. What questions might we ask about graph data? Who or what is trending the most on social media right now? Which website is the most important? How many clicks has a certain news story got?
-
 
 But in order to answer these questions on a computer we need to be able to model and store the graph on a computer.
 
@@ -32,3 +31,53 @@ A better idea is to monitor the queries and performance of the system, then buil
 Fortunately, there is... (pause) a third way.
 
 # Adaptive Indexing and DBCracking
+
+Adaptive indexing constitutes the modification of database operators such that they cause an index to be partially built as a consequence of responding to a query.
+
+The technique is naturally workload aware because the part of the index that is built during the modified database operation is for the queried values.
+
+Cracking is an adaptive indexing technique for relational tables. It partially sorts columns during range queries by using the bounds of the range as pivots and partitioning the scanned section of the column appropriately.
+
+This is shown in the diagram on the slide. The first query copies the base column into a copy called the cracker column. The cracker column is scanned and restructured in-place by Q1. Each piece, or (emphasis) fragment of the column is shown with its corresponding bounds. Q2 further fragments the column, and more information is learned. Future queries will be able to exploit this information to limit which sections they must scan.
+
+Now we'll briefly discuss the cracker select algorithm so you know more of what I'm talking about in later sections.
+
+# Cracking algorithm
+
+The first thing that happens is that the column being queried gets copied into a cracker column if it hasn't been already.
+
+During the main part of the algorithm, the scan, two edge pointers, initialised at the boundaries of the regiion to be scanned, are tightened as much as possible.
+
+At the end of the scan, all values in the selected range are in the region between the two edge pointers. This is effectively the creation of new column fragments, as you can see in the diagram. The position of the fragment is saved in the cracker index, which maps values of elements in the column to the corresponding index in the column before which no entry exceeds that value.
+
+# Cracking an edge array
+
+We won't refer to the edge array as a table, we'll just call it an array, and we'll say the source and destination arrays are arrays too, although the cracking algorithm obviously applies just the same. We use standard cracking as a baseline for the novel augmentations we make to it.
+
+We aren't querying for any wide ranges, only individual node ids. As more queries come in, the edge array is getting clustererd adaptively (by whichever side we are querying), effectively turning it into an adjacency list adaptively. This is the basis for our decision to pursue a compression-based variation on the cracking algorithm.
+
+# Challenge: Cracking + Compression
+
+Now I'll talk about the main challenge in this project, which was creating an algorithm to perform cracking with compression.
+
+# Opportunities: When can we compress?
+
+In general, we can compress when there is some kind of statistical redundancy in some data. For this project we compressed repeated values.
+
+We identified repeated values at different granularities. At the coarse level, we recognised column fragments which were uniform. We called this per-fragment compression. At a finer grain, we compressed any runs of repeated values even if they weren't identifiable using the cracker index. This is simply run-length encoding, a common compression scheme.
+
+# Exploitation
+
+Having identified runs of repeated values, we scan it as a single entry rather than scanning all of the duplicated values individually as in standard cracking.
+
+For per-fragment compression, this means that when the column fragment to be scanned is known to be uniform, we don't scan it, we return immediately with the values inside the fragment.
+
+For run length encoding, scans build up run-length information even for sections of column that have never been queried for, as long as they have been touched by a scan, so we would expect all queries to benefit after a certain amount of run-lengths have been marked.
+
+# Per-fragment compression
+
+I'll now talk about the two different granularities in more detail, starting the per-fragment compression.
+
+# Recognising uniform fragments
+
+
