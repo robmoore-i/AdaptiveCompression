@@ -1,0 +1,34 @@
+# Title
+
+Hello, for the next 35 minutes I'll be talking about adaptive compression for graph databases.
+
+Firstly, I'll go through all of these words to make sure we're all on the same page, and give you some context of the problem.
+
+# Graphs!
+
+What's in a graph? Nodes and the edges that connect them. That can be people and their relationships or sites and connecting links. We use data because we want to be able to answer questions. What questions might we ask about graph data? Who or what is trending the most on social media right now? Which website is the most important? How many clicks has a certain news story got?
+
+
+But in order to answer these questions on a computer we need to be able to model and store the graph on a computer.
+
+# Modeling graph data
+
+Formally, a graph is a set of vertices and a set of edges. An edge is a source and destination vertex. An array of these is called an edge array, and is how we store the edge data of a graph. Vertex data can be stored inside any appropriate data structure mapping a vertex ID to its data. This could be an array, hash or tree structure.
+
+# Improving on an edge array
+
+We can make the edge array representation more compact by clustering the vertices on one side of the edge array. That is, store the neighbours of a vertex as part of its vertex data. This goes for either the in-neighbours - where you cluster by source vertex, or by the out-neighbours - where you cluster by destination vertex.
+
+This clustered structure is called an adjacency list or sometimes adjacency matrix. It is built by sorting the edge array using either the source or destination vertex as the key.
+
+# Going faster
+
+The graph applications we are using as our use case are subject to unpredictable workloads as part of the nature of the data they store, so we would ideally like a way of speeding up our queries based on that.
+
+The most obvious idea is to make our best guess at the workload beforehand and build our indices before the system goes live. This is offline indexing. If we get it wrong, then that's no good at all.
+
+A better idea is to monitor the queries and performance of the system, then build indices as and when they are needed. This is at least workload-aware, but while you're waiting for the index to get built, the workload may rapidly change and again, that's time wasted.
+
+Fortunately, there is... (pause) a third way.
+
+# Adaptive Indexing and DBCracking
