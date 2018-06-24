@@ -6,85 +6,115 @@ Firstly, I'll go through all of these words to make sure we're all on the same p
 
 # Graphs!
 
-What's in a graph? Nodes and the edges that connect them. That can be people and their relationships or sites and connecting links. We use data because we want to be able to answer questions. What questions might we ask about graph data? Who or what is trending the most on social media right now? Which website is the most important? How many clicks has a certain news story got?
+[] We will treat a graph as some nodes and the edges that connect them.
 
-But in order to answer these questions on a computer we need to be able to model and store the graph on a computer.
+[] That can be people and their relationships or sites and connecting links. We use data because we want to be able to answer questions.
+
+[] So what questions might we ask about graph data?
+
+[] Who or what is trending the most on social media right now?
+
+[] Which website is the most important? How many clicks has a certain news story got?
+
+But in order to answer these questions we need to be able to model and store the graph on a computer.
 
 # Modeling graph data
 
-Formally, a graph is a set of vertices and a set of edges. An edge is a source and destination vertex. An array of these is called an edge array, and is how we store the edge data of a graph. Vertex data can be stored inside any appropriate data structure mapping a vertex ID to its data. This could be an array, hash or tree structure.
+[] Formally, a graph is a set of vertices and a set of edges.
+
+[] An edge is a source vertex and destination vertex. An array of edges is called an edge array, and is how we store the edge data of a graph.
+
+[] Vertex data can be stored inside any appropriate data structure mapping a vertex ID to its data. This could be an array, hash or tree structure.
 
 # Improving on an edge array
 
-We can make the edge array representation more compact by clustering the vertices on one side of the edge array. That is, store the neighbours of a vertex as part of its vertex data. This goes for either the in-neighbours - where you cluster by source vertex, or by the out-neighbours - where you cluster by destination vertex.
+[] We can make the edge array representation more compact by clustering the vertices on one side of the edge array. That is, store the neighbours of a vertex as part of its vertex data. This goes for either the in-neighbours - where you cluster by source vertex, or by the out-neighbours - where you cluster by destination vertex.
 
 This clustered structure is called an adjacency list or sometimes adjacency matrix. It is built by sorting the edge array using either the source or destination vertex as the key.
 
 # Going faster
 
-The graph applications we are using as our use case are subject to unpredictable workloads as part of the nature of the data they store, so we would ideally like a way of speeding up our queries based on that.
+[] The graph use cases we're targeting in this project are subject to unpredictable workloads as part of the nature of the data they store, so we would ideally like a way of speeding up our queries regardless of the workload.
 
-The most obvious idea is to make our best guess at the workload beforehand and build our indices before the system goes live. This is offline indexing. If we get it wrong, then that's no good at all.
+[] The most obvious idea for speeding up queries is to make our best guess at the workload beforehand and build our indices before the system goes live.
 
-A better idea is to monitor the queries and performance of the system, then build indices as and when they are needed. This is at least workload-aware, but while you're waiting for the index to get built, the workload may rapidly change and again, that's time wasted.
+[] This is offline indexing. If our guess is wrong though, then our index is not useful.
 
-Fortunately, there is... (pause) a third way.
+[] A better idea is to monitor the queries and performance of the live system, then build indices as and when they are needed.
+
+[] This is online indexing. It is at least workload-aware, but while you're waiting for the index to get built, the workload may change and again, the index you've worked hard for and delayed queries for in order to build it, may end up not actually being useful.
+
+Fortunately, there's another way.
 
 # Adaptive Indexing and DBCracking
 
 Adaptive indexing constitutes the modification of database operators such that they cause an index to be partially built as a consequence of responding to a query.
 
-The technique is naturally workload aware because the part of the index that is built during the modified database operation is for the queried values.
+[] Cracking is an adaptive indexing technique for relational tables.
 
-Cracking is an adaptive indexing technique for relational tables. It partially sorts columns during range queries by using the bounds of the range as pivots and partitioning the scanned section of the column appropriately.
+[] Its workload-aware, because the index is built by storing the information about the boundaries of queried-for ranges, so areas of interest have more information about them stored.
 
-This is shown in the diagram on the slide. The first query copies the base column into a copy called the cracker column. The cracker column is scanned and restructured in-place by Q1. Each piece, or (emphasis) fragment of the column is shown with its corresponding bounds. Q2 further fragments the column, and more information is learned. Future queries will be able to exploit this information to limit which sections they must scan.
+[] The technique involves partially sorting columns during range queries by using the bounds of the range as pivots and partitioning the scanned section of the column appropriately.
 
-Now we'll briefly discuss the cracker select algorithm so you know more of what I'm talking about in later sections when I discuss my contributions.
+This is shown in the diagram on the slide. The first query copies the base column into a copy called the cracker column. The cracker column is scanned and restructured in-place by Q1. Each piece, or (emphasis) fragment of the column is shown with its corresponding bounds, so... the top piece in the diagram is bounded such that all values in that fragment are less than or equal to 10, the values in the middle fragment are greater than 10 and less than 14, and the values in the bottom fragment are greater than or equal to 14.
+
+Q2 further fragments the column, and more information is learned. Future queries will be able to exploit this information to limit which sections of the column they must scan.
 
 # Cracking algorithm
 
-The first thing that happens is that the column being queried gets copied into a cracker column if it hasn't been already.
+[] The first thing that happens during a query is that the column being queried gets copied into a cracker column if it hasn't been already.
 
-During the main part of the algorithm, the scan, two edge pointers, initialised at the boundaries of the regiion to be scanned, are tightened as much as possible.
+[] The region to be scanned is then selected, based on the information stored in the cracker index about the column fragments. This is done by initialising two edge pointers at the boundaries of the section being scanned.
 
-At the end of the scan, all values in the selected range are in the region between the two edge pointers. This is effectively the creation of new column fragments, as you can see in the diagram. The position of the fragment is saved in the cracker index, which maps values of elements in the column to the corresponding index in the column before which no entry exceeds that value.
+[] During the main part of the algorithm, the scan, the two edge pointers are tightened as much as possible. The section is restructured as the pointers are tightened, so that by the end of the scan all values in the selected range are in the region between the two now fully-tightened edge pointers.
+
+[] As you can see in the diagram, a column of unknown structure is physically reorganised into three fragments with defined bounds.
+
+[] All new information about column fragments is saved in the cracker index. The cracker index maps values of elements in the column to the corresponding index before which no entry exceeds that value.
 
 # Cracking an edge array
 
-We won't refer to the edge array as a table, we'll just call it an array, although the cracking algorithm obviously applies just the same. We use standard cracking as a baseline for the novel augmentations we make to it.
+[] We won't refer to the edge array as a table, we'll just call it an array, although the cracking algorithm obviously applies just the same.
 
-We aren't querying for any wide ranges, only individual node ids. As more queries come in, the edge array is getting clustererd adaptively (by whichever side we are querying), effectively turning it into an adjacency list adaptively. This is the basis for our decision to pursue a compression-based variation on the cracking algorithm.
+[] We aren't querying for any wide ranges, only individual node ids.
+
+[] As more queries come in, the edge array is getting clustererd adaptively, effectively turning it into an adjacency list.
+
+[] This is the basis for our decision to pursue a compression-based variation on the cracking algorithm.
 
 # Challenge: Cracking + Compression
 
-Now I'll talk about the main challenge in this project, which was creating an algorithm to perform cracking with compression.
+Now I'll talk about the main challenge in this project, which was creating novel algorithms to perform cracking with compression. We use standard cracking as a baseline for our contributions.
 
 # Opportunities: When can we compress?
 
-In general, we can compress when there is some kind of statistical redundancy in some data. For this project we compressed repeated values.
+[] In general, we can compress when there is some kind of statistical redundancy in the data. For this project we compressed repeated values.
 
-We identified repeated values at different granularities. At the coarse level, we recognised column fragments which were uniform. We called this per-fragment compression. At a finer grain, we compressed any runs of repeated values even if they weren't identifiable using the cracker index. This is simply run-length encoding, a common compression scheme.
+[] We identified repeated values at different granularities.
+
+[] At the coarse level, we recognised column fragments which were uniform. We called this per-fragment compression.
+
+[] At a finer grain, we compressed any runs of repeated values even if they weren't identifiable using just the cracker index. This is simply run-length encoding, a common compression scheme.
 
 # Exploitation
 
-Having identified runs of repeated values, we scan it as a single entry rather than scanning all of the duplicated values individually as in standard cracking.
+[] Having identified a run of repeated values, we scan it as a single entry rather than scanning all of the duplicated values individually as you would in standard cracking.
 
-For per-fragment compression, this means that when the column fragment to be scanned is known to be uniform, we don't scan it, we return immediately with the values inside the fragment.
+[] For per-fragment compression, this means that when the column fragment to be scanned is known to be uniform, we don't scan it, we return immediately with the values inside the fragment.
 
-For run length encoding, scans build up run-length information even for sections of column that have never been queried for, as long as they have been touched by a scan, so we would expect all queries to benefit after a certain amount of run-lengths have been marked.
+[] For run length encoding, scans build up run-length information even for sections of column that have never been queried for, as long as they have been touched by a scan, so we would expect all queries to benefit after a certain amount of run-lengths have been marked.
 
 # Per-fragment compression
 
-I'll now talk about the two different granularities in more detail, starting the per-fragment compression.
+I'll now talk about the two different granularities in more detail, starting with per-fragment compression.
 
 # Recognising uniform fragments
 
-After queries, the cracker index is updated with the boundaries of the newly created column fragment which contains all instances of the node id that was selected.
+[] After queries, the cracker index is updated with the boundaries of the newly created column fragment which contains all instances of the node id that was selected.
 
-If two entries exist which have minimally different values, then we know that between the two corresponding indices the section is uniform. In our case, node ids are represented as integers, so any two consecutive integers as node ids represent a per-fragment compression opportunity. This in fact occurs at least once on every query for a previously unqueried for value.
+[][][][][] If two entries exist which have minimally different values, then we know that between the two corresponding indices the section is uniform. In our case, node ids are represented as integers, so any two consecutive integers as node ids represent a per-fragment compression opportunity. This in fact occurs at least once on every query for a previously unqueried for value.
 
-The way we exploit this is by not doing any scanning when doing a repeat query, since the section of the column containing all the required values is known and stored in the cracker index.
+[] The way we exploit this is by not doing any scanning when doing a repeat query, since the section of the column containing all the required values is known and stored in the cracker index.
 
 # Recognising uniform fragments: Performance (Cost)
 
@@ -92,103 +122,114 @@ The difference between standard cracking and per-fragment compressive cracking i
 
 The way we chose to evaluate this cost is to measure the effect it has on the number of cracker queries which can be run in the time it would take to instead sort the edge array up-front. This is called the break-even point.
 
-As you can see from the graph, there is very little change in the break-even point. It has reduced by a very small amount. In every case the reduction in the break-point is less than 2%.
+As you can see from the graph, there is very little change in the break-even point. It has reduced by a very small amount. In every case the reduction in the break-even point is less than 2%.
 
 # Recognising uniform fragments: Performance (Benefit)
 
-The benefit, as discussed, is that we do less scanning. To demonstrate how this speeds up queries, we ran pagerank, a common graph algorithm, and saw that overall time to completion was positively effected. The bar chart shows the running times for 50 and 100 iterations of pagerank on a graph with approximately 1.9M edges and 65K nodes, which was generated using the LDBC social network benchmark graph generator. We also ran experiments for generated networks of two other, smaller scale factors. The average speedup was 8% across all of our recorded experiments.
+The benefit, as I mentioned earlier, is that we do less scanning. To demonstrate how this speeds up queries, we ran pagerank, a common graph algorithm, and saw that overall time to completion was reduced. The bar chart shows the running times for 50 and 100 iterations of pagerank on a graph with approximately 1.9M edges and 65K nodes, which was generated using the LDBC social network benchmark graph generator. We also ran experiments for generated networks of two other, smaller scale factors. The average speedup was 8% across all of our recorded experiments.
 
 # Run-length encoding
 
-Run-length encoding constitutes marking sections containing a duplicated value as such by marking the size of the section and the repeated value it contains.
+[] Run-length encoding constitutes marking sections containing duplicate values. The duplicated values are encoded into a pair containing the value that is duplicated and the number of duplicates.
 
-Applying this to cracking, we hoped to reduce our scanning time by hopping over any repeated values. This benefit doesn't only apply for repeat queries however, it applies when scanning any section of column that has been previously scanned over, which after the first query, is everywhere!
+[] Applying this to cracking, we hoped to reduce our scanning time by hopping over any repeated values. This benefit doesn't only apply for repeat queries however, it applies when scanning any section of column that has been previously scanned over, which after the first query, is everywhere!
 
-This does mean however that we'll have to do a lot more work early on by recognising and marking these runs.
+[] This does mean however that we'll have to do a lot more work early on by recognising and marking these runs.
 
 # Challenge: Build & maintain RLE while cracking
 
-We discovered through other experiments that physically compacting data caused the algorithm to become prohibitively slow due to the cost of copying tailward elements in the array forwards when deleting arbitrary intermediate values. For this reason, we chose to mark runs in a separate array rather than physically compact the cracker column.
+[] We discovered through other experiments that physically compacting data caused the algorithm to become prohibitively slow due to the cost of copying tailward elements in the array forwards when deleting arbitrary intermediate values. For this reason, we chose to mark runs in a separate array rather than physically compact the cracker column.
 
-During the scan, pointers move in both directions, so in order to fully exploit RLE, we chose to mark runs such that they could be exploited in both directions, requiring us to mark both the front and end of runs.
+[] During the scan, pointers move in both directions, so in order to fully exploit RLE, we chose to mark runs such that they could be exploited in both directions, requiring us to mark both the front and end of runs.
 
-Fragments are built as one big run by the iteration pointer which scans the elements between the two enclosing edge pointers, so we also get the benefits of per-fragment compression. They are essentially the same idea, just applied at different granularities, as I mentioned earlier.
+[] Fragments are built as one big run by the iteration pointer which scans the elements between the two enclosing edge pointers, so we also get the benefits of per-fragment compression. They are essentially the same idea, just applied at different granularities, as I mentioned earlier.
 
-When pivoting, we also need to ensure that any swapping of values doesn't cause the run length markings to become invalidated and incorrect. Accounting for this had a lot of cases to consider and caused the final algorithms developed to be much more complex than standard cracking.
+[] When pivoting, we also need to ensure that any swapping of values doesn't cause the run length markings to become invalidated and incorrect. Accounting for this had a lot of cases to consider and caused the final algorithms developed to be much more complex than standard cracking.
 
-Please do also look at the note - if you are interested in the details of the implementations I built then ask at the end I'd be really happy to show you.
+[] I actually built two implementations of RLE cracking. They differ in the way runs are maintained during restructuring. If you are interested then that's something you can ask about at the end I'd be really happy to show you. They perform very similarly so I refer to RLE cracking throughout as though it were a single algorithm.
 
 # RLE Cracking: Performance
 
-Before the first scan runs, we have a difficult scenario for RLE cracking. There are no runs to exploit, but there are many runs to build and mark. Early scans therefore we expect to perform worse than standard cracking.
+[][][][] Before the first scan runs, we have a difficult scenario for RLE cracking. There are no runs to exploit, but there are many runs to build and mark. Early scans therefore we expect to perform worse than standard cracking.
 
-As more scans come in, more runs are marked and built. Additionally, there will be fewer runs to BE marked. So we're also expecting that later scans will perform better than standard cracking.
+[][][][] As more scans come in, more runs are marked and built. Additionally, there will be fewer runs to BE marked. So we're also expecting that later scans will perform better than standard cracking.
 
 # Cracking is a lightweight operation
 
-Idreos showed that the first cracker query was about 30% slower than just scanning, but every subsequent query is faster. Cracking aims to quickly adapt to the workload, while still returning answers to queries promptly. For example, in experiments run by Idreos, 10,000 queries were answered by cracking operators in the time it took to sort the input graph.
+[] Idreos showed that the first cracker query was about 30% slower than just scanning, but every subsequent query is faster. Cracking aims to quickly adapt to the workload, while still returning answers to queries promptly. For example, in experiments run by Idreos, 10,000 queries were answered by cracking operators in the time it took to sort the input graph.
 
 # RLE cracking is too heavyweight!
 
-The early work done by RLE cracking is very heavyweight and caused the break-even point to be much lower than that of standard cracking or per-fragment compression - a bit less than 40 queries.
+[] The early work done by RLE cracking is very heavyweight and caused the break-even point to be much lower than that of standard cracking or per-fragment compression - a few shy of 40 queries.
 
 # What did we buy with all that work?
 
-When measuring the completion time for pagerank iterations with RLE, we didn't find evidence of it being either faster or slower than standard cracking, so evidently the later queries are benefiting from the work done by the earlier queries.
+[] When measuring the completion time for pagerank iterations with RLE cracking, we didn't find evidence of it being either faster or slower than standard cracking,
 
-But really the question we want to answer is: Is it worth it? We got no overall speed boost, and the break-even point is significantly lower, which misaligns with the goal of adaptive indexing, which is namely to be adaptive - so probably not unfortunately.
+[] so evidently the later queries are benefiting from the work done by the earlier queries.
+
+[] But really the question we want to answer is: Is it worth it? We got no overall speed boost, and the break-even point is significantly lower, which misaligns with the goal of adaptive indexing, which is namely to be adaptive - so probably not unfortunately.
 
 # How could we have made RLE cracking better?
 
-The algorithm contains a lot of branches due to the number of edge cases when swapping runs of different lengths around during scanning. A measure shown to be effective for standard cracking was predication, so implementing that may have helped improve performance.
+[] The algorithm contains a lot of branches due to the number of edge cases when swapping runs of different lengths around during scanning.
 
-Additionally, using a cutoff parameter may have proved to prune some unnnecessary work from the early scans - for example, only writing in runs if they exceed a certain length.
+[] A measure shown to be effective for standard cracking was predication, so implementing that may have helped improve performance.
 
-We could have tried to implement an algorithm that does less run-length maintenance during swapping in order to cut down on work done during swapping.
+[] Using a cutoff parameter may have helped to prune some unnnecessary work from the early scans - for example, only writing in runs if they exceed a certain length.
 
-No matter what we did though, the underlying complexity of RLE cracking is the same as standard cracking, because it is still a scan of every element in the worst case, such as if every element is unique and so there are no runs.
+[] We could have tried to implement an algorithm that does less run-length maintenance during swapping in order to cut down on work done during swapping.
+
+[] No matter what we did though, the underlying complexity of RLE cracking is the same as standard cracking, because it is still a scan of every element in the worst case, such as if every element is unique and so there are no runs.
 
 # Summary
 
-Now I'll go through some comparisons of the methods I just talked about, summarise the achievements of the project as a whole and briefly discuss future work.
+[] Now I'll go through some comparisons of the methods I just talked about, summarise the achievements of the project as a whole and briefly discuss future work.
 
 # Per-fragment vs RLE
 
-First I'll compare compression for the two granularities discussed. On the costs-side, per-fragment compression costs much less than run-length encoding to use. On the benefits side, the potential of RLE is that it could perform better because there is more information to exploit and scans are sped up regardless of whether they are a repeat or not. Overall however, we found the costs of RLE cracking to outweigh the benefits compared to the fragment-wise granularity.
+First I'll compare compression for the two granularities discussed.
+
+[] On the costs-side, per-fragment compression costs much less than run-length encoding to use, because it is a single branch at the start of the cracker query, whereas run-length encoding requires making the actual scan more expensive. Per-fragment compression therefore is still lightweight like standard cracking, but RLE cracking isn't.
+
+[] On the benefits side, the potential of RLE is that it could perform better because there is more information to exploit and scans are sped up regardless of whether they are a repeat or not, whereas per-fragment compression is only beneficial if minimally different values can be found in the cracker index.
+
+[] Overall, we found the costs of RLE cracking to outweigh the benefits compared to the fragment-wise granularity.
 
 # Standard cracking vs Per-fragment
 
-The difference in results between these two methods is small because the actual difference bewteen the methods themselvs is small, however there is a trade-off to be made. Standard cracking is slightly more lightweight, so it is more adaptive. Per-fragment gets a speed boost on repeated queries, so after many repeated queries it outperforms standard cracking.
+The difference in results between these two methods is small because the actual difference bewteen the methods themselvs is small, however there is a trade-off to be made.
 
-This trade-off is small in size, but is non-trivial. By that I mean, it's not like a trade-off between query speed and say, energy efficiency, which we aren't really interested in. It's a meaningful trade-off in that there are times when we might want one over the other, such as if the workload contains a lot of repeated queries or doesn't. 
+[] Standard cracking is slightly more lightweight, so it is more adaptive. Per-fragment gets a speed boost on repeated queries, so after many repeated queries it outperforms standard cracking.
+
+[] Overall, this trade-off is small in size, but is non-trivial. By that I mean it's not like a trade-off between query speed and say, energy efficiency, which we aren't really interested in. It's a meaningful trade-off becauses there are times when we might want one over the other, such as if the workload contains a lot of repeated queries or doesn't. 
 
 The best case of course would be to combine them in some way such that after some number of queries the if-statement for compressable fragments in the cracker index is used to speed up repeat queries.
 
 # Summary of achievements
 
-Firstly, we looked into the space of potential compression based variations that could be applied to cracking in order to improve on it as an adaptive indexing technique for graph processing.
+[] Firstly, we looked into the space of potential compression based variations that could  be applied to cracking in order to improve on it as an adaptive indexing technique for graph processing.
 
-We looked at identifying opportunities for compression and showed that recognising the compression but not doing any actual compaction was better than doing compaction.
+[] Using our ideas, we changed the standard cracking algorithm to exploit compression opportunities in uniform fragments by reading them from the cracker index. We evaluated this change, measuring the cost to the break-even point and also the performance increase on pagerank.
 
-Using our ideas, we changed the standard cracking algorithm to exploit compression opportunities in uniform fragments by reading the cracker index. We evaluated this change, measuring the cost to the break-even point and also the performance increase on pagerank.
-
-In this project we also demonstrated the novel RLE cracking, for which we built two implementations, comparing them against standard cracking in order to evaluate the costs and benefits.
+[] In this project we also demonstrated RLE cracking, a novel algorithm based on standard cracking. We built two variations of RLE cracking and compared them against standard cracking in order to evaluate the costs and benefits.
 
 # Future work
 
-The biggest problem that makes RLE cracking unviable as it is, is that the cost of early scans outweighs the benefits of faster scanning. Standard cracking is known to have the problem of not being workload-robust. It is vulnerable to pathological query patterns. RLE cracking exacerbates this problem because the scans are that much more expensive.
+[] The biggest problem that makes RLE cracking unviable as it is, is that the cost of early scans outweighs the benefits of faster scanning. Standard cracking is known to have the problem of not being workload-robust. It is vulnerable to pathological query patterns. RLE cracking exacerbates this problem because the scans are that much more expensive.
 
 Something that could improve performance might be to do less run-length encoding by being more data-driven when making a decision to perform RLE. This approach is used in stochastic cracking and applied to the decision to perform restructuring.
 
+[] There are CPU efficient and parallel implementations of standard cracking which have been shown to make it up to 25 times faster. It could be interesting to see how one might make such changes to compression-based cracking algorithms and see how they effect performance.
+
 # In the report but not detailed here
 
-I implemented per-fragment compaction. The algorithm had a few differences to standard cracking in order to account for the deletion of elements in the cracker column, but the performance was poor. We did expect this before implementing it, however included it for completeness.
+[] Although not mentioned in this presentation, we also looked at how we might vary the way we stored compression information. One of the ways would be to physically compact data rather than store extra compression information. The cost of copying memory due to arbitrary array deletions proved to be prohibitive however. I've included it in this slide for completeness.
 
-I also haven't covered the details of the difference between underswapping and overswapping, which are the two variants of RLE cracking that I implemented.
+[] I also haven't covered the details of the difference between underswapping and overswapping, which are the two variants of RLE cracking that I implemented.
 
-If you're interested in the details then feel free to ask about that, or anything else in this project... (next slide)
+If you're interested in the details or anything else in this project, then feel free to ask about that... (next slide)
 
 # Ask me about it
 
 ... now.
-
