@@ -41,7 +41,7 @@ fn traversal_time(n: i64, i: usize) {
         let mut start = PreciseTime::now();
         let (src, dst) = datagen::randomly_connected_tree(n);
         let start_node = rand::thread_rng().gen_range(1, n);
-        println!("Created tree {} after {} seconds", j, start.to(PreciseTime::now()).to_string());
+         shellsprintln!("Created tree {} after {} seconds", j, start.to(PreciseTime::now()).to_string());
 
         start = PreciseTime::now();
         bfs::decracked_bfs_adjl(&mut decomposed_cracking::from_adjacency_vectors(src.clone(), dst.clone(), "src"), start_node);
